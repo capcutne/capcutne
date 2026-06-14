@@ -1,0 +1,2218 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CapCut – Video Editor</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg0:#0f0f0f;--bg1:#181818;--bg2:#202020;--bg3:#2a2a2a;--bg4:#343434;--bg5:#3e3e3e;
+  --border:rgba(255,255,255,.06);--border2:rgba(255,255,255,.11);--border3:rgba(255,255,255,.18);
+  --t1:#f2f2f2;--t2:#999;--t3:#555;--t4:#333;
+  --accent:#D4A017;--accent2:#f0c040;--accentdim:rgba(212,160,23,.18);
+  --tv:#1d3060;--tvt:#6a9de8;--tvb:rgba(106,157,232,.15);
+  --ta:#0f3020;--tat:#48b07a;
+  --ts:#302008;--tst:#c09030;
+  --tfx:#200f38;--tfxt:#9060d0;
+  --red:#c0392b;--green:#27ae60;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg0);color:var(--t1);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;font-size:13px;user-select:none}
+svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;pointer-events:none}
+
+/* ─── APP SHELL ─────────────────────────────────────── */
+#app{display:flex;flex-direction:column;width:100vw;height:100vh}
+
+/* ─── TOPBAR ─────────────────────────────────────────── */
+#topbar{
+  height:48px;background:var(--bg1);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 10px;gap:6px;flex-shrink:0;z-index:200
+}
+.tb-back{
+  display:flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border2);
+  border-radius:7px;color:var(--t2);padding:5px 11px;font-size:12px;cursor:pointer;white-space:nowrap
+}
+.tb-back:hover{background:var(--bg4);color:var(--t1)}
+.tb-divider{width:1px;height:22px;background:var(--border2);flex-shrink:0}
+.tb-project{display:flex;flex-direction:column;gap:1px;margin:0 4px}
+.tb-name{font-size:13px;font-weight:500;color:var(--t1);background:none;border:none;outline:none;
+  cursor:text;padding:0;max-width:180px}
+.tb-name:focus{border-bottom:1px solid var(--accent)}
+.tb-meta{display:flex;align-items:center;gap:6px}
+.tb-badge{background:var(--bg3);border:1px solid var(--border2);border-radius:4px;
+  padding:1px 7px;font-size:10px;color:var(--t3)}
+.tb-dur{font-size:10px;color:var(--t3)}
+.tb-sep{flex:1}
+/* history dots */
+.tb-hist{display:flex;align-items:center;gap:3px;margin-right:4px}
+.tb-hist-dot{width:6px;height:6px;border-radius:50%;background:var(--bg5)}
+.tb-hist-dot.active{background:var(--accent)}
+/* icon buttons */
+.tb-btn{background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--t2);
+  width:34px;height:34px;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.tb-btn:hover{background:var(--bg4);color:var(--t1)}
+.tb-btn:disabled{opacity:.35;pointer-events:none}
+.tb-btn-label{display:flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border2);
+  border-radius:7px;color:var(--t2);padding:0 12px;height:34px;font-size:12px;cursor:pointer}
+.tb-btn-label:hover{background:var(--bg4);color:var(--t1)}
+.tb-export{
+  background:var(--accent);border:none;border-radius:8px;color:#000;
+  padding:0 20px;height:34px;font-size:13px;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;gap:6px;flex-shrink:0;letter-spacing:.2px
+}
+.tb-export:hover{background:var(--accent2)}
+
+/* ─── MAIN ROW ───────────────────────────────────────── */
+#main{display:flex;flex:1;overflow:hidden;min-height:0}
+
+/* ─── LEFT SIDEBAR ───────────────────────────────────── */
+#lsb{
+  width:68px;background:var(--bg1);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;align-items:center;padding:8px 0 4px;gap:2px;flex-shrink:0;overflow-y:auto
+}
+#lsb::-webkit-scrollbar{display:none}
+.tb{
+  width:60px;min-height:52px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:4px;padding:7px 4px;border-radius:8px;cursor:pointer;border:none;
+  background:none;color:var(--t3);transition:background .12s,color .12s
+}
+.tb:hover{background:var(--bg3);color:var(--t2)}
+.tb.on{background:var(--bg3);color:var(--accent2)}
+.tb svg{width:20px;height:20px}
+.tb span{font-size:9.5px;text-align:center;line-height:1.25;font-weight:500;letter-spacing:.1px}
+.lsb-sep{width:36px;height:1px;background:var(--border);margin:3px 0;flex-shrink:0}
+
+/* ─── MEDIA PANEL ────────────────────────────────────── */
+#media-panel{
+  width:270px;background:var(--bg1);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;flex-shrink:0;overflow:hidden
+}
+#media-panel.hidden{display:none}
+.mp-top{
+  height:40px;display:flex;align-items:center;padding:0 12px;
+  border-bottom:1px solid var(--border);flex-shrink:0;gap:8px
+}
+.mp-top-title{font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.7px;flex:1}
+.mp-close-btn{background:none;border:none;color:var(--t3);cursor:pointer;
+  width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:5px}
+.mp-close-btn:hover{background:var(--bg3);color:var(--t2)}
+.mp-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0;padding:0 8px}
+.mp-tab{
+  padding:8px 10px;font-size:11.5px;color:var(--t3);cursor:pointer;
+  border-bottom:2px solid transparent;white-space:nowrap
+}
+.mp-tab:hover{color:var(--t2)}
+.mp-tab.on{color:var(--t1);border-bottom-color:var(--accent)}
+.mp-body{flex:1;overflow-y:auto;padding:10px}
+.mp-body::-webkit-scrollbar{width:3px}
+.mp-body::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px}
+.mp-upload{
+  width:100%;background:var(--accentdim);border:1.5px dashed var(--accent);
+  border-radius:8px;color:var(--accent2);padding:9px;font-size:11px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:5px;margin-bottom:10px
+}
+.mp-upload:hover{background:rgba(212,160,23,.28)}
+.mp-section{font-size:10px;color:var(--t3);font-weight:600;text-transform:uppercase;
+  letter-spacing:.6px;margin:8px 0 6px}
+.mp-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.mp-card{border-radius:8px;overflow:hidden;cursor:pointer;border:1.5px solid transparent;
+  background:var(--bg2);transition:border-color .12s}
+.mp-card:hover{border-color:var(--accent)}
+.mp-card.active{border-color:var(--accent2)}
+.mp-thumb{width:100%;aspect-ratio:9/16;background:var(--bg3);display:flex;align-items:center;
+  justify-content:center;font-size:26px;position:relative}
+.mp-thumb-tag{
+  position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,.75);
+  border-radius:3px;padding:1px 5px;font-size:9px;color:#fff
+}
+.mp-card-name{font-size:10px;color:var(--t3);padding:4px 6px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--bg2)}
+/* audio items */
+.mp-audio{
+  display:flex;align-items:center;gap:9px;padding:7px 6px;border-radius:7px;cursor:pointer;
+  border:1px solid transparent
+}
+.mp-audio:hover{background:var(--bg3);border-color:var(--border2)}
+.mp-audio-icon{width:36px;height:36px;border-radius:50%;background:var(--bg3);
+  border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.mp-audio-info{flex:1;min-width:0}
+.mp-audio-name{font-size:11.5px;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mp-audio-dur{font-size:10px;color:var(--t3);margin-top:1px}
+.mp-audio-add{background:var(--bg3);border:1px solid var(--border2);border-radius:5px;
+  color:var(--t3);padding:2px 9px;font-size:10px;cursor:pointer;flex-shrink:0}
+.mp-audio-add:hover{border-color:var(--accent);color:var(--accent2)}
+
+/* ─── CENTER COLUMN ──────────────────────────────────── */
+#center{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
+
+/* ─── TOOLBAR STRIP (replaces AI bar) ───────────────── */
+#toolbar-strip{
+  height:40px;background:var(--bg1);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 12px;gap:4px;flex-shrink:0
+}
+.ts-group{display:flex;align-items:center;gap:2px;padding:0 6px;border-right:1px solid var(--border2)}
+.ts-group:last-child{border-right:none}
+.ts-btn{
+  display:flex;align-items:center;gap:4px;background:none;border:none;
+  color:var(--t3);padding:4px 8px;border-radius:5px;font-size:11px;cursor:pointer
+}
+.ts-btn:hover{background:var(--bg3);color:var(--t2)}
+.ts-btn.on{background:var(--bg3);color:var(--accent2)}
+.ts-btn svg{width:14px;height:14px}
+.ts-ratio{
+  display:flex;align-items:center;gap:2px;margin-left:auto
+}
+.ts-ratio-btn{
+  background:var(--bg3);border:1px solid var(--border2);border-radius:5px;
+  color:var(--t3);padding:3px 9px;font-size:10.5px;cursor:pointer
+}
+.ts-ratio-btn:hover,.ts-ratio-btn.on{background:var(--accentdim);border-color:var(--accent);color:var(--accent2)}
+.ts-sep{flex:1}
+.ts-ai-btn{
+  display:flex;align-items:center;gap:5px;background:var(--accentdim);
+  border:1px solid var(--accent);border-radius:6px;color:var(--accent2);
+  padding:4px 12px;font-size:11.5px;font-weight:600;cursor:pointer
+}
+.ts-ai-btn:hover{background:rgba(212,160,23,.3)}
+
+/* ─── PREVIEW AREA ───────────────────────────────────── */
+#preview{
+  flex:1;background:#0a0a0a;display:flex;align-items:center;justify-content:center;
+  position:relative;overflow:hidden
+}
+/* top info bar */
+.pv-top{
+  position:absolute;top:0;left:0;right:0;height:38px;
+  display:flex;align-items:center;justify-content:space-between;padding:0 14px;
+  background:linear-gradient(180deg,rgba(0,0,0,.55) 0%,transparent 100%);z-index:10;pointer-events:none
+}
+.pv-top>*{pointer-events:all}
+.pv-timecode{font-size:12px;color:rgba(255,255,255,.55);font-variant-numeric:tabular-nums;letter-spacing:.5px}
+.pv-zoom-group{display:flex;gap:3px}
+.pv-zoom-btn{
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);
+  border-radius:4px;color:rgba(255,255,255,.5);padding:3px 9px;font-size:10.5px;cursor:pointer
+}
+.pv-zoom-btn:hover,.pv-zoom-btn.on{background:var(--accentdim);border-color:var(--accent);color:var(--accent2)}
+/* canvas */
+.pv-canvas-wrap{
+  display:flex;flex-direction:column;align-items:center;gap:10px;position:relative
+}
+.pv-canvas{
+  background:#000;position:relative;overflow:hidden;
+  box-shadow:0 0 0 1px rgba(255,255,255,.08),0 20px 60px rgba(0,0,0,.7)
+}
+.pv-ratio-label{font-size:10.5px;color:var(--t3);letter-spacing:.3px}
+/* subtitle on canvas */
+.pv-sub{
+  position:absolute;bottom:32px;left:8px;right:8px;background:rgba(0,0,0,.62);
+  border-radius:4px;padding:4px 10px;font-size:11px;color:#f0f0e8;text-align:center;
+  line-height:1.5;display:none;z-index:5
+}
+.pv-tc{
+  position:absolute;bottom:10px;right:10px;font-size:9px;
+  color:rgba(255,255,255,.35);font-variant-numeric:tabular-nums
+}
+/* side quick tools */
+.pv-side{
+  position:absolute;top:50%;transform:translateY(-50%);
+  display:flex;flex-direction:column;gap:8px;z-index:10
+}
+#pv-side-l{right:calc(50% + 128px)}
+#pv-side-r{left:calc(50% + 128px)}
+.pv-side-btn{
+  width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;
+  justify-content:center;cursor:pointer;color:rgba(255,255,255,.5)
+}
+.pv-side-btn:hover{background:rgba(255,255,255,.14);color:#fff}
+/* overlays */
+#pv-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5}
+.ov-text{
+  position:absolute;cursor:move;padding:3px 7px;border-radius:3px;
+  font-size:11px;font-weight:600;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.8);
+  white-space:nowrap;pointer-events:all;border:1px solid transparent;user-select:none;line-height:1.3
+}
+.ov-text:hover,.ov-text.focused{border:1px dashed rgba(255,255,255,.45)}
+.ov-text.focused{border-color:var(--accent2)}
+.ov-sticker{
+  position:absolute;cursor:move;font-size:28px;pointer-events:all;
+  border:1px solid transparent;border-radius:4px;line-height:1;user-select:none
+}
+.ov-sticker:hover,.ov-sticker.focused{border:1px dashed rgba(255,255,255,.4)}
+/* crop */
+#crop-overlay{display:none;position:absolute;top:0;left:0;width:100%;height:100%;z-index:20;background:rgba(0,0,0,.5)}
+#crop-box{position:absolute;border:2px solid var(--accent2);cursor:move}
+.crop-handle{position:absolute;width:12px;height:12px;background:var(--accent2);border-radius:2px}
+.crop-handle.tl{top:-6px;left:-6px;cursor:nw-resize}
+.crop-handle.tr{top:-6px;right:-6px;cursor:ne-resize}
+.crop-handle.bl{bottom:-6px;left:-6px;cursor:sw-resize}
+.crop-handle.br{bottom:-6px;right:-6px;cursor:se-resize}
+.crop-toolbar{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:8px}
+.crop-btn{background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--t2);padding:6px 16px;font-size:12px;cursor:pointer}
+.crop-btn.ok{background:var(--accent);border-color:var(--accent2);color:#000;font-weight:600}
+/* playback bar */
+.pv-playbar{
+  position:absolute;bottom:0;left:0;right:0;height:56px;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  background:linear-gradient(0deg,rgba(0,0,0,.5) 0%,transparent 100%)
+}
+.pv-pb-btn{
+  width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.07);
+  border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;
+  justify-content:center;color:rgba(255,255,255,.55);cursor:pointer
+}
+.pv-pb-btn:hover{background:rgba(255,255,255,.14);color:#fff}
+.pv-pb-btn.play{
+  width:46px;height:46px;background:var(--accent);border:none;color:#000
+}
+.pv-pb-btn.play:hover{background:var(--accent2)}
+
+/* ─── TIMELINE ────────────────────────────────────────── */
+#tl{
+  height:228px;background:var(--bg1);border-top:1px solid var(--border);
+  flex-shrink:0;display:flex;flex-direction:column
+}
+#tl-hdr{
+  height:38px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 12px;gap:8px;flex-shrink:0;position:relative
+}
+.tl-label{font-size:11px;color:var(--t3);font-weight:500}
+.tl-sep2{flex:1}
+.tl-zoom-grp{display:flex;align-items:center;gap:4px}
+.tl-zb{
+  background:var(--bg3);border:none;border-radius:4px;color:var(--t2);
+  width:22px;height:22px;font-size:15px;display:flex;align-items:center;
+  justify-content:center;cursor:pointer
+}
+.tl-zv{font-size:10.5px;color:var(--t3);min-width:34px;text-align:center}
+.tl-icon-btn{
+  background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--t2);
+  width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer
+}
+.tl-icon-btn svg{width:13px;height:13px}
+.tl-icon-btn:hover{background:var(--bg4);color:var(--t1)}
+.tl-add-btn{
+  background:var(--accent);border:none;border-radius:6px;color:#000;
+  padding:5px 13px;font-size:11.5px;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;gap:4px
+}
+.tl-add-btn:hover{background:var(--accent2)}
+/* multi-sel bar */
+#multi-bar{
+  display:none;position:absolute;top:4px;right:12px;background:var(--bg3);
+  border:1px solid var(--border2);border-radius:7px;padding:3px 10px;
+  gap:6px;align-items:center;z-index:50;font-size:11px;color:var(--t2)
+}
+#multi-bar.visible{display:flex}
+.mb-btn{background:var(--bg4);border:none;border-radius:5px;color:var(--t2);padding:3px 10px;font-size:11px;cursor:pointer}
+.mb-btn:hover{background:var(--accent);color:#000}
+/* scroll area */
+#tl-scroll{flex:1;overflow:auto;position:relative}
+#tl-scroll::-webkit-scrollbar{width:4px;height:4px}
+#tl-scroll::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px}
+#tl-inner{min-width:max-content}
+/* ruler */
+#ruler{
+  height:22px;position:sticky;top:0;background:var(--bg2);
+  border-bottom:1px solid var(--border);z-index:20;min-width:max-content;cursor:col-resize
+}
+#ruler-inner{display:flex;align-items:flex-end;padding:0 0 2px 74px;height:100%}
+.r-unit{flex-shrink:0;position:relative;height:100%}
+.r-tick{position:absolute;left:0;bottom:0;width:1px;height:7px;background:var(--border2)}
+.r-lbl{position:absolute;left:3px;bottom:9px;font-size:9px;color:var(--t4)}
+.r-sub{position:absolute;bottom:0;width:.5px;height:4px;background:var(--border)}
+/* playhead */
+#ph-line{
+  position:absolute;left:82px;top:0;bottom:-300px;width:1.5px;
+  background:var(--accent);z-index:25;pointer-events:none
+}
+#ph-line::before{
+  content:'';position:absolute;top:-2px;left:-5px;
+  border-left:6px solid transparent;border-right:6px solid transparent;
+  border-top:8px solid var(--accent)
+}
+/* tracks */
+#tracks-area{min-width:max-content}
+#tracks{padding:3px 0;display:flex;flex-direction:column;gap:1px}
+.t-row{display:flex;align-items:center;height:44px}
+.t-head{
+  width:74px;flex-shrink:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:3px;color:var(--t3);
+  position:sticky;left:0;background:var(--bg2);z-index:10;
+  border-right:1px solid var(--border);padding:2px 0;
+  font-size:9px;text-transform:uppercase;font-weight:600;letter-spacing:.3px
+}
+.t-head svg{opacity:.65;width:14px;height:14px}
+.t-head-lbl{color:var(--t4);font-size:8.5px}
+.t-body{flex:1;height:100%;position:relative;min-width:1600px}
+/* clips */
+.clip{
+  position:absolute;top:4px;height:36px;border-radius:5px;
+  display:flex;align-items:center;padding:0 14px;font-size:10.5px;font-weight:500;
+  overflow:hidden;white-space:nowrap;cursor:grab;border:1.5px solid transparent;
+  transition:filter .1s
+}
+.clip:active{cursor:grabbing}
+.clip:hover{filter:brightness(1.12);border-color:rgba(255,255,255,.18)}
+.clip.sel{border-color:rgba(255,255,255,.5)!important;filter:brightness(1.2)}
+.clip-lh,.clip-rh{
+  position:absolute;top:0;bottom:0;width:10px;
+  cursor:col-resize;z-index:5;display:flex;align-items:center;justify-content:center;
+  opacity:0;transition:opacity .12s
+}
+.clip-lh{left:0;border-radius:5px 0 0 5px}
+.clip-rh{right:0;border-radius:0 5px 5px 0}
+.clip-lh::after,.clip-rh::after{
+  content:'';width:3px;height:16px;border-radius:2px;
+  background:rgba(255,255,255,.8);pointer-events:none
+}
+.clip:hover .clip-lh,.clip:hover .clip-rh,
+.clip.sel .clip-lh,.clip.sel .clip-rh{opacity:1}
+.clip.dragging-active{opacity:.75;z-index:50;box-shadow:0 0 0 2px var(--accent2)}
+.clip.resizing-l,.clip.resizing-r{z-index:50;box-shadow:0 0 0 2px var(--accent2)}
+.clip-waveform{position:absolute;top:0;left:0;right:0;bottom:0;opacity:.22;pointer-events:none}
+.clip-label{position:relative;z-index:1;pointer-events:none;text-overflow:ellipsis;overflow:hidden}
+.cv{background:var(--tv);color:var(--tvt)}
+.ca{background:var(--ta);color:var(--tat)}
+.cs{background:var(--ts);color:var(--tst)}
+.cx{background:var(--tfx);color:var(--tfxt)}
+/* transition node */
+.trans-node{
+  position:absolute;top:50%;transform:translate(-50%,-50%);
+  width:18px;height:18px;background:var(--bg3);border:1px solid var(--border2);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;z-index:12;font-size:8px;color:var(--t3)
+}
+.trans-node:hover{background:var(--accent);border-color:var(--accent2);color:#000}
+/* keyframe dot */
+.kf-dot{
+  position:absolute;bottom:-4px;width:8px;height:8px;border-radius:50%;
+  background:var(--accent2);border:1.5px solid var(--bg1);
+  transform:translateX(-50%);cursor:pointer;z-index:15
+}
+.kf-dot:hover{background:#fff;transform:translateX(-50%) scale(1.3)}
+/* snap line */
+.snap-line{position:absolute;top:0;bottom:0;width:1px;background:rgba(255,210,0,.75);pointer-events:none;z-index:30;display:none}
+/* drag tooltip */
+#drag-tooltip{
+  position:fixed;background:var(--bg3);border:1px solid var(--border2);
+  border-radius:6px;padding:4px 10px;font-size:11px;color:var(--t1);
+  pointer-events:none;z-index:9999;display:none;white-space:nowrap;
+  box-shadow:0 4px 12px rgba(0,0,0,.5)
+}
+/* trim in/out indicator on ruler */
+#trim-shade-l,#trim-shade-r{
+  position:absolute;top:0;bottom:-9999px;background:rgba(0,0,0,.35);
+  pointer-events:none;z-index:22;display:none
+}
+/* add track row */
+.t-add-row{display:flex;align-items:center;height:26px;padding-left:80px;margin-top:2px;gap:8px}
+.t-add-track{
+  background:none;border:1px dashed var(--border2);border-radius:5px;
+  color:var(--t3);font-size:10px;padding:3px 12px;cursor:pointer;display:flex;align-items:center;gap:4px
+}
+.t-add-track:hover{border-color:var(--accent);color:var(--accent2)}
+
+/* ─── RIGHT PANEL ────────────────────────────────────── */
+#rp{
+  width:256px;background:var(--bg1);border-left:1px solid var(--border);
+  display:flex;flex-direction:column;flex-shrink:0;overflow:hidden
+}
+#rp-tabs{display:flex;border-bottom:1px solid var(--border);height:40px;flex-shrink:0}
+.rp-tab{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  font-size:12px;color:var(--t3);cursor:pointer;border-bottom:2px solid transparent
+}
+.rp-tab:hover{color:var(--t2);background:var(--bg2)}
+.rp-tab.on{color:var(--t1);border-bottom-color:var(--accent)}
+#rp-body{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column}
+#rp-body::-webkit-scrollbar{width:3px}
+#rp-body::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px}
+/* panel sections */
+.ps{margin-bottom:16px}
+.ps-title{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
+.ps-div{height:1px;background:var(--border);margin:14px 0}
+.info-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:7px}
+.ic-row{display:flex;align-items:center;justify-content:space-between}
+.ic-key{font-size:11px;color:var(--t3)}
+.ic-val{font-size:11px;color:var(--t2)}
+.badge-v{font-size:10px;padding:2px 7px;border-radius:4px;background:#1a2c55;color:#6a9de8}
+.badge-a{font-size:10px;padding:2px 7px;border-radius:4px;background:#0f2e1f;color:#48b07a}
+/* property rows */
+.prop-row{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.prop-lbl{font-size:11px;color:var(--t3);width:74px;flex-shrink:0}
+.prop-sl{
+  flex:1;-webkit-appearance:none;appearance:none;height:3px;border-radius:2px;
+  background:var(--bg4);outline:none;cursor:pointer
+}
+.prop-sl::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--accent2);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.prop-val{font-size:11px;color:var(--t2);width:36px;text-align:right;flex-shrink:0}
+/* filter row */
+.filter-row{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.filter-row::-webkit-scrollbar{display:none}
+.fi{flex-shrink:0;text-align:center;cursor:pointer}
+.fi-thumb{width:50px;height:50px;border-radius:8px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid transparent}
+.fi.on .fi-thumb{border-color:var(--accent2)}
+.fi-name{font-size:9px;color:var(--t3);margin-top:3px}
+/* transitions grid */
+.trans-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.tr-it{
+  aspect-ratio:1;background:var(--bg3);border-radius:7px;display:flex;
+  align-items:center;justify-content:center;font-size:11px;color:var(--t3);
+  cursor:pointer;border:1.5px solid transparent
+}
+.tr-it:hover{background:var(--bg4);color:var(--t2)}
+.tr-it.on{border-color:var(--accent2);color:var(--accent2);background:var(--accentdim)}
+/* speed opts */
+.sp-opts{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.sp-o{
+  background:var(--bg3);border:1px solid var(--border2);border-radius:6px;
+  padding:6px 0;text-align:center;font-size:11px;color:var(--t2);cursor:pointer
+}
+.sp-o.on{background:var(--accentdim);border-color:var(--accent);color:var(--accent2)}
+/* select */
+.lng-sel{
+  width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;
+  color:var(--t2);padding:8px 10px;font-size:12px;outline:none;cursor:pointer;
+  font-family:inherit;appearance:none
+}
+/* toggle */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0}
+.tg-lbl{font-size:12px;color:var(--t2)}
+.tg{width:34px;height:18px;border-radius:9px;position:relative;cursor:pointer}
+.tg.on{background:var(--accent)}
+.tg.off{background:var(--bg5)}
+.tg-k{width:14px;height:14px;border-radius:50%;background:#fff;position:absolute;top:2px;transition:left .18s}
+.tg.on .tg-k{left:18px}
+.tg.off .tg-k{left:2px}
+/* quality options */
+.q-opt{display:flex;align-items:center;gap:8px;cursor:pointer;padding:7px 10px;border-radius:7px;border:1px solid transparent;margin-bottom:4px}
+.q-opt:hover{background:var(--bg3)}
+.q-opt.on{background:var(--accentdim);border-color:var(--accent)}
+.q-opt input{accent-color:var(--accent2)}
+.q-name{font-size:12px;color:var(--t1)}
+.q-desc{font-size:10px;color:var(--t3)}
+.q-size{font-size:11px;color:var(--t3);margin-left:auto}
+/* platform row */
+.pl-row{display:flex;align-items:center;justify-content:space-between;padding:5px 0}
+.pl-info{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--t2)}
+/* export btn */
+.exp-btn{
+  width:100%;background:var(--accent);border:none;border-radius:8px;color:#000;
+  padding:10px;font-size:13px;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:6px;margin-top:14px
+}
+.exp-btn:hover{background:var(--accent2)}
+/* color swatches */
+.clr-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.clr-sw{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent}
+.clr-sw.on{border-color:#fff}
+/* style btns */
+.ts-row{display:flex;gap:5px}
+.ts-btn-r{
+  flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;
+  padding:6px;font-size:11px;color:var(--t2);cursor:pointer;text-align:center
+}
+.ts-btn-r.on{border-color:var(--accent);color:var(--accent2);background:var(--accentdim)}
+/* text panel */
+.txt-ta{
+  width:100%;background:var(--bg2);border:1px solid var(--border2);border-radius:7px;
+  color:var(--t1);padding:8px 10px;font-size:12px;outline:none;font-family:inherit;
+  resize:none;margin-bottom:8px
+}
+.txt-ta:focus{border-color:var(--accent)}
+.font-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:8px}
+.font-item{
+  background:var(--bg3);border:1px solid var(--border);border-radius:6px;
+  padding:6px 8px;font-size:12px;color:var(--t2);cursor:pointer;
+  text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
+.font-item.on{border-color:var(--accent);color:var(--accent2);background:var(--accentdim)}
+.align-row{display:flex;gap:5px;margin-bottom:8px}
+.align-btn{
+  flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;
+  padding:5px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--t3)
+}
+.align-btn.on,.align-btn:hover{background:var(--accentdim);border-color:var(--accent);color:var(--accent2)}
+.add-ov-btn{
+  width:100%;background:var(--accentdim);border:1px solid var(--accent);border-radius:7px;
+  color:var(--accent2);padding:8px;font-size:12px;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:6px;margin-top:4px
+}
+.add-ov-btn:hover{background:rgba(212,160,23,.3)}
+/* sticker grid */
+.stk-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:8px}
+.stk-item{
+  font-size:22px;text-align:center;padding:4px;border-radius:6px;cursor:pointer;
+  border:1.5px solid transparent
+}
+.stk-item:hover{background:var(--bg3);border-color:var(--border2)}
+/* speed curve */
+.spd-curve{
+  width:100%;height:76px;background:var(--bg2);border-radius:8px;
+  border:1px solid var(--border);cursor:crosshair;margin-bottom:8px
+}
+
+/* ─── CONTEXT MENU ───────────────────────────────────── */
+#ctx-menu{
+  position:fixed;background:var(--bg2);border:1px solid var(--border2);
+  border-radius:9px;min-width:175px;z-index:9999;
+  box-shadow:0 8px 28px rgba(0,0,0,.75);display:none;padding:4px
+}
+.ctx-item{
+  display:flex;align-items:center;gap:8px;padding:8px 12px;
+  font-size:12px;color:var(--t2);cursor:pointer;border-radius:6px
+}
+.ctx-item:hover{background:var(--bg3);color:var(--t1)}
+.ctx-item.danger:hover{background:rgba(200,50,50,.2);color:#ff6b6b}
+.ctx-item svg{flex-shrink:0;color:var(--t3)}
+.ctx-sep{height:1px;background:var(--border);margin:3px 0}
+.ctx-kbd{
+  margin-left:auto;font-size:10px;color:var(--t3);
+  background:var(--bg3);border-radius:3px;padding:1px 5px
+}
+
+/* ─── SCROLLBAR ─────────────────────────────────────── */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px}
+::-webkit-scrollbar-track{background:transparent}
+
+/* ─── MISC ───────────────────────────────────────────── */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{animation:spin .7s linear infinite;transform-origin:center}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <button class="tb-back">
+    <svg class="ic" width="14" height="14" viewBox="0 0 24 24"><path d="M19 12H5M5 12l7 7M5 12l7-7"/></svg>
+    Dự án
+  </button>
+  <div class="tb-divider"></div>
+  <div class="tb-project">
+    <input class="tb-name" value="Video mới #1" spellcheck="false"/>
+    <div class="tb-meta">
+      <span class="tb-badge">9:16</span>
+      <span class="tb-badge">1080p</span>
+      <span class="tb-dur" id="tb-dur-label">00:30</span>
+    </div>
+  </div>
+  <div class="tb-sep"></div>
+  <!-- Undo/Redo history dots -->
+  <div class="tb-hist">
+    <div class="tb-hist-dot"></div>
+    <div class="tb-hist-dot"></div>
+    <div class="tb-hist-dot active"></div>
+    <div class="tb-hist-dot"></div>
+    <div class="tb-hist-dot"></div>
+  </div>
+  <button class="tb-btn" id="btn-undo" title="Hoàn tác (Ctrl+Z)" onclick="doUndo()">
+    <svg class="ic" width="15" height="15" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+  </button>
+  <button class="tb-btn" id="btn-redo" title="Làm lại (Ctrl+Y)" onclick="doRedo()">
+    <svg class="ic" width="15" height="15" viewBox="0 0 24 24"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg>
+  </button>
+  <div class="tb-divider"></div>
+  <button class="tb-btn" title="Media" onclick="toggleMedia()">
+    <svg class="ic" width="15" height="15" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+  </button>
+  <button class="tb-btn-label" title="Chia sẻ">
+    <svg class="ic" width="14" height="14" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>
+    Chia sẻ
+  </button>
+  <button class="tb-export" onclick="switchTab('export')">
+    <svg class="ic" width="14" height="14" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    Xuất video
+  </button>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+<!-- LEFT SIDEBAR -->
+<div id="lsb">
+  <button class="tb on" onclick="setTool(this,'edit')">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    <span>Chỉnh sửa</span>
+  </button>
+  <button class="tb" onclick="setTool(this,'text')">
+    <svg class="ic" viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+    <span>Chữ</span>
+  </button>
+  <button class="tb" onclick="setTool(this,'sticker')">
+    <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+    <span>Sticker</span>
+  </button>
+  <button class="tb" onclick="setTool(this,'effect')">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z"/></svg>
+    <span>Hiệu ứng</span>
+  </button>
+  <button class="tb" onclick="setTool(this,'filter')">
+    <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    <span>Bộ lọc</span>
+  </button>
+  <div class="lsb-sep"></div>
+  <button class="tb" onclick="setTool(this,'music')">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+    <span>Nhạc</span>
+  </button>
+  <button class="tb" onclick="setTool(this,'subtitle')">
+    <svg class="ic" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M7 15h4M15 15h2M7 9h2M13 9h4"/></svg>
+    <span>Phụ đề</span>
+  </button>
+  <button class="tb" onclick="setTool(this,'speed')">
+    <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <span>Tốc độ</span>
+  </button>
+  <div class="lsb-sep"></div>
+  <button class="tb" onclick="setTool(this,'crop')">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M6 2v14h14"/><path d="M18 22V8H4"/></svg>
+    <span>Crop</span>
+  </button>
+  <button class="tb" onclick="setTool(this,'translate')">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M5 8l6 6m-7 0 6-6 2-3M2 5h12M7 2h1m15 20-5-10-5 10M14 18h6"/></svg>
+    <span>Dịch</span>
+  </button>
+  <button class="tb" onclick="setTool(this,'export')">
+    <svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    <span>Xuất</span>
+  </button>
+</div>
+
+<!-- MEDIA PANEL -->
+<div id="media-panel">
+  <div class="mp-top">
+    <span class="mp-top-title">Media</span>
+    <button class="mp-close-btn" onclick="toggleMedia()">
+      <svg class="ic" width="13" height="13" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="mp-tabs">
+    <div class="mp-tab on" onclick="setMpTab(this,'video')">Video</div>
+    <div class="mp-tab" onclick="setMpTab(this,'audio')">Âm thanh</div>
+    <div class="mp-tab" onclick="setMpTab(this,'stock')">Stock</div>
+  </div>
+  <div class="mp-body" id="mp-body">
+    <button class="mp-upload" onclick="document.getElementById('vid-file-input').click()">
+      <svg class="ic" width="13" height="13" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Tải lên ảnh / video
+    </button>
+
+    <div class="mp-section">Đã tải lên</div>
+    <div class="mp-grid">
+      <div class="mp-card active" onclick="addVideoClipFromLib('sunset_beach.mp4',8,this)">
+        <div class="mp-thumb" style="background:linear-gradient(180deg,#0d1f3a 0%,#1a3050 40%,#2a1e08 80%,#1a1208 100%)">🌅
+          <span class="mp-thumb-tag">00:08</span>
+        </div>
+        <div class="mp-card-name">sunset_beach.mp4</div>
+      </div>
+      <div class="mp-card" onclick="addVideoClipFromLib('forest_walk.mp4',12,this)">
+        <div class="mp-thumb" style="background:linear-gradient(135deg,#1a3a2a 0%,#0e2018 100%)">🌲
+          <span class="mp-thumb-tag">00:12</span>
+        </div>
+        <div class="mp-card-name">forest_walk.mp4</div>
+      </div>
+      <div class="mp-card" onclick="addVideoClipFromLib('city_night.mp4',5,this)">
+        <div class="mp-thumb" style="background:linear-gradient(135deg,#3a2a4a 0%,#1c1530 100%)">🏙️
+          <span class="mp-thumb-tag">00:05</span>
+        </div>
+        <div class="mp-card-name">city_night.mp4</div>
+      </div>
+      <div class="mp-card" onclick="addVideoClipFromLib('coffee_shop.jpg',3,this)">
+        <div class="mp-thumb" style="background:linear-gradient(135deg,#2a3a4a 0%,#13202c 100%)">☕
+          <span class="mp-thumb-tag">00:03</span>
+        </div>
+        <div class="mp-card-name">coffee_shop.jpg</div>
+      </div>
+    </div>
+
+    <div class="mp-section">Mẫu có sẵn</div>
+    <div class="mp-grid">
+      <div class="mp-card" onclick="addVideoClipFromLib('travel_vlog_01',15,this)">
+        <div class="mp-thumb" style="background:linear-gradient(135deg,#4a2a2a 0%,#200e0e 100%)">🎬
+          <span class="mp-thumb-tag">00:15</span>
+        </div>
+        <div class="mp-card-name">travel_vlog_01</div>
+      </div>
+      <div class="mp-card" onclick="addVideoClipFromLib('product_demo',20,this)">
+        <div class="mp-thumb" style="background:linear-gradient(135deg,#2a4a3a 0%,#0e2018 100%)">🎞️
+          <span class="mp-thumb-tag">00:20</span>
+        </div>
+        <div class="mp-card-name">product_demo</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CENTER -->
+<div id="center">
+
+<!-- TOOLBAR STRIP -->
+<div id="toolbar-strip">
+  <!-- ratio -->
+  <div class="ts-ratio" style="margin-left:0">
+    <span style="font-size:10.5px;color:var(--t3);margin-right:4px">Tỷ lệ</span>
+    <button class="ts-ratio-btn on" onclick="setRatioBtn(this,'9:16',216,384)">9:16</button>
+    <button class="ts-ratio-btn" onclick="setRatioBtn(this,'16:9',384,216)">16:9</button>
+    <button class="ts-ratio-btn" onclick="setRatioBtn(this,'1:1',300,300)">1:1</button>
+    <button class="ts-ratio-btn" onclick="setRatioBtn(this,'4:3',320,240)">4:3</button>
+  </div>
+  <div class="ts-sep"></div>
+  <!-- AI generate -->
+  <button class="ts-ai-btn" onclick="openAIGen()">
+    <svg class="ic" width="13" height="13" viewBox="0 0 24 24"><path d="M12 2L9.5 9.5 2 12l7.5 2.5L12 22l2.5-7.5L22 12l-7.5-2.5z"/></svg>
+    AI Tạo
+  </button>
+</div>
+
+<!-- PREVIEW -->
+<div id="preview">
+  <!-- top bar -->
+  <div class="pv-top">
+    <span class="pv-timecode" id="ptime">00:03 / 00:30</span>
+    <div class="pv-zoom-group">
+      <button class="pv-zoom-btn" onclick="setZoom(50,this)">50%</button>
+      <button class="pv-zoom-btn" onclick="setZoom(75,this)">75%</button>
+      <button class="pv-zoom-btn on" onclick="setZoom(100,this)">100%</button>
+    </div>
+  </div>
+
+  <!-- left quick tools -->
+  <div class="pv-side" id="pv-side-l">
+    <div class="pv-side-btn" onclick="doUndo()" title="Hoàn tác">
+      <svg class="ic" width="15" height="15" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+    </div>
+    <div class="pv-side-btn" title="Tỷ lệ khung hình" onclick="cycleRatio()">
+      <svg class="ic" width="15" height="15" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18"/></svg>
+    </div>
+    <div class="pv-side-btn" title="Toàn màn hình">
+      <svg class="ic" width="15" height="15" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+    </div>
+  </div>
+
+  <!-- canvas preview -->
+  <div class="pv-canvas-wrap">
+    <div class="pv-canvas" id="phone-el" style="width:216px;height:384px;border-radius:3px">
+      <div id="ph-sky" style="height:55%;background:linear-gradient(180deg,#0d1f3a 0%,#1a3050 40%,#2a1e08 80%,#1a1208 100%);position:relative">
+        <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:70%;height:3px;background:linear-gradient(90deg,transparent,#ff8c00,#ffb300,#ff8c00,transparent);border-radius:2px"></div>
+      </div>
+      <div id="ph-ground" style="height:45%;background:linear-gradient(180deg,#0d2010 0%,#050e08 100%)"></div>
+      <div id="pv-overlay"></div>
+      <div class="pv-sub" id="ph-sub">Cảnh hoàng hôn ở bờ biển</div>
+      <div class="pv-tc" id="ph-tc">00:03</div>
+    </div>
+    <div class="pv-ratio-label" id="pv-ratio-label">9:16 &nbsp;·&nbsp; 1080×1920</div>
+  </div>
+
+  <!-- right quick tools -->
+  <div class="pv-side" id="pv-side-r">
+    <div class="pv-side-btn" title="Thêm sticker" onclick="openStickerPanel()">
+      <svg class="ic" width="15" height="15" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+    </div>
+    <div class="pv-side-btn" title="Thêm chữ" onclick="openTextPanel()">
+      <svg class="ic" width="15" height="15" viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+    </div>
+    <div class="pv-side-btn" title="Crop" onclick="openCrop()">
+      <svg class="ic" width="15" height="15" viewBox="0 0 24 24"><path d="M6 2v14h14"/><path d="M18 22V8H4"/></svg>
+    </div>
+    <div class="pv-side-btn" title="Xóa overlay" onclick="removeSelectedOverlay()">
+      <svg class="ic" width="15" height="15" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+    </div>
+  </div>
+
+  <!-- CROP OVERLAY -->
+  <div id="crop-overlay">
+    <div id="crop-box">
+      <div class="crop-handle tl" data-h="tl"></div>
+      <div class="crop-handle tr" data-h="tr"></div>
+      <div class="crop-handle bl" data-h="bl"></div>
+      <div class="crop-handle br" data-h="br"></div>
+    </div>
+    <div class="crop-toolbar">
+      <button class="crop-btn" onclick="cancelCrop()">Hủy</button>
+      <select class="crop-btn" id="crop-aspect" onchange="applyCropAspect(this.value)">
+        <option value="free">Tự do</option>
+        <option value="9:16" selected>9:16</option>
+        <option value="16:9">16:9</option>
+        <option value="1:1">1:1</option>
+        <option value="4:3">4:3</option>
+      </select>
+      <button class="crop-btn ok" onclick="confirmCrop()">Áp dụng</button>
+    </div>
+  </div>
+
+  <!-- PLAYBACK BAR -->
+  <div class="pv-playbar">
+    <div class="pv-pb-btn" onclick="seekStart()"><svg class="ic" width="15" height="15" viewBox="0 0 24 24"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg></div>
+    <div class="pv-pb-btn" onclick="stepBack()"><svg class="ic" width="15" height="15" viewBox="0 0 24 24"><polygon points="19 20 9 12 19 4 19 20"/><polygon points="5 20 5 4 13 12 5 20" style="fill:currentColor"/></svg></div>
+    <div class="pv-pb-btn play" id="playBtn" onclick="togglePlay()">
+      <svg class="ic" width="20" height="20" viewBox="0 0 24 24" id="playIcon"><polygon points="5 3 19 12 5 21 5 3" style="fill:#000;stroke:none"/></svg>
+    </div>
+    <div class="pv-pb-btn" onclick="stepFwd()"><svg class="ic" width="15" height="15" viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"/><polygon points="19 4 19 20 11 12 19 4" style="fill:currentColor"/></svg></div>
+    <div class="pv-pb-btn" onclick="seekEnd()"><svg class="ic" width="15" height="15" viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg></div>
+  </div>
+</div><!-- /preview -->
+
+<!-- TIMELINE -->
+<div id="tl">
+  <div id="tl-hdr">
+    <span class="tl-label">Timeline</span>
+    <div id="multi-bar">
+      <span id="multi-count">0 clips</span>
+      <button class="mb-btn" onclick="deleteMulti()">Xóa</button>
+      <button class="mb-btn" onclick="groupAlign()">Căn trái</button>
+      <button class="mb-btn" onclick="clearMultiSel()">Bỏ chọn</button>
+    </div>
+    <div class="tl-sep2"></div>
+    <div class="tl-zoom-grp">
+      <button class="tl-zb" onclick="zoom(-1)">−</button>
+      <span class="tl-zv" id="zv">50%</span>
+      <button class="tl-zb" onclick="zoom(1)">+</button>
+    </div>
+    <div style="width:8px"></div>
+    <button class="tl-icon-btn" title="Cắt (S)" onclick="splitClip()">
+      <svg class="ic" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/></svg>
+    </button>
+    <button class="tl-icon-btn" title="Xóa (Del)" onclick="deleteClip()">
+      <svg class="ic" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+    </button>
+    <button class="tl-icon-btn" title="Nhân đôi (Ctrl+D)" onclick="duplicateClip()">
+      <svg class="ic" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    </button>
+    <div style="width:6px"></div>
+    <button class="tl-add-btn" onclick="toggleMedia()">
+      <svg class="ic" width="12" height="12" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Thêm
+    </button>
+  </div>
+  <div id="tl-scroll">
+    <div id="tl-inner">
+      <div id="ruler">
+        <div id="ph-line"></div>
+        <div id="ruler-inner">
+          <div class="r-unit" style="width:70px"><span class="r-tick"></span><span class="r-lbl">00:00</span></div>
+          <div class="r-unit" style="width:70px"><span class="r-tick"></span><span class="r-lbl">00:05</span></div>
+          <div class="r-unit" style="width:70px"><span class="r-tick"></span><span class="r-lbl">00:10</span></div>
+          <div class="r-unit" style="width:70px"><span class="r-tick"></span><span class="r-lbl">00:15</span></div>
+          <div class="r-unit" style="width:70px"><span class="r-tick"></span><span class="r-lbl">00:20</span></div>
+          <div class="r-unit" style="width:70px"><span class="r-tick"></span><span class="r-lbl">00:25</span></div>
+          <div class="r-unit" style="width:70px"><span class="r-tick"></span><span class="r-lbl">00:30</span></div>
+          <div class="r-unit" style="width:70px"><span class="r-tick"></span><span class="r-lbl">00:35</span></div>
+        </div>
+      </div>
+      <div id="tracks-area">
+        <div id="tracks">
+          <div class="t-row">
+            <div class="t-head">
+              <svg class="ic" viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>
+              <span class="t-head-lbl">Văn bản</span>
+            </div>
+            <div class="t-body">
+              <div class="clip cs" style="left:0px;width:42px"><div class="clip-lh"></div><span class="clip-label">Chào mừng!</span><div class="clip-rh"></div></div>
+              <div class="clip cs" style="left:140px;width:56px"><div class="clip-lh"></div><span class="clip-label">Khám phá ngay</span><div class="clip-rh"></div></div>
+            </div>
+          </div>
+          <div class="t-row">
+            <div class="t-head">
+              <svg class="ic" viewBox="0 0 24 24"><path d="M12 2L9.5 9.5 2 12l7.5 2.5L12 22l2.5-7.5L22 12l-7.5-2.5z"/></svg>
+              <span class="t-head-lbl">Hiệu ứng</span>
+            </div>
+            <div class="t-body">
+              <div class="clip cx" style="left:0px;width:70px"><div class="clip-lh"></div><span class="clip-label">Zoom in</span><div class="clip-rh"></div></div>
+              <div class="clip cx" style="left:210px;width:42px"><div class="clip-lh"></div><span class="clip-label">Glitch</span><div class="clip-rh"></div></div>
+            </div>
+          </div>
+          <div class="t-row">
+            <div class="t-head">
+              <svg class="ic" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              <span class="t-head-lbl">Video</span>
+            </div>
+            <div class="t-body">
+              <div class="clip cv sel" style="left:0px;width:112px"><div class="clip-lh"></div><span class="clip-label">sunset_beach.mp4</span><div class="clip-rh"></div></div>
+              <div class="trans-node" style="left:112px">⇄</div>
+              <div class="clip cv" style="left:112px;width:168px"><div class="clip-lh"></div><span class="clip-label">forest_walk.mp4</span><div class="clip-rh"></div></div>
+              <div class="trans-node" style="left:280px">⇄</div>
+              <div class="clip cv" style="left:280px;width:140px"><div class="clip-lh"></div><span class="clip-label">city_night.mp4</span><div class="clip-rh"></div></div>
+            </div>
+          </div>
+          <div class="t-row">
+            <div class="t-head">
+              <svg class="ic" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+              <span class="t-head-lbl">Âm thanh</span>
+            </div>
+            <div class="t-body">
+              <div class="clip ca" style="left:0px;width:420px">
+                <svg class="clip-waveform" viewBox="0 0 420 36" preserveAspectRatio="none">
+                  <path d="M0 18 L4 10 L8 26 L12 14 L16 22 L20 8 L24 28 L28 12 L32 20 L36 16 L40 24 L44 10 L48 18 L52 6 L56 26 L60 14 L64 20 L68 12 L72 22 L76 16 L80 28 L84 10 L88 18 L92 14 L96 24 L100 8 L104 20 L108 16 L112 26 L116 12 L120 18 L124 22 L128 10 L132 20 L136 14 L140 26 L144 8 L148 18 L152 22 L156 12 L160 16 L164 24 L168 10 L172 20 L176 14 L180 18 L184 26 L188 12 L192 22 L196 16 L200 8 L204 20 L208 14 L212 26 L216 18 L220 10 L224 22 L228 16 L232 24 L236 12 L240 18 L244 20 L248 8 L252 26 L256 14 L260 18 L264 22 L268 12 L272 16 L276 24 L280 10 L284 20 L288 14 L292 26 L296 18 L300 8 L304 22 L308 16 L312 24 L316 12 L320 18 L324 20 L328 8 L332 26 L336 14 L340 18 L344 22 L348 12 L352 16 L356 24 L360 10 L364 20 L368 14 L372 26 L376 18 L380 10 L384 22 L388 16 L392 24 L396 12 L400 18 L404 20 L408 8 L412 26 L416 14 L420 18" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                </svg>
+                <div class="clip-lh"></div><span class="clip-label">🎵 lofi_chill_beat.mp3</span><div class="clip-rh"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="snap-line" id="snap-line"></div>
+      </div>
+    </div>
+    <div class="t-add-row">
+      <button class="t-add-track" onclick="addVideoTrack()">+ Video Track</button>
+      <button class="t-add-track" onclick="addAudioTrack()">+ Audio Track</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- /center -->
+
+<!-- RIGHT PANEL -->
+<div id="rp">
+  <div id="rp-tabs">
+    <div class="rp-tab on" id="tab-edit" onclick="switchTab('edit')">Chỉnh sửa</div>
+    <div class="rp-tab" id="tab-trans" onclick="switchTab('trans')">Phụ đề</div>
+    <div class="rp-tab" id="tab-export" onclick="switchTab('export')">Xuất</div>
+  </div>
+  <div id="rp-body">
+    <div class="ps">
+      <div class="ps-title">Thông tin clip</div>
+      <div class="info-card">
+        <div class="ic-row"><span class="ic-key">Tên file</span><span class="ic-val" id="ic-name">sunset_beach.mp4</span></div>
+        <div class="ic-row"><span class="ic-key">Thời lượng</span><span class="ic-val" id="ic-dur">00:08</span></div>
+        <div class="ic-row"><span class="ic-key">Độ phân giải</span><span class="ic-val">1920×1080</span></div>
+        <div class="ic-row"><span class="ic-key">Loại</span><span class="ic-val" id="ic-type"><span class="badge-v">Video</span></span></div>
+      </div>
+    </div>
+
+    <div class="ps">
+      <div class="ps-title">Âm lượng</div>
+      <div class="prop-row">
+        <span class="prop-lbl">Volume</span>
+        <input type="range" class="prop-sl" min="0" max="100" value="80" data-pct="1">
+        <span class="prop-val">80%</span>
+      </div>
+    </div>
+
+    <div class="ps">
+      <div class="ps-title">Tốc độ</div>
+      <div class="sp-opts">
+        <div class="sp-o">0.5x</div>
+        <div class="sp-o on">1x</div>
+        <div class="sp-o">1.5x</div>
+        <div class="sp-o">2x</div>
+        <div class="sp-o">3x</div>
+      </div>
+    </div>
+
+    <div class="ps-div"></div>
+
+    <div class="ps">
+      <div class="ps-title">Bộ lọc</div>
+      <div class="filter-row">
+        <div class="fi on"><div class="fi-thumb">∅</div><div class="fi-name">Gốc</div></div>
+        <div class="fi"><div class="fi-thumb">🌇</div><div class="fi-name">Hoàng hôn</div></div>
+        <div class="fi"><div class="fi-thumb">🎞️</div><div class="fi-name">Vintage</div></div>
+        <div class="fi"><div class="fi-thumb">🌫️</div><div class="fi-name">Mờ</div></div>
+        <div class="fi"><div class="fi-thumb">🌈</div><div class="fi-name">Sống động</div></div>
+        <div class="fi"><div class="fi-thumb">⬛</div><div class="fi-name">Đen trắng</div></div>
+      </div>
+    </div>
+
+    <div class="ps-div"></div>
+
+    <div class="ps">
+      <div class="ps-title">Điều chỉnh</div>
+      <div class="prop-row">
+        <span class="prop-lbl">Độ sáng</span>
+        <input type="range" class="prop-sl" min="-100" max="100" value="5">
+        <span class="prop-val">5</span>
+      </div>
+      <div class="prop-row">
+        <span class="prop-lbl">Tương phản</span>
+        <input type="range" class="prop-sl" min="-100" max="100" value="0">
+        <span class="prop-val">0</span>
+      </div>
+      <div class="prop-row">
+        <span class="prop-lbl">Bão hòa</span>
+        <input type="range" class="prop-sl" min="-100" max="100" value="12">
+        <span class="prop-val">12</span>
+      </div>
+      <div class="prop-row">
+        <span class="prop-lbl">Độ sắc nét</span>
+        <input type="range" class="prop-sl" min="0" max="100" value="20">
+        <span class="prop-val">20</span>
+      </div>
+    </div>
+
+    <div class="ps-div"></div>
+
+    <div class="ps">
+      <div class="ps-title">Hoạt ảnh</div>
+      <div class="filter-row" style="margin-bottom:8px">
+        <div class="fi on"><div class="fi-thumb">↘</div><div class="fi-name">Vào</div></div>
+        <div class="fi"><div class="fi-thumb">↗</div><div class="fi-name">Ra</div></div>
+        <div class="fi"><div class="fi-thumb">↻</div><div class="fi-name">Lặp</div></div>
+      </div>
+      <div class="trans-grid">
+        <div class="tr-it on">Mờ dần</div>
+        <div class="tr-it">Trượt lên</div>
+        <div class="tr-it">Phóng to</div>
+        <div class="tr-it">Lắc nhẹ</div>
+      </div>
+      <div class="prop-row" style="margin-top:10px">
+        <span class="prop-lbl">Thời gian</span>
+        <input type="range" class="prop-sl" min="0" max="100" value="30">
+        <span class="prop-val">0.6s</span>
+      </div>
+    </div>
+
+    <div class="ps-div"></div>
+
+    <div class="ps">
+      <div class="ps-title">Hiệu ứng chuyển cảnh</div>
+      <div class="trans-grid">
+        <div class="tr-it on">Mờ dần</div>
+        <div class="tr-it">Trượt</div>
+        <div class="tr-it">Lật</div>
+        <div class="tr-it">Zoom</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- CONTEXT MENU -->
+<div id="ctx-menu">
+  <div class="ctx-item" onclick="ctxAction('split')">
+    <svg class="ic" width="13" height="13" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/></svg>
+    Cắt đôi tại đây <span class="ctx-kbd">S</span>
+  </div>
+  <div class="ctx-item" onclick="ctxAction('duplicate')">
+    <svg class="ic" width="13" height="13" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    Nhân đôi <span class="ctx-kbd">⌘D</span>
+  </div>
+  <div class="ctx-item" onclick="ctxAction('copy')">
+    <svg class="ic" width="13" height="13" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    Sao chép <span class="ctx-kbd">⌘C</span>
+  </div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" onclick="ctxAction('speed')">
+    <svg class="ic" width="13" height="13" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    Tốc độ phát
+  </div>
+  <div class="ctx-item" onclick="ctxAction('reverse')">
+    <svg class="ic" width="13" height="13" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+    Đảo ngược
+  </div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item danger" onclick="ctxAction('delete')">
+    <svg class="ic" width="13" height="13" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+    Xóa clip <span class="ctx-kbd">Del</span>
+  </div>
+</div>
+
+<!-- hidden file inputs -->
+<input type="file" id="vid-file-input" accept="video/*,image/*" style="display:none" onchange="handleVideoUpload(this)">
+<input type="file" id="aud-file-input" accept="audio/*" style="display:none" onchange="handleAudioUpload(this)">
+
+<script>
+/* =========================================================
+   CAPCUT SHELL — INTERACTION ENGINE (demo, no real media I/O)
+   ========================================================= */
+
+/* ---------- ICONS for track heads ---------- */
+const ICONS = {
+  text:'<svg class="ic" viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>',
+  effect:'<svg class="ic" viewBox="0 0 24 24"><path d="M12 2L9.5 9.5 2 12l7.5 2.5L12 22l2.5-7.5L22 12l-7.5-2.5z"/></svg>',
+  video:'<svg class="ic" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
+  audio:'<svg class="ic" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>'
+};
+
+/* ---------- STATE ---------- */
+const zoomLevels=[25,50,75,100,150,200];
+const zoomPPS   =[7,  14, 21, 28, 42, 56];
+let zoomIdx=1;
+const HEAD_W=74;
+let nextId=9;
+
+let tracks=[
+ {id:'tr1',type:'text',label:'Văn bản',icon:ICONS.text,clips:[
+   {id:'c1',start:0,dur:3,label:'Chào mừng!',cls:'cs'},
+   {id:'c2',start:10,dur:4,label:'Khám phá ngay',cls:'cs'}
+ ]},
+ {id:'tr2',type:'effect',label:'Hiệu ứng',icon:ICONS.effect,clips:[
+   {id:'c3',start:0,dur:5,label:'Zoom in',cls:'cx'},
+   {id:'c4',start:15,dur:3,label:'Glitch',cls:'cx'}
+ ]},
+ {id:'tr3',type:'video',label:'Video',icon:ICONS.video,trans:true,clips:[
+   {id:'c5',start:0,dur:8,label:'sunset_beach.mp4',cls:'cv'},
+   {id:'c6',start:8,dur:12,label:'forest_walk.mp4',cls:'cv'},
+   {id:'c7',start:20,dur:10,label:'city_night.mp4',cls:'cv'}
+ ]},
+ {id:'tr4',type:'audio',label:'Âm thanh',icon:ICONS.audio,clips:[
+   {id:'c8',start:0,dur:30,label:'🎵 lofi_chill_beat.mp3',cls:'ca',wave:true}
+ ]}
+];
+
+let selected=new Set();
+let playhead=3;
+let playing=false, playTimer=null;
+let ratio={label:'9:16',w:216,h:384,res:'1080×1920'};
+let pvZoom=100;
+let activeTool='edit';
+let ovCounter=0;
+
+/* ---------- HELPERS ---------- */
+function fmt(t){
+  t=Math.max(0,t);
+  const m=Math.floor(t/60), s=Math.floor(t%60);
+  return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+function pps(){return zoomPPS[zoomIdx];}
+function projectDur(){
+  let m=0;
+  tracks.forEach(tr=>tr.clips.forEach(c=>{ if(c.start+c.dur>m) m=c.start+c.dur; }));
+  return Math.max(m,1);
+}
+function timelineDur(){ return Math.ceil((projectDur()+5)/5)*5; }
+function toast(msg){
+  let t=document.getElementById('toast');
+  if(!t){
+    t=document.createElement('div'); t.id='toast';
+    t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--border2);color:var(--t1);padding:8px 18px;border-radius:8px;font-size:12px;z-index:99999;opacity:0;transition:opacity .2s;pointer-events:none';
+    document.body.appendChild(t);
+  }
+  t.textContent=msg; t.style.opacity='1';
+  clearTimeout(t._h); t._h=setTimeout(()=>{t.style.opacity='0';},1800);
+}
+function findClip(id){
+  for(const tr of tracks){
+    const c=tr.clips.find(x=>x.id===id);
+    if(c) return {track:tr,clip:c};
+  }
+  return null;
+}
+
+/* ---------- RENDER TIMELINE ---------- */
+function renderRuler(){
+  const dur=timelineDur(), unit=5;
+  let html='';
+  for(let s=0;s<=dur;s+=unit){
+    html+=`<div class="r-unit" style="width:${unit*pps()}px"><span class="r-tick"></span><span class="r-lbl">${fmt(s)}</span></div>`;
+  }
+  document.getElementById('ruler-inner').innerHTML=html;
+}
+function clipStyle(c){
+  return `left:${c.start*pps()}px;width:${Math.max(c.dur*pps(),18)}px`;
+}
+function waveformSVG(widthPx){
+  let d='M0 18';
+  for(let x=4;x<=widthPx;x+=4){
+    const y=8+Math.round(Math.random()*20);
+    d+=` L${x} ${y}`;
+  }
+  return `<svg class="clip-waveform" viewBox="0 0 ${widthPx} 36" preserveAspectRatio="none"><path d="${d}" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>`;
+}
+function renderTracks(){
+  let html='';
+  tracks.forEach(tr=>{
+    html+=`<div class="t-row" data-track="${tr.id}"><div class="t-head">${tr.icon}<span class="t-head-lbl">${tr.label}</span></div><div class="t-body">`;
+    const sorted=[...tr.clips].sort((a,b)=>a.start-b.start);
+    sorted.forEach((c,i)=>{
+      const sel=selected.has(c.id)?' sel':'';
+      const wpx=Math.max(c.dur*pps(),18);
+      const wave=c.wave?waveformSVG(wpx):'';
+      html+=`<div class="clip ${c.cls}${sel}" data-clip="${c.id}" style="${clipStyle(c)}">${wave}<div class="clip-lh"></div><span class="clip-label">${c.label}</span><div class="clip-rh"></div></div>`;
+      if(tr.trans && i<sorted.length-1){
+        const x=(c.start+c.dur)*pps();
+        html+=`<div class="trans-node" style="left:${x}px">⇄</div>`;
+      }
+    });
+    html+='</div></div>';
+  });
+  document.getElementById('tracks').innerHTML=html;
+}
+function renderAll(){
+  renderRuler();
+  renderTracks();
+  updatePlayhead();
+  const zv=document.getElementById('zv'); if(zv) zv.textContent=zoomLevels[zoomIdx]+'%';
+  updateMultiBar();
+  const durLbl=document.getElementById('tb-dur-label');
+  if(durLbl) durLbl.textContent=fmt(projectDur());
+}
+function updatePlayhead(){
+  const x=HEAD_W+playhead*pps();
+  document.getElementById('ph-line').style.left=x+'px';
+  document.getElementById('ptime').textContent=fmt(playhead)+' / '+fmt(projectDur());
+  document.getElementById('ph-tc').textContent=fmt(playhead);
+}
+
+/* ---------- DRAG TOOLTIP ---------- */
+const dragTip = (()=>{
+  const el = document.createElement('div');
+  el.id = 'drag-tooltip';
+  document.body.appendChild(el);
+  return {
+    show(x, y, text){ el.style.display='block'; el.style.left=(x+14)+'px'; el.style.top=(y-32)+'px'; el.textContent=text; },
+    hide(){ el.style.display='none'; }
+  };
+})();
+
+/* ---------- SNAP HELPERS ---------- */
+const SNAP_PX = 6; // pixels within which to snap
+function getSnapPoints(excludeId){
+  const pts = [0];
+  tracks.forEach(tr => tr.clips.forEach(c => {
+    if(c.id === excludeId) return;
+    pts.push(c.start, c.start + c.dur);
+  }));
+  pts.push(playhead);
+  return pts;
+}
+function snapTime(t, snapPts){
+  for(const s of snapPts){
+    if(Math.abs((t - s) * pps()) <= SNAP_PX) return s;
+  }
+  return t;
+}
+
+/* ---------- TRIM SHADE ---------- */
+function showTrimShade(side, clipEl){
+  let ls = document.getElementById('trim-shade-l');
+  let rs = document.getElementById('trim-shade-r');
+  if(!ls){
+    ls = document.createElement('div'); ls.id='trim-shade-l';
+    rs = document.createElement('div'); rs.id='trim-shade-r';
+    document.getElementById('tl-inner').style.position='relative';
+    document.getElementById('tl-inner').appendChild(ls);
+    document.getElementById('tl-inner').appendChild(rs);
+  }
+  const clipLeft = parseInt(clipEl.style.left);
+  const clipW    = parseInt(clipEl.style.width);
+  const offset   = HEAD_W;
+  if(side === 'l'){
+    ls.style.display='block'; ls.style.left='0'; ls.style.width=(offset+clipLeft)+'px';
+    rs.style.display='none';
+  } else {
+    rs.style.display='block'; rs.style.left=(offset+clipLeft+clipW)+'px'; rs.style.width='9999px';
+    ls.style.display='none';
+  }
+}
+function hideTrimShade(){
+  const ls=document.getElementById('trim-shade-l'), rs=document.getElementById('trim-shade-r');
+  if(ls) ls.style.display='none';
+  if(rs) rs.style.display='none';
+}
+
+/* ---------- SNAP LINE ---------- */
+function showSnapLine(t){
+  const sl = document.getElementById('snap-line');
+  sl.style.display = 'block';
+  sl.style.left = (HEAD_W + t * pps()) + 'px';
+}
+function hideSnapLine(){
+  document.getElementById('snap-line').style.display='none';
+}
+
+/* ---------- SELECTION ---------- */
+function selectClip(id, multi){
+  if(multi){
+    if(selected.has(id)) selected.delete(id); else selected.add(id);
+  } else {
+    selected.clear(); selected.add(id);
+  }
+  /* update DOM without full re-render */
+  document.querySelectorAll('.clip').forEach(el => {
+    const cid = el.dataset.clip;
+    el.classList.toggle('sel', selected.has(cid));
+  });
+  updateMultiBar();
+  updateRightInfo();
+}
+function updateMultiBar(){
+  const bar=document.getElementById('multi-bar');
+  const cnt=document.getElementById('multi-count');
+  if(!bar||!cnt) return;
+  cnt.textContent=selected.size+' clip'+(selected.size===1?'':'s');
+  bar.classList.toggle('visible', selected.size>0);
+}
+
+document.getElementById('tracks').addEventListener('mousedown', onTrackMouseDown);
+document.getElementById('tracks-area').addEventListener('contextmenu', onClipContext);
+
+function onTrackMouseDown(e){
+  const clipEl = e.target.closest('.clip');
+  if(!clipEl){
+    if(!e.ctrlKey && !e.metaKey && !e.shiftKey && selected.size){
+      selected.clear();
+      document.querySelectorAll('.clip.sel').forEach(el=>el.classList.remove('sel'));
+      updateMultiBar(); updateRightInfo();
+    }
+    return;
+  }
+
+  const id    = clipEl.dataset.clip;
+  const found = findClip(id);
+  if(!found) return;
+  const clip  = found.clip;
+
+  const isLH = e.target.classList.contains('clip-lh');
+  const isRH = e.target.classList.contains('clip-rh');
+  const mode  = isLH ? 'resize-l' : isRH ? 'resize-r' : 'move';
+
+  const startX  = e.clientX;
+  const orig    = { start: clip.start, dur: clip.dur };
+  const snapPts = getSnapPoints(id);
+  let moved     = false;
+  let snappedTo = null;
+
+  /* visual: mark active */
+  if(mode === 'move')     clipEl.classList.add('dragging-active');
+  if(mode === 'resize-l') clipEl.classList.add('resizing-l');
+  if(mode === 'resize-r') clipEl.classList.add('resizing-r');
+  document.body.style.cursor = 'col-resize';
+
+  function applyToDOM(){
+    clipEl.style.left  = (clip.start * pps()) + 'px';
+    clipEl.style.width = Math.max(clip.dur * pps(), 18) + 'px';
+    /* reposition transition nodes on same track */
+    const tr = found.track;
+    const sorted = [...tr.clips].sort((a,b)=>a.start-b.start);
+    sorted.forEach((c, i) => {
+      if(i < sorted.length-1){
+        const nodeX = (c.start + c.dur) * pps();
+        const selector = `.t-row[data-track="${tr.id}"] .trans-node`;
+        const nodes = document.querySelectorAll(selector);
+        if(nodes[i]) nodes[i].style.left = nodeX+'px';
+      }
+    });
+    /* update ruler duration label */
+    const durLbl = document.getElementById('tb-dur-label');
+    if(durLbl) durLbl.textContent = fmt(projectDur());
+  }
+
+  function onMove(ev){
+    const dxPx = ev.clientX - startX;
+    if(Math.abs(dxPx) > 2) moved = true;
+    const dxSec = dxPx / pps();
+    snappedTo = null;
+
+    if(mode === 'move'){
+      let ns = Math.max(0, orig.start + dxSec);
+      const snappedStart = snapTime(ns, snapPts);
+      const snappedEnd   = snapTime(ns + orig.dur, snapPts);
+      if(snappedStart !== ns){ ns = snappedStart; snappedTo = snappedStart; }
+      else if(snappedEnd !== ns + orig.dur){ ns = snappedEnd - orig.dur; snappedTo = snappedEnd; }
+      clip.start = Math.max(0, ns);
+
+      dragTip.show(ev.clientX, ev.clientY, fmt(clip.start) + ' → ' + fmt(clip.start + clip.dur));
+    }
+    else if(mode === 'resize-l'){
+      let ns = Math.max(0, Math.min(orig.start + dxSec, orig.start + orig.dur - 0.3));
+      ns = snapTime(ns, snapPts);
+      if(ns !== orig.start + dxSec) snappedTo = ns;
+      clip.start = ns;
+      clip.dur   = orig.dur + (orig.start - ns);
+      showTrimShade('l', clipEl);
+      dragTip.show(ev.clientX, ev.clientY, 'Vào: ' + fmt(clip.start));
+    }
+    else if(mode === 'resize-r'){
+      let newEnd = Math.max(orig.start + 0.3, orig.start + orig.dur + dxSec);
+      const snapped = snapTime(newEnd, snapPts);
+      if(snapped !== newEnd) snappedTo = snapped;
+      newEnd = snapped;
+      clip.dur = newEnd - clip.start;
+      showTrimShade('r', clipEl);
+      dragTip.show(ev.clientX, ev.clientY, 'Ra: ' + fmt(clip.start + clip.dur));
+    }
+
+    if(snappedTo !== null) showSnapLine(snappedTo);
+    else hideSnapLine();
+
+    applyToDOM();
+  }
+
+  function onUp(){
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup',   onUp);
+    document.body.style.cursor = '';
+    clipEl.classList.remove('dragging-active','resizing-l','resizing-r');
+    dragTip.hide();
+    hideSnapLine();
+    hideTrimShade();
+
+    if(!moved){
+      selectClip(id, e.ctrlKey || e.metaKey || e.shiftKey);
+    } else {
+      selectClip(id, false);
+      renderAll(); /* sync state → DOM fully after drop */
+    }
+  }
+
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup',   onUp);
+  e.preventDefault();
+}
+
+/* ---------- CLIP ACTIONS ---------- */
+function splitClip(){
+  if(selected.size===0){ toast('Chọn một clip để cắt'); return; }
+  let did=false;
+  selected.forEach(id=>{
+    const found=findClip(id); if(!found) return;
+    const {track,clip}=found;
+    if(playhead>clip.start+0.1 && playhead<clip.start+clip.dur-0.1){
+      const newClip={...clip,id:'c'+(nextId++),start:playhead,dur:clip.start+clip.dur-playhead};
+      clip.dur=playhead-clip.start;
+      track.clips.push(newClip);
+      did=true;
+    }
+  });
+  if(did){ renderAll(); toast('Đã cắt clip tại '+fmt(playhead)); }
+  else toast('Đặt con trỏ thời gian vào giữa clip để cắt');
+}
+function deleteClip(){
+  if(selected.size===0){ toast('Chọn clip để xóa'); return; }
+  deleteMulti();
+}
+function deleteMulti(){
+  if(selected.size===0){ toast('Chưa chọn clip nào'); return; }
+  tracks.forEach(tr=>{ tr.clips=tr.clips.filter(c=>!selected.has(c.id)); });
+  selected.clear();
+  renderAll(); updateRightInfo();
+  toast('Đã xóa clip');
+}
+function duplicateClip(){
+  if(selected.size===0){ toast('Chọn clip để nhân đôi'); return; }
+  const newSel=new Set();
+  selected.forEach(id=>{
+    const found=findClip(id); if(!found) return;
+    const {track,clip}=found;
+    const copy={...clip,id:'c'+(nextId++),start:clip.start+clip.dur};
+    track.clips.push(copy);
+    newSel.add(copy.id);
+  });
+  selected=newSel;
+  renderAll(); updateRightInfo();
+  toast('Đã nhân đôi clip');
+}
+function groupAlign(){
+  if(selected.size<2){ toast('Chọn từ 2 clip để căn trái'); return; }
+  let minStart=Infinity;
+  selected.forEach(id=>{ const f=findClip(id); if(f && f.clip.start<minStart) minStart=f.clip.start; });
+  selected.forEach(id=>{ const f=findClip(id); if(f) f.clip.start=minStart; });
+  renderAll();
+}
+function clearMultiSel(){ selected.clear(); renderTracks(); updateMultiBar(); updateRightInfo(); }
+
+function addVideoTrack(){
+  tracks.push({id:'tr'+(nextId++),type:'video',label:'Video',icon:ICONS.video,trans:true,clips:[]});
+  renderAll(); toast('Đã thêm track video');
+}
+function addAudioTrack(){
+  tracks.push({id:'tr'+(nextId++),type:'audio',label:'Âm thanh',icon:ICONS.audio,clips:[]});
+  renderAll(); toast('Đã thêm track âm thanh');
+}
+function zoom(dir){
+  zoomIdx=Math.max(0,Math.min(zoomLevels.length-1,zoomIdx+dir));
+  renderAll();
+}
+
+/* ---------- ADD MEDIA TO TIMELINE ---------- */
+function addVideoClipFromLib(label,dur,cardEl){
+  const tr=tracks.find(t=>t.type==='video');
+  const end=tr.clips.reduce((m,c)=>Math.max(m,c.start+c.dur),0);
+  const c={id:'c'+(nextId++),start:end,dur:dur,label:label,cls:'cv'};
+  tr.clips.push(c);
+  selected.clear(); selected.add(c.id);
+  if(cardEl){
+    document.querySelectorAll('.mp-card').forEach(x=>x.classList.remove('active'));
+    cardEl.classList.add('active');
+  }
+  renderAll(); updateRightInfo();
+  toast('Đã thêm "'+label+'" vào timeline');
+}
+function addAudioClipFromLib(label,dur){
+  const tr=tracks.find(t=>t.type==='audio');
+  const end=tr.clips.reduce((m,c)=>Math.max(m,c.start+c.dur),0);
+  const c={id:'c'+(nextId++),start:end,dur:dur,label:'🎵 '+label,cls:'ca',wave:true};
+  tr.clips.push(c);
+  renderAll();
+  toast('Đã thêm "'+label+'" vào track âm thanh');
+}
+function handleVideoUpload(input){
+  const f=input.files && input.files[0]; if(!f) return;
+  addVideoClipFromLib(f.name,5);
+  input.value='';
+}
+function handleAudioUpload(input){
+  const f=input.files && input.files[0]; if(!f) return;
+  addAudioClipFromLib(f.name,10);
+  input.value='';
+}
+
+/* ---------- PLAYBACK ---------- */
+function setPlayIcon(isPlaying){
+  const ic=document.getElementById('playIcon');
+  ic.innerHTML = isPlaying
+    ? '<rect x="5" y="3" width="5" height="18" rx="1" style="fill:#000;stroke:none"/><rect x="14" y="3" width="5" height="18" rx="1" style="fill:#000;stroke:none"/>'
+    : '<polygon points="5 3 19 12 5 21 5 3" style="fill:#000;stroke:none"/>';
+}
+function togglePlay(){
+  playing=!playing;
+  setPlayIcon(playing);
+  if(playing){
+    playTimer=setInterval(()=>{
+      playhead+=0.1;
+      if(playhead>=projectDur()){ playhead=0; }
+      updatePlayhead();
+    },100);
+  }else{
+    clearInterval(playTimer);
+  }
+}
+function seekStart(){ playhead=0; updatePlayhead(); }
+function seekEnd(){ playhead=projectDur(); updatePlayhead(); }
+function stepBack(){ playhead=Math.max(0,playhead-1); updatePlayhead(); }
+function stepFwd(){ playhead=Math.min(projectDur(),playhead+1); updatePlayhead(); }
+function seekTo(t){ playhead=t; updatePlayhead(); }
+
+/* ---------- RULER SEEK / PLAYHEAD DRAG ---------- */
+function seekFromEvent(e){
+  const rect=document.getElementById('ruler').getBoundingClientRect();
+  const x=e.clientX-rect.left-HEAD_W;
+  playhead=Math.max(0, Math.min(x/pps(), projectDur()));
+  updatePlayhead();
+}
+document.getElementById('ruler').addEventListener('mousedown', e=>{
+  seekFromEvent(e);
+  function move(ev){ seekFromEvent(ev); }
+  function up(){ document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); }
+  document.addEventListener('mousemove',move);
+  document.addEventListener('mouseup',up);
+});
+
+/* ---------- PREVIEW ZOOM / RATIO ---------- */
+function applyRatio(){
+  const f=pvZoom/100;
+  const w=Math.round(ratio.w*f), h=Math.round(ratio.h*f);
+  const ph=document.getElementById('phone-el');
+  ph.style.width=w+'px'; ph.style.height=h+'px';
+  document.getElementById('pv-ratio-label').textContent=ratio.label+'  ·  '+ratio.res;
+  const badge=document.querySelector('.tb-badge');
+  if(badge) badge.textContent=ratio.label;
+}
+function setZoom(pct,el){
+  pvZoom=pct;
+  document.querySelectorAll('.pv-zoom-btn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  applyRatio();
+}
+function resFor(label){
+  return {'9:16':'1080×1920','16:9':'1920×1080','1:1':'1080×1080','4:3':'1440×1080'}[label] || '1080×1920';
+}
+function setRatioBtn(el,label,w,h){
+  ratio={label,w,h,res:resFor(label)};
+  document.querySelectorAll('.ts-ratio-btn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  applyRatio();
+  const sel=document.getElementById('crop-aspect');
+  if(sel){ sel.value=label; if(document.getElementById('crop-overlay').style.display==='block') applyCropAspect(label); }
+}
+function cycleRatio(){
+  const btns=[...document.querySelectorAll('.ts-ratio-btn')];
+  const idx=btns.findIndex(b=>b.classList.contains('on'));
+  btns[(idx+1)%btns.length].click();
+}
+
+/* ---------- MEDIA PANEL ---------- */
+const MP_VIDEO = document.getElementById('mp-body').innerHTML;
+const MP_AUDIO = `
+  <div class="mp-section">Nhạc trong dự án</div>
+  <div class="mp-audio">
+    <div class="mp-audio-icon">🎵</div>
+    <div class="mp-audio-info"><div class="mp-audio-name">lofi_chill_beat.mp3</div><div class="mp-audio-dur">00:24</div></div>
+    <button class="mp-audio-add" onclick="addAudioClipFromLib('lofi_chill_beat.mp3',24)">+ Thêm</button>
+  </div>
+  <div class="mp-section">Thư viện nhạc bản quyền</div>
+  <div class="mp-audio"><div class="mp-audio-icon">🎶</div><div class="mp-audio-info"><div class="mp-audio-name">Upbeat Summer</div><div class="mp-audio-dur">00:32</div></div><button class="mp-audio-add" onclick="addAudioClipFromLib('Upbeat Summer',32)">+ Thêm</button></div>
+  <div class="mp-audio"><div class="mp-audio-icon">🎹</div><div class="mp-audio-info"><div class="mp-audio-name">Piano Emotional</div><div class="mp-audio-dur">00:45</div></div><button class="mp-audio-add" onclick="addAudioClipFromLib('Piano Emotional',45)">+ Thêm</button></div>
+  <div class="mp-audio"><div class="mp-audio-icon">🥁</div><div class="mp-audio-info"><div class="mp-audio-name">Hip Hop Drive</div><div class="mp-audio-dur">00:28</div></div><button class="mp-audio-add" onclick="addAudioClipFromLib('Hip Hop Drive',28)">+ Thêm</button></div>
+  <div class="mp-audio"><div class="mp-audio-icon">🎤</div><div class="mp-audio-info"><div class="mp-audio-name">Acoustic Folk</div><div class="mp-audio-dur">00:36</div></div><button class="mp-audio-add" onclick="addAudioClipFromLib('Acoustic Folk',36)">+ Thêm</button></div>
+  <div class="mp-section">Hiệu ứng âm thanh</div>
+  <div class="mp-audio"><div class="mp-audio-icon">🔔</div><div class="mp-audio-info"><div class="mp-audio-name">Ting Notification</div><div class="mp-audio-dur">00:01</div></div><button class="mp-audio-add" onclick="addAudioClipFromLib('Ting Notification',1)">+ Thêm</button></div>
+  <div class="mp-audio"><div class="mp-audio-icon">👏</div><div class="mp-audio-info"><div class="mp-audio-name">Applause</div><div class="mp-audio-dur">00:03</div></div><button class="mp-audio-add" onclick="addAudioClipFromLib('Applause',3)">+ Thêm</button></div>
+`;
+const MP_STOCK = `
+  <div class="mp-section">Video stock miễn phí</div>
+  <div class="mp-grid">
+    <div class="mp-card" onclick="addVideoClipFromLib('stock_ocean_waves.mp4',10,this)"><div class="mp-thumb" style="background:linear-gradient(135deg,#1a3a4a 0%,#0c1822 100%)">🌊<span class="mp-thumb-tag">00:10</span></div><div class="mp-card-name">ocean_waves.mp4</div></div>
+    <div class="mp-card" onclick="addVideoClipFromLib('stock_mountains.mp4',9,this)"><div class="mp-thumb" style="background:linear-gradient(135deg,#3a4a5a 0%,#161e28 100%)">⛰️<span class="mp-thumb-tag">00:09</span></div><div class="mp-card-name">mountains.mp4</div></div>
+    <div class="mp-card" onclick="addVideoClipFromLib('stock_street_food.mp4',7,this)"><div class="mp-thumb" style="background:linear-gradient(135deg,#4a3a1a 0%,#221a0c 100%)">🍜<span class="mp-thumb-tag">00:07</span></div><div class="mp-card-name">street_food.mp4</div></div>
+    <div class="mp-card" onclick="addVideoClipFromLib('stock_neon_city.mp4',11,this)"><div class="mp-thumb" style="background:linear-gradient(135deg,#3a1a4a 0%,#1a0c22 100%)">🌃<span class="mp-thumb-tag">00:11</span></div><div class="mp-card-name">neon_city.mp4</div></div>
+  </div>
+  <div class="mp-section">Ảnh nền stock</div>
+  <div class="mp-grid">
+    <div class="mp-card" onclick="addVideoClipFromLib('stock_texture_paper.jpg',3,this)"><div class="mp-thumb" style="background:linear-gradient(135deg,#4a4438 0%,#221f1a 100%)">📄<span class="mp-thumb-tag">00:03</span></div><div class="mp-card-name">texture_paper.jpg</div></div>
+    <div class="mp-card" onclick="addVideoClipFromLib('stock_gradient_bg.jpg',3,this)"><div class="mp-thumb" style="background:linear-gradient(135deg,#2a2a4a 0%,#14141f 100%)">🎨<span class="mp-thumb-tag">00:03</span></div><div class="mp-card-name">gradient_bg.jpg</div></div>
+  </div>
+`;
+function toggleMedia(){
+  document.getElementById('media-panel').classList.toggle('hidden');
+}
+function setMpTab(el,tab){
+  document.querySelectorAll('.mp-tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  const body=document.getElementById('mp-body');
+  if(tab==='video') body.innerHTML=MP_VIDEO;
+  else if(tab==='audio') body.innerHTML=MP_AUDIO;
+  else body.innerHTML=MP_STOCK;
+}
+
+/* ---------- RIGHT PANEL TEMPLATES ---------- */
+const TPL_CLIP = document.getElementById('rp-body').innerHTML;
+
+const TPL_TEXT = `
+  <div class="ps">
+    <div class="ps-title">Nội dung văn bản</div>
+    <textarea class="txt-ta" rows="3" id="txt-input">Chào mừng đến với CapCut!</textarea>
+    <button class="add-ov-btn" onclick="addTextOverlay()">+ Thêm văn bản vào khung hình</button>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Phông chữ</div>
+    <div class="font-grid">
+      <div class="font-item on" style="font-family:Arial">Roboto</div>
+      <div class="font-item" style="font-family:Georgia">Montserrat</div>
+      <div class="font-item" style="font-family:cursive">Lobster</div>
+      <div class="font-item" style="font-family:Impact">Bebas Neue</div>
+    </div>
+    <div class="prop-row">
+      <span class="prop-lbl">Cỡ chữ</span>
+      <input type="range" class="prop-sl" min="10" max="80" value="24">
+      <span class="prop-val">24</span>
+    </div>
+    <div class="align-row">
+      <div class="align-btn on" title="Trái"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg></div>
+      <div class="align-btn" title="Giữa"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></div>
+      <div class="align-btn" title="Phải"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="21" y2="18"/></svg></div>
+    </div>
+    <div class="clr-row">
+      <div class="clr-sw on" style="background:#fff"></div>
+      <div class="clr-sw" style="background:#ffd400"></div>
+      <div class="clr-sw" style="background:#ff5b5b"></div>
+      <div class="clr-sw" style="background:#5bb8ff"></div>
+      <div class="clr-sw" style="background:#7cf07c"></div>
+      <div class="clr-sw" style="background:#c060ff"></div>
+      <div class="clr-sw" style="background:#222"></div>
+    </div>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Hoạt ảnh</div>
+    <div class="trans-grid">
+      <div class="tr-it on">Mờ dần</div>
+      <div class="tr-it">Trượt lên</div>
+      <div class="tr-it">Đánh máy</div>
+      <div class="tr-it">Nảy</div>
+    </div>
+  </div>`;
+
+const TPL_STICKER = `
+  <div class="ps">
+    <div class="ps-title">Sticker</div>
+    <div class="stk-grid">
+      <div class="stk-item" onclick="addStickerOverlay('😀')">😀</div>
+      <div class="stk-item" onclick="addStickerOverlay('😍')">😍</div>
+      <div class="stk-item" onclick="addStickerOverlay('🔥')">🔥</div>
+      <div class="stk-item" onclick="addStickerOverlay('❤️')">❤️</div>
+      <div class="stk-item" onclick="addStickerOverlay('⭐')">⭐</div>
+      <div class="stk-item" onclick="addStickerOverlay('🎉')">🎉</div>
+      <div class="stk-item" onclick="addStickerOverlay('👍')">👍</div>
+      <div class="stk-item" onclick="addStickerOverlay('💯')">💯</div>
+      <div class="stk-item" onclick="addStickerOverlay('🌈')">🌈</div>
+      <div class="stk-item" onclick="addStickerOverlay('✨')">✨</div>
+      <div class="stk-item" onclick="addStickerOverlay('🎵')">🎵</div>
+      <div class="stk-item" onclick="addStickerOverlay('📍')">📍</div>
+      <div class="stk-item" onclick="addStickerOverlay('💬')">💬</div>
+      <div class="stk-item" onclick="addStickerOverlay('⏰')">⏰</div>
+      <div class="stk-item" onclick="addStickerOverlay('🚀')">🚀</div>
+    </div>
+    <div class="ps-title" style="margin-top:6px">Nhãn dán xu hướng</div>
+    <div class="stk-grid">
+      <div class="stk-item" onclick="addStickerOverlay('🐱')">🐱</div>
+      <div class="stk-item" onclick="addStickerOverlay('🌻')">🌻</div>
+      <div class="stk-item" onclick="addStickerOverlay('🍀')">🍀</div>
+      <div class="stk-item" onclick="addStickerOverlay('🎬')">🎬</div>
+      <div class="stk-item" onclick="addStickerOverlay('💖')">💖</div>
+    </div>
+  </div>`;
+
+const TPL_EFFECT = `
+  <div class="ps">
+    <div class="ps-title">Hiệu ứng video</div>
+    <div class="trans-grid">
+      <div class="tr-it" onclick="addEffectClip('Zoom in')">Zoom in</div>
+      <div class="tr-it" onclick="addEffectClip('Glitch')">Glitch</div>
+      <div class="tr-it" onclick="addEffectClip('Rung lắc')">Rung lắc</div>
+      <div class="tr-it" onclick="addEffectClip('VHS')">VHS</div>
+      <div class="tr-it" onclick="addEffectClip('Ánh sáng')">Ánh sáng</div>
+      <div class="tr-it" onclick="addEffectClip('Mưa')">Mưa</div>
+      <div class="tr-it" onclick="addEffectClip('Tuyết')">Tuyết</div>
+      <div class="tr-it" onclick="addEffectClip('Bokeh')">Bokeh</div>
+    </div>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Hiệu ứng chuyển cảnh</div>
+    <div class="trans-grid">
+      <div class="tr-it on">Mờ dần</div>
+      <div class="tr-it">Trượt</div>
+      <div class="tr-it">Lật</div>
+      <div class="tr-it">Zoom</div>
+    </div>
+  </div>`;
+
+const TPL_FILTER = `
+  <div class="ps">
+    <div class="ps-title">Bộ lọc</div>
+    <div class="filter-row">
+      <div class="fi on"><div class="fi-thumb">∅</div><div class="fi-name">Gốc</div></div>
+      <div class="fi"><div class="fi-thumb">🌇</div><div class="fi-name">Hoàng hôn</div></div>
+      <div class="fi"><div class="fi-thumb">🎞️</div><div class="fi-name">Vintage</div></div>
+      <div class="fi"><div class="fi-thumb">🌫️</div><div class="fi-name">Mờ</div></div>
+      <div class="fi"><div class="fi-thumb">🌈</div><div class="fi-name">Sống động</div></div>
+      <div class="fi"><div class="fi-thumb">⬛</div><div class="fi-name">Đen trắng</div></div>
+      <div class="fi"><div class="fi-thumb">❄️</div><div class="fi-name">Lạnh</div></div>
+      <div class="fi"><div class="fi-thumb">🔥</div><div class="fi-name">Ấm</div></div>
+    </div>
+    <div class="prop-row" style="margin-top:10px">
+      <span class="prop-lbl">Cường độ</span>
+      <input type="range" class="prop-sl" min="0" max="100" value="70" data-pct="1">
+      <span class="prop-val">70%</span>
+    </div>
+  </div>`;
+
+const TPL_MUSIC = MP_AUDIO + `
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Tách giọng / lời</div>
+    <div class="toggle-row"><span class="tg-lbl">Tách lời khỏi nhạc nền</span><div class="tg off"><div class="tg-k"></div></div></div>
+  </div>`;
+
+const TPL_SPEED = `
+  <div class="ps">
+    <div class="ps-title">Tốc độ phát</div>
+    <div class="sp-opts">
+      <div class="sp-o">0.3x</div>
+      <div class="sp-o">0.5x</div>
+      <div class="sp-o on">1x</div>
+      <div class="sp-o">2x</div>
+      <div class="sp-o">3x</div>
+    </div>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Đường cong tốc độ</div>
+    <div class="ts-row" style="margin-bottom:8px">
+      <div class="ts-btn-r on">Đều</div>
+      <div class="ts-btn-r">Tùy chỉnh</div>
+      <div class="ts-btn-r">Vlog tự động</div>
+    </div>
+    <div class="spd-curve"></div>
+    <div class="toggle-row"><span class="tg-lbl">Duy trì cao độ</span><div class="tg on"><div class="tg-k"></div></div></div>
+  </div>`;
+
+const TPL_TRANSLATE = `
+  <div class="ps">
+    <div class="ps-title">Dịch phụ đề / văn bản</div>
+    <div class="prop-row" style="margin-bottom:8px"><span class="prop-lbl" style="width:90px">Ngôn ngữ gốc</span>
+      <select class="lng-sel"><option>Tự động phát hiện</option><option>Tiếng Việt</option><option>Tiếng Anh</option></select>
+    </div>
+    <div class="prop-row" style="margin-bottom:8px"><span class="prop-lbl" style="width:90px">Ngôn ngữ đích</span>
+      <select class="lng-sel"><option>Tiếng Anh</option><option>Tiếng Việt</option><option>Tiếng Hàn</option><option>Tiếng Nhật</option></select>
+    </div>
+    <button class="add-ov-btn" onclick="toast('Đang dịch phụ đề... (demo)')">Dịch toàn bộ phụ đề</button>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Xem trước</div>
+    <div class="info-card">
+      <div class="ic-row"><span class="ic-key">Gốc</span><span class="ic-val">Cảnh hoàng hôn ở bờ biển</span></div>
+      <div class="ic-row"><span class="ic-key">Đã dịch</span><span class="ic-val">Sunset scene at the beach</span></div>
+    </div>
+  </div>`;
+
+const TPL_CROP = `
+  <div class="ps">
+    <div class="ps-title">Tỷ lệ khung cắt</div>
+    <div class="trans-grid">
+      <div class="tr-it on" onclick="applyCropAspect('9:16')">9:16</div>
+      <div class="tr-it" onclick="applyCropAspect('16:9')">16:9</div>
+      <div class="tr-it" onclick="applyCropAspect('1:1')">1:1</div>
+      <div class="tr-it" onclick="applyCropAspect('4:3')">4:3</div>
+      <div class="tr-it" onclick="applyCropAspect('free')">Tự do</div>
+    </div>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Lật / Xoay</div>
+    <div class="align-row">
+      <div class="align-btn" title="Lật ngang" onclick="toast('Đã lật ngang')"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><path d="M8 3v18M16 3v18M3 8l5-5M3 16l5 5M21 8l-5-5M21 16l-5 5"/></svg></div>
+      <div class="align-btn" title="Lật dọc" onclick="toast('Đã lật dọc')"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><path d="M3 8h18M3 16h18M8 3l-5 5M16 3l5 5M8 21l-5-5M16 21l5-5"/></svg></div>
+      <div class="align-btn" title="Xoay 90°" onclick="toast('Đã xoay 90°')"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg></div>
+    </div>
+  </div>
+  <button class="exp-btn" onclick="confirmCrop()">Áp dụng</button>`;
+
+const TPL_SUBTITLE = `
+  <div class="ps">
+    <div class="ps-title">Phụ đề tự động</div>
+    <div class="toggle-row"><span class="tg-lbl">Tạo phụ đề tự động (ASR)</span><div class="tg off"><div class="tg-k"></div></div></div>
+    <div class="prop-row" style="margin:8px 0"><span class="prop-lbl" style="width:70px">Ngôn ngữ</span>
+      <select class="lng-sel"><option>Tiếng Việt</option><option>Tiếng Anh</option></select>
+    </div>
+    <button class="add-ov-btn" onclick="generateSubtitles()">Tạo phụ đề</button>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Danh sách phụ đề</div>
+    <div id="sub-list" style="font-size:11px;color:var(--t3)">Chưa có phụ đề. Nhấn "Tạo phụ đề" để bắt đầu.</div>
+  </div>`;
+
+const TPL_EXPORT = `
+  <div class="ps">
+    <div class="ps-title">Độ phân giải</div>
+    <label class="q-opt on"><input type="radio" name="qres" checked><div><div class="q-name">1080p · Full HD</div><div class="q-desc">Khuyên dùng cho mạng xã hội</div></div><span class="q-size">~24 MB</span></label>
+    <label class="q-opt"><input type="radio" name="qres"><div><div class="q-name">720p · HD</div><div class="q-desc">Dung lượng nhỏ hơn</div></div><span class="q-size">~12 MB</span></label>
+    <label class="q-opt"><input type="radio" name="qres"><div><div class="q-name">4K · Ultra HD</div><div class="q-desc">Yêu cầu CapCut Pro</div></div><span class="q-size">~80 MB</span></label>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Định dạng &amp; tốc độ khung hình</div>
+    <div class="prop-row" style="margin-bottom:8px"><span class="prop-lbl" style="width:60px">Định dạng</span>
+      <select class="lng-sel"><option>MP4</option><option>MOV</option></select>
+    </div>
+    <div class="prop-row"><span class="prop-lbl" style="width:60px">FPS</span>
+      <select class="lng-sel"><option>30</option><option>60</option><option>24</option></select>
+    </div>
+  </div>
+  <button class="exp-btn" onclick="startExport()">
+    <svg class="ic" width="14" height="14" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+    Xuất video
+  </button>
+  <div id="exp-progress" style="display:none;margin-top:12px">
+    <div style="height:6px;background:var(--bg4);border-radius:3px;overflow:hidden">
+      <div id="exp-bar" style="height:100%;width:0%;background:var(--accent);transition:width .3s"></div>
+    </div>
+    <div style="font-size:11px;color:var(--t3);margin-top:6px;text-align:center" id="exp-pct">0%</div>
+  </div>`;
+
+/* ---------- TOOL / TAB SWITCHING ---------- */
+function setTool(el,name){
+  document.querySelectorAll('#lsb .tb').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  activeTool=name;
+  if(name==='export'){ switchTab('export'); return; }
+  if(name==='subtitle'){ switchTab('trans'); return; }
+  switchTab('edit');
+}
+function setTool_byName(name){
+  const btn=[...document.querySelectorAll('#lsb .tb')].find(b=>(b.getAttribute('onclick')||'').includes("'"+name+"'"));
+  if(btn) setTool(btn,name);
+}
+function highlightSidebar(name){
+  document.querySelectorAll('#lsb .tb').forEach(b=>{
+    b.classList.toggle('on', (b.getAttribute('onclick')||'').includes("'"+name+"'"));
+  });
+}
+function renderEditPanel(name){
+  const body=document.getElementById('rp-body');
+  const tplMap={text:TPL_TEXT,sticker:TPL_STICKER,effect:TPL_EFFECT,filter:TPL_FILTER,music:TPL_MUSIC,speed:TPL_SPEED,translate:TPL_TRANSLATE,crop:TPL_CROP};
+  if(name==='edit' || !tplMap[name]){
+    body.innerHTML=TPL_CLIP;
+    updateRightInfo();
+  }else{
+    body.innerHTML=tplMap[name];
+    if(name==='crop') openCrop();
+  }
+  bindPanelInteractions();
+}
+function switchTab(name){
+  document.querySelectorAll('.rp-tab').forEach(t=>t.classList.remove('on'));
+  const map={edit:'tab-edit',trans:'tab-trans',export:'tab-export'};
+  document.getElementById(map[name]).classList.add('on');
+  const body=document.getElementById('rp-body');
+  if(name==='edit'){
+    renderEditPanel(activeTool);
+  }else if(name==='trans'){
+    activeTool='subtitle'; highlightSidebar('subtitle');
+    body.innerHTML=TPL_SUBTITLE; bindPanelInteractions();
+  }else{
+    activeTool='export'; highlightSidebar('export');
+    body.innerHTML=TPL_EXPORT; bindPanelInteractions();
+    document.getElementById('crop-overlay').style.display='none';
+  }
+  if(name!=='crop' && document.getElementById('crop-overlay')) document.getElementById('crop-overlay').style.display='none';
+}
+function updateRightInfo(){
+  const nameEl=document.getElementById('ic-name');
+  if(!nameEl) return;
+  if(selected.size===1){
+    const id=[...selected][0];
+    const found=findClip(id);
+    if(!found) return;
+    const {clip}=found;
+    nameEl.textContent=clip.label;
+    document.getElementById('ic-dur').textContent=fmt(clip.dur);
+    const typeMap={cv:['Video','badge-v'],ca:['Audio','badge-a'],cs:['Văn bản','badge-v'],cx:['Hiệu ứng','badge-v']};
+    const [t,cls]=typeMap[clip.cls]||['Video','badge-v'];
+    document.getElementById('ic-type').innerHTML='<span class="'+cls+'">'+t+'</span>';
+  }else{
+    nameEl.textContent='— chưa chọn clip —';
+    document.getElementById('ic-dur').textContent='--:--';
+    document.getElementById('ic-type').innerHTML='';
+  }
+}
+
+/* ---------- GENERIC PANEL INTERACTIONS (delegated) ---------- */
+function bindPanelInteractions(){
+  const body=document.getElementById('rp-body');
+  body.onclick=function(e){
+    const sel=(cls)=>e.target.closest(cls);
+    let el;
+    if((el=sel('.fi'))){ el.parentElement.querySelectorAll('.fi').forEach(x=>x.classList.remove('on')); el.classList.add('on'); return; }
+    if((el=sel('.tr-it'))){ el.parentElement.querySelectorAll('.tr-it').forEach(x=>x.classList.remove('on')); el.classList.add('on'); return; }
+    if((el=sel('.sp-o'))){ el.parentElement.querySelectorAll('.sp-o').forEach(x=>x.classList.remove('on')); el.classList.add('on'); return; }
+    if((el=sel('.align-btn'))){ el.parentElement.querySelectorAll('.align-btn').forEach(x=>x.classList.remove('on')); el.classList.add('on'); return; }
+    if((el=sel('.font-item'))){ el.parentElement.querySelectorAll('.font-item').forEach(x=>x.classList.remove('on')); el.classList.add('on'); return; }
+    if((el=sel('.clr-sw'))){ el.parentElement.querySelectorAll('.clr-sw').forEach(x=>x.classList.remove('on')); el.classList.add('on'); return; }
+    if((el=sel('.ts-btn-r'))){ el.parentElement.querySelectorAll('.ts-btn-r').forEach(x=>x.classList.remove('on')); el.classList.add('on'); return; }
+    if((el=sel('.q-opt'))){ el.parentElement.querySelectorAll('.q-opt').forEach(x=>x.classList.remove('on')); el.classList.add('on'); const r=el.querySelector('input[type=radio]'); if(r) r.checked=true; return; }
+    if((el=sel('.tg'))){ el.classList.toggle('on'); el.classList.toggle('off'); return; }
+  };
+  body.querySelectorAll('.prop-sl').forEach(slEl=>{
+    slEl.oninput=function(){
+      const out=this.nextElementSibling;
+      if(out && out.classList.contains('prop-val')){
+        out.textContent = this.dataset.pct==='1' ? (this.value+'%') : this.value;
+      }
+    };
+  });
+}
+
+/* ---------- CROP OVERLAY ---------- */
+function openCrop(){
+  document.getElementById('crop-overlay').style.display='block';
+  applyCropAspect(document.getElementById('crop-aspect').value);
+}
+function cancelCrop(){
+  document.getElementById('crop-overlay').style.display='none';
+}
+function confirmCrop(){
+  document.getElementById('crop-overlay').style.display='none';
+  toast('Đã áp dụng crop');
+}
+function applyCropAspect(val){
+  const sel=document.getElementById('crop-aspect');
+  if(sel) sel.value=val;
+  const box=document.getElementById('crop-box');
+  const ph=document.getElementById('phone-el');
+  const W=ph.clientWidth, H=ph.clientHeight;
+  let w,h;
+  if(val==='free'){ w=W*0.8; h=H*0.8; }
+  else{
+    const parts=val.split(':').map(Number);
+    const tr=parts[0]/parts[1];
+    if(tr>W/H){ w=W*0.85; h=w/tr; } else { h=H*0.85; w=h*tr; }
+  }
+  box.style.width=w+'px'; box.style.height=h+'px';
+  box.style.left=((W-w)/2)+'px'; box.style.top=((H-h)/2)+'px';
+}
+(function initCropDrag(){
+  const box=document.getElementById('crop-box');
+  box.addEventListener('mousedown',e=>{
+    if(e.target.classList.contains('crop-handle')){
+      const handle=e.target.dataset.h;
+      const startX=e.clientX,startY=e.clientY;
+      const orig={w:box.offsetWidth,h:box.offsetHeight,l:box.offsetLeft,t:box.offsetTop};
+      function move(ev){
+        const dx=ev.clientX-startX, dy=ev.clientY-startY;
+        let {w,h,l,t}=orig;
+        if(handle==='br'){ w=orig.w+dx; h=orig.h+dy; }
+        if(handle==='bl'){ w=orig.w-dx; h=orig.h+dy; l=orig.l+dx; }
+        if(handle==='tr'){ w=orig.w+dx; h=orig.h-dy; t=orig.t+dy; }
+        if(handle==='tl'){ w=orig.w-dx; h=orig.h-dy; l=orig.l+dx; t=orig.t+dy; }
+        box.style.width=Math.max(30,w)+'px'; box.style.height=Math.max(30,h)+'px';
+        box.style.left=l+'px'; box.style.top=t+'px';
+      }
+      function up(){ document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); }
+      document.addEventListener('mousemove',move); document.addEventListener('mouseup',up);
+      e.preventDefault(); return;
+    }
+    const startX=e.clientX,startY=e.clientY;
+    const ol=box.offsetLeft, ot=box.offsetTop;
+    function move(ev){
+      box.style.left=(ol+(ev.clientX-startX))+'px';
+      box.style.top=(ot+(ev.clientY-startY))+'px';
+    }
+    function up(){ document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); }
+    document.addEventListener('mousemove',move); document.addEventListener('mouseup',up);
+    e.preventDefault();
+  });
+})();
+
+/* ---------- CANVAS OVERLAYS (sticker / text) ---------- */
+function focusOverlay(el){
+  document.querySelectorAll('.ov-text,.ov-sticker').forEach(o=>o.classList.remove('focused'));
+  el.classList.add('focused');
+}
+function makeOverlayDraggable(el){
+  el.addEventListener('mousedown',e=>{
+    focusOverlay(el);
+    const startX=e.clientX, startY=e.clientY;
+    const sL=el.offsetLeft, sT=el.offsetTop;
+    function move(ev){
+      el.style.left=Math.max(0,(sL+(ev.clientX-startX)))+'px';
+      el.style.top=Math.max(0,(sT+(ev.clientY-startY)))+'px';
+      el.style.right='auto';
+    }
+    function up(){ document.removeEventListener('mousemove',move); document.removeEventListener('mouseup',up); }
+    document.addEventListener('mousemove',move); document.addEventListener('mouseup',up);
+    e.stopPropagation();
+  });
+}
+function addTextOverlay(){
+  const ta=document.getElementById('txt-input');
+  const text=ta ? (ta.value||'Văn bản mới') : 'Văn bản mới';
+  const el=document.createElement('div');
+  el.className='ov-text';
+  el.contentEditable='true';
+  el.textContent=text;
+  el.style.left='20%'; el.style.top='38%'; el.style.fontSize='15px';
+  makeOverlayDraggable(el);
+  document.getElementById('pv-overlay').appendChild(el);
+  focusOverlay(el);
+  toast('Đã thêm văn bản vào khung hình');
+}
+function addStickerOverlay(emoji){
+  const el=document.createElement('div');
+  el.className='ov-sticker';
+  el.textContent=emoji;
+  el.style.left='38%'; el.style.top='28%';
+  makeOverlayDraggable(el);
+  document.getElementById('pv-overlay').appendChild(el);
+  focusOverlay(el);
+  toast('Đã thêm sticker '+emoji);
+}
+function removeSelectedOverlay(){
+  const f=document.querySelector('.ov-text.focused,.ov-sticker.focused');
+  if(f){ f.remove(); toast('Đã xóa lớp phủ'); }
+  else toast('Chưa chọn lớp phủ nào trên khung hình');
+}
+function openStickerPanel(){ setTool_byName('sticker'); }
+function openTextPanel(){ setTool_byName('text'); }
+
+/* ---------- EFFECT CLIP FROM PANEL ---------- */
+function addEffectClip(label){
+  const tr=tracks.find(t=>t.type==='effect');
+  const end=tr.clips.reduce((m,c)=>Math.max(m,c.start+c.dur),0);
+  const c={id:'c'+(nextId++),start:playhead,dur:3,label:label,cls:'cx'};
+  tr.clips.push(c);
+  renderAll();
+  toast('Đã thêm hiệu ứng "'+label+'"');
+}
+
+/* ---------- SUBTITLES / EXPORT ---------- */
+function generateSubtitles(){
+  const list=document.getElementById('sub-list');
+  if(!list) return;
+  list.innerHTML=`
+    <div class="info-card" style="margin-bottom:6px;cursor:pointer" onclick="seekTo(0)"><div class="ic-row"><span class="ic-key">00:00</span><span class="ic-val">Cảnh hoàng hôn ở bờ biển</span></div></div>
+    <div class="info-card" style="margin-bottom:6px;cursor:pointer" onclick="seekTo(8)"><div class="ic-row"><span class="ic-key">00:08</span><span class="ic-val">Đi bộ trong rừng</span></div></div>
+    <div class="info-card" style="cursor:pointer" onclick="seekTo(20)"><div class="ic-row"><span class="ic-key">00:20</span><span class="ic-val">Thành phố về đêm</span></div></div>`;
+  document.getElementById('ph-sub').style.display='block';
+  toast('Đã tạo phụ đề tự động');
+}
+function startExport(){
+  const bar=document.getElementById('exp-bar');
+  const wrap=document.getElementById('exp-progress');
+  const pctEl=document.getElementById('exp-pct');
+  wrap.style.display='block';
+  let p=0;
+  const iv=setInterval(()=>{
+    p+=Math.random()*15+5;
+    if(p>=100){ p=100; clearInterval(iv); toast('Xuất video hoàn tất! (demo)'); }
+    bar.style.width=p+'%';
+    pctEl.textContent=Math.floor(p)+'%';
+  },280);
+}
+
+/* ---------- CONTEXT MENU ---------- */
+function onClipContext(e){
+  const clipEl=e.target.closest('.clip');
+  if(!clipEl) return;
+  e.preventDefault();
+  const id=clipEl.dataset.clip;
+  if(!selected.has(id)) selectClip(id,false);
+  const menu=document.getElementById('ctx-menu');
+  menu.style.display='block';
+  menu.style.left=e.clientX+'px';
+  menu.style.top=e.clientY+'px';
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#ctx-menu')) document.getElementById('ctx-menu').style.display='none';
+});
+function ctxAction(action){
+  document.getElementById('ctx-menu').style.display='none';
+  switch(action){
+    case 'split': splitClip(); break;
+    case 'duplicate': duplicateClip(); break;
+    case 'copy': toast('Đã sao chép clip'); break;
+    case 'speed': setTool_byName('speed'); break;
+    case 'reverse': toast('Đã đảo ngược clip (demo)'); break;
+    case 'delete': deleteClip(); break;
+  }
+}
+
+/* ---------- UNDO / REDO (visual stub) ---------- */
+function cycleHistDot(dir){
+  const dots=[...document.querySelectorAll('.tb-hist-dot')];
+  let idx=dots.findIndex(d=>d.classList.contains('active'));
+  idx=Math.max(0,Math.min(dots.length-1,idx+dir));
+  dots.forEach(d=>d.classList.remove('active'));
+  dots[idx].classList.add('active');
+}
+function doUndo(){ cycleHistDot(-1); toast('Hoàn tác (demo)'); }
+function doRedo(){ cycleHistDot(1); toast('Làm lại (demo)'); }
+
+/* ---------- AI GENERATE ---------- */
+function openAIGen(){ toast('✨ AI Tạo: tính năng demo — sẽ tạo nội dung bằng AI'); }
+
+/* ---------- KEYBOARD SHORTCUTS ---------- */
+document.addEventListener('keydown',e=>{
+  const tag=(e.target.tagName||'').toLowerCase();
+  if(tag==='input'||tag==='textarea'||tag==='select'||e.target.isContentEditable) return;
+  if(e.code==='Space'){ e.preventDefault(); togglePlay(); }
+  else if(e.key==='s'||e.key==='S'){ splitClip(); }
+  else if(e.key==='Delete'||e.key==='Backspace'){ deleteClip(); }
+  else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='d'){ e.preventDefault(); duplicateClip(); }
+  else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){ e.preventDefault(); doUndo(); }
+});
+
+/* ---------- INIT ---------- */
+setPlayIcon(false);
+applyRatio();
+bindPanelInteractions();
+updateRightInfo();
+renderAll();
+</script>
+
+</body>
+</html>
+
