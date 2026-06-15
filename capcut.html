@@ -2198,7 +2198,31 @@ function openAIGen(){ toast('✨ AI Tạo: tính năng demo — sẽ tạo nội
 document.addEventListener('keydown',e=>{
   const tag=(e.target.tagName||'').toLowerCase();
   if(tag==='input'||tag==='textarea'||tag==='select'||e.target.isContentEditable) return;
+
   if(e.code==='Space'){ e.preventDefault(); togglePlay(); }
+
+  else if(e.key==='ArrowLeft'){
+    e.preventDefault();
+    if(playing){ playing=false; setPlayIcon(false); clearInterval(playTimer); }
+    playhead=Math.max(0, playhead - (e.shiftKey ? 5 : 0.1));
+    updatePlayhead();
+  }
+  else if(e.key==='ArrowRight'){
+    e.preventDefault();
+    if(playing){ playing=false; setPlayIcon(false); clearInterval(playTimer); }
+    playhead=Math.min(projectDur(), playhead + (e.shiftKey ? 5 : 0.1));
+    updatePlayhead();
+  }
+
+  else if(e.key==='Home'||e.key==='j'||e.key==='J'){ seekStart(); }
+  else if(e.key==='End'||e.key==='l'||e.key==='L'){ seekEnd(); }
+  else if(e.key==='k'||e.key==='K'){
+    if(playing){ playing=false; setPlayIcon(false); clearInterval(playTimer); }
+  }
+
+  else if(e.key===','){ stepBack(); }
+  else if(e.key==='.'){ stepFwd(); }
+
   else if(e.key==='s'||e.key==='S'){ splitClip(); }
   else if(e.key==='Delete'||e.key==='Backspace'){ deleteClip(); }
   else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='d'){ e.preventDefault(); duplicateClip(); }
