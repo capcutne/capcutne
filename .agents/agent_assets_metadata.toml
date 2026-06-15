@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "cyGo7YQ3Ftw3MegjdS0qg"
+uri = "file://tientrinhhethong.md"
+type = "text"
+title = "Tiến Trình Hệ Thống — CapCut Editor"
