@@ -603,10 +603,18 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 .kf-hint{ font-size:10px; color:var(--t3); line-height:1.6; }
 .kf-empty{ font-size:10.5px; color:var(--t3); text-align:center; padding:8px 0; }
 .kf-list{ display:flex; flex-direction:column; gap:4px; margin-bottom:6px; }
-.kf-list-item{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--t2); background:var(--bg2); border-radius:4px; padding:3px 7px; }
-.kf-list-item span{ flex:1; }
-.kf-list-item button{ background:none; border:none; color:#e84545; cursor:pointer; font-size:12px; padding:0 2px; line-height:1; }
-.kf-list-item.active{ background:var(--bg3); color:var(--t1); }
+.kf-list-item{ display:flex; flex-direction:column; gap:5px; font-size:11px; color:var(--t2); background:var(--bg2); border-radius:6px; padding:6px 8px; border:1px solid var(--border1); }
+.kf-item-top{ display:flex; align-items:center; gap:6px; }
+.kf-item-top span{ flex:1; font-size:11px; }
+.kf-item-top button{ background:none; border:none; color:#e84545; cursor:pointer; font-size:13px; padding:0 2px; line-height:1; }
+.kf-item-top button:hover{ color:#ff6b6b; }
+.kf-easing-row{ display:flex; align-items:center; gap:4px; }
+.kf-easing-lbl{ font-size:10px; color:var(--t3); margin-right:2px; flex-shrink:0; }
+.kf-ease-btn{ background:var(--bg3); border:1px solid var(--border2); color:var(--t2); border-radius:4px; padding:2px 7px; font-size:10px; cursor:pointer; display:flex; align-items:center; gap:3px; white-space:nowrap; transition:background .12s, color .12s; }
+.kf-ease-btn:hover{ background:var(--bg4); color:var(--t1); }
+.kf-ease-btn.on{ background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+.kf-ease-preview{ width:100%; height:24px; border-radius:3px; overflow:hidden; margin-top:2px; }
+.kf-ease-preview canvas{ display:block; }
 
 /* ─── MINIMAP ────────────────────────────────────────── */
 #minimap{
@@ -2555,6 +2563,35 @@ const KF_DEFAULTS = {
 };
 
 /* Linear interpolation giữa 2 keyframe */
+/* ── Easing functions (0→1 input, 0→1 output) ── */
+const EASING_FN = {
+  'linear':       t => t,
+  'ease-in':      t => t*t*t,
+  'ease-out':     t => 1 - Math.pow(1-t, 3),
+  'ease-in-out':  t => t<0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2,
+  'bounce-out':   t => {
+    const n1=7.5625, d1=2.75;
+    if(t<1/d1) return n1*t*t;
+    if(t<2/d1) return n1*(t-=1.5/d1)*t+0.75;
+    if(t<2.5/d1) return n1*(t-=2.25/d1)*t+0.9375;
+    return n1*(t-=2.625/d1)*t+0.984375;
+  },
+  'elastic':      t => t===0||t===1 ? t : -Math.pow(2,10*t-10)*Math.sin((t*10-10.75)*(2*Math.PI)/3),
+};
+const EASING_LABELS = {
+  'linear':      '→ Linear',
+  'ease-in':     '↗ Ease In',
+  'ease-out':    '↘ Ease Out',
+  'ease-in-out': '⟿ Ease In-Out',
+  'bounce-out':  '⤵ Bounce',
+  'elastic':     '〜 Elastic',
+};
+
+function kfApplyEase(t, easingName){
+  const fn = EASING_FN[easingName] || EASING_FN['linear'];
+  return Math.max(0, Math.min(1, fn(Math.max(0, Math.min(1, t)))));
+}
+
 function kfInterpolate(kfs, t){
   if(!kfs || kfs.length===0) return null;
   if(kfs.length===1) return kfs[0].v;
@@ -2563,8 +2600,9 @@ function kfInterpolate(kfs, t){
   if(t>=sorted[sorted.length-1].t) return sorted[sorted.length-1].v;
   for(let i=0;i<sorted.length-1;i++){
     if(t>=sorted[i].t && t<=sorted[i+1].t){
-      const frac=(t-sorted[i].t)/(sorted[i+1].t-sorted[i].t);
-      return sorted[i].v + frac*(sorted[i+1].v-sorted[i].v);
+      const raw=(t-sorted[i].t)/(sorted[i+1].t-sorted[i].t);
+      const eased=kfApplyEase(raw, sorted[i].easing||'linear');
+      return sorted[i].v + eased*(sorted[i+1].v-sorted[i].v);
     }
   }
   return sorted[sorted.length-1].v;
@@ -2599,7 +2637,7 @@ function kfAddAtPlayhead(){
   const curVal=kfInterpolate(clip.keyframes[prop],relT);
   const v = curVal!==null ? Math.round(curVal) : meta.def;
   saveState();
-  clip.keyframes[prop].push({t:parseFloat(relT.toFixed(3)), v});
+  clip.keyframes[prop].push({t:parseFloat(relT.toFixed(3)), v, easing:'linear'});
   clip.keyframes[prop].sort((a,b)=>a.t-b.t);
 
   renderKFEditor();
@@ -2682,20 +2720,89 @@ function renderKFEditor(fullRender=true){
     if(hintEl) hintEl.style.display='';
   } else {
     if(hintEl) hintEl.style.display='none';
-    listEl.innerHTML=kfs.map((k,i)=>`
+    listEl.innerHTML=kfs.map((k,i)=>{
+      const eas=k.easing||'linear';
+      const easeBtns=Object.keys(EASING_LABELS).map(e=>
+        `<button class="kf-ease-btn${eas===e?' on':''}" onclick="kfSetEasing('${prop}',${i},'${e}')" title="${e}">${EASING_LABELS[e]}</button>`
+      ).join('');
+      return `
       <div class="kf-list-item" id="kf-item-${i}">
-        <span>⏱ ${fmt(k.t+clip.start)}</span>
-        <input type="range" min="${meta.min}" max="${meta.max}" value="${Math.round(k.v)}"
-          style="flex:1;height:3px;accent-color:var(--accent)"
-          oninput="kfUpdateVal('${prop}',${i},this.value);this.nextElementSibling.textContent=this.value+'${meta.suffix}'"
-          onchange="saveState()">
-        <span style="min-width:38px;text-align:right;font-size:11px;color:var(--t1)">${Math.round(k.v)}${meta.suffix}</span>
-        <button onclick="kfRemove('${prop}',${i})" title="Xóa keyframe">✕</button>
-      </div>`).join('');
+        <div class="kf-item-top">
+          <span>◆ ${fmt(k.t+clip.start)}</span>
+          <input type="range" min="${meta.min}" max="${meta.max}" value="${Math.round(k.v)}"
+            style="flex:1;height:3px;accent-color:var(--accent)"
+            oninput="kfUpdateVal('${prop}',${i},this.value);this.nextElementSibling.textContent=this.value+'${meta.suffix}'"
+            onchange="saveState()">
+          <span style="min-width:38px;text-align:right;font-size:11px;color:var(--t1)">${Math.round(k.v)}${meta.suffix}</span>
+          <button onclick="kfRemove('${prop}',${i})" title="Xóa">✕</button>
+        </div>
+        <div class="kf-easing-row">
+          <span class="kf-easing-lbl">Easing:</span>
+          ${easeBtns}
+        </div>
+        <canvas class="kf-ease-canvas" id="kf-cv-${prop}-${i}" width="220" height="28" style="width:100%;height:28px;border-radius:3px;background:var(--bg1)"></canvas>
+      </div>`;
+    }).join('');
   }
+
+  /* draw easing curves after DOM update */
+  setTimeout(()=>drawEasingCurves(prop, kfs), 0);
 
   /* apply to preview overlay */
   kfApplyPreview(clip, prop);
+}
+
+/* Thay đổi easing type của 1 keyframe */
+function kfSetEasing(prop, idx, easingName){
+  if(selected.size!==1) return;
+  const id=[...selected][0];
+  const found=findClip(id);
+  if(!found) return;
+  const {clip}=found;
+  if(!clip.keyframes||!clip.keyframes[prop]) return;
+  saveState();
+  clip.keyframes[prop][idx].easing=easingName;
+  renderKFEditor();
+  toast('Easing: '+EASING_LABELS[easingName]);
+}
+
+/* Vẽ đường cong easing trên canvas nhỏ */
+function drawEasingCurves(prop, kfs){
+  kfs.forEach((k,i)=>{
+    const cv=document.getElementById('kf-cv-'+prop+'-'+i);
+    if(!cv) return;
+    const ctx=cv.getContext('2d');
+    const W=cv.width, H=cv.height;
+    ctx.clearRect(0,0,W,H);
+    const fn=EASING_FN[k.easing||'linear']||EASING_FN.linear;
+    const accent=getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#D4A017';
+
+    /* grid lines */
+    ctx.strokeStyle='rgba(255,255,255,0.06)';
+    ctx.lineWidth=1;
+    [0.25,0.5,0.75].forEach(x=>{ ctx.beginPath(); ctx.moveTo(x*W,0); ctx.lineTo(x*W,H); ctx.stroke(); });
+    [0.5].forEach(y=>{ ctx.beginPath(); ctx.moveTo(0,y*H); ctx.lineTo(W,y*H); ctx.stroke(); });
+
+    /* curve */
+    ctx.strokeStyle=accent;
+    ctx.lineWidth=2;
+    ctx.lineJoin='round';
+    ctx.beginPath();
+    for(let px=0;px<=W;px++){
+      const t=px/W;
+      const val=Math.max(0,Math.min(1,fn(t)));
+      const y=H-(val*H); /* invert: 0 at bottom, 1 at top */
+      px===0 ? ctx.moveTo(px,y) : ctx.lineTo(px,y);
+    }
+    ctx.stroke();
+
+    /* start & end dots */
+    ctx.fillStyle=accent;
+    [[0,fn(0)],[1,fn(1)]].forEach(([tx,ty])=>{
+      const cx2=tx*W, cy2=H-Math.max(0,Math.min(1,ty))*H;
+      ctx.beginPath(); ctx.arc(cx2,cy2,3,0,Math.PI*2); ctx.fill();
+    });
+  });
 }
 
 /* Highlight marker when selected */

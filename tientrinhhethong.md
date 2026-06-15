@@ -26,6 +26,7 @@
 | 15 | **Minimap timeline** | Thanh tổng quan phía dưới timeline hiển thị tất cả clips theo màu track, viewport indicator, click/kéo để cuộn timeline, playhead marker | 15/06/2026 |
 | 16 | **Xuất danh sách phím tắt PDF** | Nút "📥 Tải PDF" trong popup phím tắt, mở trang in với toàn bộ shortcuts, hỗ trợ Print to PDF | 15/06/2026 |
 | 17 | **Keyframe Animation** | Panel "🎯 Keyframe" trong right panel: thêm/xóa keyframe tại playhead cho 4 thuộc tính (Opacity, Volume, Brightness, Scale), mini strip hiển thị vị trí keyframe, slider chỉnh giá trị từng keyframe, linear interpolation, apply visual preview lên khung hình khi phát | 15/06/2026 |
+| 18 | **Easing Curves** | 6 loại easing cho keyframe: Linear, Ease In (cubic), Ease Out (cubic), Ease In-Out, Bounce Out, Elastic. Mỗi keyframe có hàng chọn easing + canvas preview vẽ đường cong thực tế bằng easing function | 15/06/2026 |
 
 ---
 
