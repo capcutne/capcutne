@@ -64,6 +64,7 @@
 |----|-----------|----------|------|
 | F16 | Keyframe Editor | Panel 🎯 Keyframe trong right panel: thêm/xóa keyframe tại playhead cho 4 thuộc tính (Opacity, Volume, Brightness, Scale) · Mini strip hiển thị vị trí · Slider chỉnh giá trị · Áp dụng preview trực tiếp lên khung hình khi phát | 15/06/2026 |
 | F17 | Easing Curves | 6 loại easing: **Linear · Ease In · Ease Out · Ease In-Out · Bounce Out · Elastic** · Mỗi keyframe chọn riêng loại easing · Canvas mini vẽ đường cong thực tế theo hàm toán học | 15/06/2026 |
+| F18 | Audio Waveform thực | Upload file MP3/WAV/AAC → Web Audio API decode → 300 peak samples → vẽ canvas trên clip. Fallback pseudo-random có seed (nhất quán). Duration tự cập nhật theo file thực. Nút tải lên trong tab Âm thanh | 15/06/2026 |
 
 ---
 
