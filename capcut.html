@@ -584,6 +584,24 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 @keyframes spin{to{transform:rotate(360deg)}}
 .spin{animation:spin .7s linear infinite;transform-origin:center}
 
+/* ─── MINIMAP ────────────────────────────────────────── */
+#minimap{
+  height:28px;background:var(--bg2);border-top:1px solid var(--border);
+  position:relative;overflow:hidden;flex-shrink:0;cursor:pointer;user-select:none
+}
+#minimap-track{position:absolute;top:3px;bottom:3px;left:74px;right:4px}
+.mm-clip{position:absolute;top:0;bottom:0;border-radius:2px;opacity:.65}
+#minimap-viewport{
+  position:absolute;top:0;bottom:0;background:rgba(255,255,255,.09);
+  border:1px solid rgba(255,255,255,.28);pointer-events:none;border-radius:2px
+}
+#minimap-head{position:absolute;top:0;bottom:0;width:1.5px;background:var(--accent);pointer-events:none}
+/* drag-select rectangle */
+#sel-rect{
+  position:fixed;border:1.5px solid var(--accent2);background:rgba(212,160,23,.1);
+  pointer-events:none;z-index:9998;display:none;border-radius:3px
+}
+
 /* ─── KEYBOARD SHORTCUT CHEAT SHEET ─────────────────── */
 #ks-overlay{
   position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:10000;
@@ -1016,6 +1034,12 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
       <button class="t-add-track" onclick="addAudioTrack()">+ Audio Track</button>
     </div>
   </div>
+  <!-- MINIMAP -->
+  <div id="minimap" title="Minimap — click để di chuyển">
+    <div id="minimap-track"></div>
+    <div id="minimap-viewport"></div>
+    <div id="minimap-head"></div>
+  </div>
 </div>
 
 </div><!-- /center -->
@@ -1170,6 +1194,8 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 <!-- hidden file inputs -->
 <input type="file" id="vid-file-input" accept="video/*,image/*" style="display:none" onchange="handleVideoUpload(this)">
 <input type="file" id="aud-file-input" accept="audio/*" style="display:none" onchange="handleAudioUpload(this)">
+<!-- drag-select rectangle -->
+<div id="sel-rect"></div>
 
 <script>
 /* =========================================================
@@ -1217,6 +1243,37 @@ let ratio={label:'9:16',w:216,h:384,res:'1080×1920'};
 let pvZoom=100;
 let activeTool='edit';
 let ovCounter=0;
+
+/* --- Tính năng 2: Lịch sử hoàn tác thực --- */
+let historyStack=[];
+let historyIdx=-1;
+const HIST_MAX=50;
+function saveState(){
+  const snap=JSON.parse(JSON.stringify(tracks));
+  historyStack.splice(historyIdx+1); // xóa redo branch
+  historyStack.push(snap);
+  if(historyStack.length>HIST_MAX) historyStack.shift();
+  historyIdx=historyStack.length-1;
+  updateHistDots();
+}
+function updateHistDots(){
+  const dots=[...document.querySelectorAll('.tb-hist-dot')];
+  const n=dots.length;
+  const total=historyStack.length;
+  const cur=historyIdx;
+  dots.forEach((d,i)=>{
+    const stackIdx=total-n+i;
+    d.classList.toggle('active', stackIdx===cur && total>0);
+    d.style.opacity=(stackIdx>=0 && stackIdx<total)?'1':'0.25';
+  });
+}
+
+/* --- Tính năng 5: Copy/Paste clip --- */
+let clipboardClips=[];
+
+/* --- Tính năng 6: Tab chuyển track --- */
+let tabFocusTrackIdx=0;
+let tabFocusClipIdx=0;
 
 /* ---------- HELPERS ---------- */
 function fmt(t){
@@ -1296,6 +1353,7 @@ function renderAll(){
   updateMultiBar();
   const durLbl=document.getElementById('tb-dur-label');
   if(durLbl) durLbl.textContent=fmt(projectDur());
+  renderMinimap(); /* Tính năng 7 */
 }
 function updatePlayhead(){
   const x=HEAD_W+playhead*pps();
@@ -1324,9 +1382,15 @@ function getSnapPoints(excludeId){
     pts.push(c.start, c.start + c.dur);
   }));
   pts.push(playhead);
+  /* Tính năng 1: Snap to Grid — thêm mốc thời gian tròn */
+  const gridStep = pps() >= 28 ? 1 : 5; // 1s khi zoom nhiều, 5s khi zoom ít
+  const dur = timelineDur();
+  for(let g = 0; g <= dur; g += gridStep) pts.push(g);
   return pts;
 }
-function snapTime(t, snapPts){
+/* Tính năng 1: altKey = true → tắt snap tạm thời */
+function snapTime(t, snapPts, disableSnap){
+  if(disableSnap) return t;
   for(const s of snapPts){
     if(Math.abs((t - s) * pps()) <= SNAP_PX) return s;
   }
@@ -1454,19 +1518,20 @@ function onTrackMouseDown(e){
     const dxSec = dxPx / pps();
     snappedTo = null;
 
+    const noSnap = ev.altKey; /* Tính năng 1: Alt tắt snap */
     if(mode === 'move'){
       let ns = Math.max(0, orig.start + dxSec);
-      const snappedStart = snapTime(ns, snapPts);
-      const snappedEnd   = snapTime(ns + orig.dur, snapPts);
+      const snappedStart = snapTime(ns, snapPts, noSnap);
+      const snappedEnd   = snapTime(ns + orig.dur, snapPts, noSnap);
       if(snappedStart !== ns){ ns = snappedStart; snappedTo = snappedStart; }
       else if(snappedEnd !== ns + orig.dur){ ns = snappedEnd - orig.dur; snappedTo = snappedEnd; }
       clip.start = Math.max(0, ns);
-
-      dragTip.show(ev.clientX, ev.clientY, fmt(clip.start) + ' → ' + fmt(clip.start + clip.dur));
+      const snapHint = noSnap ? ' [Snap tắt]' : '';
+      dragTip.show(ev.clientX, ev.clientY, fmt(clip.start) + ' → ' + fmt(clip.start + clip.dur) + snapHint);
     }
     else if(mode === 'resize-l'){
       let ns = Math.max(0, Math.min(orig.start + dxSec, orig.start + orig.dur - 0.3));
-      ns = snapTime(ns, snapPts);
+      ns = snapTime(ns, snapPts, noSnap);
       if(ns !== orig.start + dxSec) snappedTo = ns;
       clip.start = ns;
       clip.dur   = orig.dur + (orig.start - ns);
@@ -1475,7 +1540,7 @@ function onTrackMouseDown(e){
     }
     else if(mode === 'resize-r'){
       let newEnd = Math.max(orig.start + 0.3, orig.start + orig.dur + dxSec);
-      const snapped = snapTime(newEnd, snapPts);
+      const snapped = snapTime(newEnd, snapPts, noSnap);
       if(snapped !== newEnd) snappedTo = snapped;
       newEnd = snapped;
       clip.dur = newEnd - clip.start;
@@ -1501,6 +1566,7 @@ function onTrackMouseDown(e){
     if(!moved){
       selectClip(id, e.ctrlKey || e.metaKey || e.shiftKey);
     } else {
+      saveState(); /* Tính năng 2: lưu lịch sử sau khi kéo/trim */
       selectClip(id, false);
       renderAll(); /* sync state → DOM fully after drop */
     }
@@ -1519,6 +1585,7 @@ function splitClip(){
     const found=findClip(id); if(!found) return;
     const {track,clip}=found;
     if(playhead>clip.start+0.1 && playhead<clip.start+clip.dur-0.1){
+      saveState(); /* Tính năng 2 */
       const newClip={...clip,id:'c'+(nextId++),start:playhead,dur:clip.start+clip.dur-playhead};
       clip.dur=playhead-clip.start;
       track.clips.push(newClip);
@@ -1534,6 +1601,7 @@ function deleteClip(){
 }
 function deleteMulti(){
   if(selected.size===0){ toast('Chưa chọn clip nào'); return; }
+  saveState(); /* Tính năng 2 */
   tracks.forEach(tr=>{ tr.clips=tr.clips.filter(c=>!selected.has(c.id)); });
   selected.clear();
   renderAll(); updateRightInfo();
@@ -1541,6 +1609,7 @@ function deleteMulti(){
 }
 function duplicateClip(){
   if(selected.size===0){ toast('Chọn clip để nhân đôi'); return; }
+  saveState(); /* Tính năng 2 */
   const newSel=new Set();
   selected.forEach(id=>{
     const found=findClip(id); if(!found) return;
@@ -1553,6 +1622,61 @@ function duplicateClip(){
   renderAll(); updateRightInfo();
   toast('Đã nhân đôi clip');
 }
+
+/* Tính năng 3: Phím tắt âm lượng */
+function changeVolume(delta){
+  if(selected.size===0){ toast('Chọn clip để chỉnh âm lượng'); return; }
+  selected.forEach(id=>{
+    const f=findClip(id); if(!f) return;
+    if(f.clip.cls!=='ca') return;
+    f.clip.volume=Math.max(0,Math.min(200,(f.clip.volume||100)+delta));
+    toast('Âm lượng: '+f.clip.volume+'%');
+  });
+}
+
+/* Tính năng 5: Copy/Paste clip */
+function copyClips(){
+  if(selected.size===0){ toast('Chọn clip để sao chép'); return; }
+  clipboardClips=[];
+  selected.forEach(id=>{
+    const f=findClip(id); if(!f) return;
+    clipboardClips.push({clip:JSON.parse(JSON.stringify(f.clip)), trackId:f.track.id});
+  });
+  toast('Đã sao chép '+clipboardClips.length+' clip');
+}
+function pasteClips(){
+  if(clipboardClips.length===0){ toast('Clipboard trống — nhấn Ctrl+C trước'); return; }
+  saveState();
+  const newSel=new Set();
+  const minStart=Math.min(...clipboardClips.map(x=>x.clip.start));
+  clipboardClips.forEach(({clip,trackId})=>{
+    const tr=tracks.find(t=>t.id===trackId)||tracks[0];
+    const offset=playhead-minStart;
+    const newClip={...clip,id:'c'+(nextId++),start:Math.max(0,clip.start+offset)};
+    tr.clips.push(newClip);
+    newSel.add(newClip.id);
+  });
+  selected=newSel;
+  renderAll(); updateRightInfo();
+  toast('Đã dán '+clipboardClips.length+' clip tại '+fmt(playhead));
+}
+
+/* Tính năng 6: Tab chuyển track */
+function tabSelectNext(){
+  const allClips=[];
+  tracks.forEach(tr=>tr.clips.forEach(c=>allClips.push({clip:c,tr})));
+  if(allClips.length===0) return;
+  allClips.sort((a,b)=>a.clip.start-b.clip.start);
+  if(selected.size===0){ selectClip(allClips[0].clip.id,false); return; }
+  const curId=[...selected][selected.size-1];
+  const idx=allClips.findIndex(x=>x.clip.id===curId);
+  const next=allClips[(idx+1)%allClips.length];
+  selectClip(next.clip.id,false);
+  /* scroll timeline vào view */
+  const tlScroll=document.getElementById('tl-scroll');
+  const x=next.clip.start*pps();
+  tlScroll.scrollLeft=Math.max(0,x-100);
+}
 function groupAlign(){
   if(selected.size<2){ toast('Chọn từ 2 clip để căn trái'); return; }
   let minStart=Infinity;
@@ -1563,10 +1687,12 @@ function groupAlign(){
 function clearMultiSel(){ selected.clear(); renderTracks(); updateMultiBar(); updateRightInfo(); }
 
 function addVideoTrack(){
+  saveState();
   tracks.push({id:'tr'+(nextId++),type:'video',label:'Video',icon:ICONS.video,trans:true,clips:[]});
   renderAll(); toast('Đã thêm track video');
 }
 function addAudioTrack(){
+  saveState();
   tracks.push({id:'tr'+(nextId++),type:'audio',label:'Âm thanh',icon:ICONS.audio,clips:[]});
   renderAll(); toast('Đã thêm track âm thanh');
 }
@@ -1575,8 +1701,117 @@ function zoom(dir){
   renderAll();
 }
 
+/* ---------- MINIMAP (Tính năng 7) ---------- */
+function renderMinimap(){
+  const mm=document.getElementById('minimap-track');
+  const vp=document.getElementById('minimap-viewport');
+  const mh=document.getElementById('minimap-head');
+  if(!mm) return;
+  const totalDur=timelineDur();
+  const mmW=mm.parentElement.clientWidth - 74 - 4;
+  if(mmW<=0) return;
+  const scale=mmW/totalDur;
+  let html='';
+  const clsColor={cv:'var(--tvb)',ca:'var(--ta)',cs:'var(--ts)',cx:'var(--tfx)'};
+  const border={cv:'1px solid var(--tvt)',ca:'1px solid var(--tat)',cs:'1px solid var(--tst)',cx:'1px solid var(--tfxt)'};
+  tracks.forEach(tr=>{
+    tr.clips.forEach(c=>{
+      const x=c.start*scale, w=Math.max(c.dur*scale,2);
+      html+=`<div class="mm-clip" style="left:${x}px;width:${w}px;background:${clsColor[c.cls]||'var(--bg4)'};border:${border[c.cls]||'none'}"></div>`;
+    });
+  });
+  mm.innerHTML=html;
+  /* viewport indicator */
+  const scroll=document.getElementById('tl-scroll');
+  const tlInner=document.getElementById('tl-inner');
+  const visW=scroll.clientWidth - HEAD_W;
+  const totalPx=Math.max(tlInner.scrollWidth - HEAD_W, 1);
+  const vpX=(scroll.scrollLeft/totalPx)*mmW;
+  const vpW=Math.min(mmW, (visW/totalPx)*mmW);
+  vp.style.left=(74+vpX)+'px';
+  vp.style.width=Math.max(vpW,8)+'px';
+  vp.style.top='0'; vp.style.bottom='0';
+  /* playhead on minimap */
+  mh.style.left=(74+playhead*scale)+'px';
+}
+
+/* Tính năng 4: Drag-select rectangle */
+(function initDragSelect(){
+  const rect=document.getElementById('sel-rect');
+  const tracksEl=document.getElementById('tracks');
+  let dragging=false, startX=0, startY=0;
+  tracksEl.addEventListener('mousedown',e=>{
+    if(e.target.closest('.clip')) return;
+    if(e.ctrlKey||e.metaKey||e.shiftKey) return;
+    dragging=true;
+    startX=e.clientX; startY=e.clientY;
+    rect.style.display='block';
+    rect.style.left=startX+'px'; rect.style.top=startY+'px';
+    rect.style.width='0'; rect.style.height='0';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove',e=>{
+    if(!dragging) return;
+    const x=Math.min(e.clientX,startX), y=Math.min(e.clientY,startY);
+    const w=Math.abs(e.clientX-startX), h=Math.abs(e.clientY-startY);
+    rect.style.left=x+'px'; rect.style.top=y+'px';
+    rect.style.width=w+'px'; rect.style.height=h+'px';
+  });
+  document.addEventListener('mouseup',e=>{
+    if(!dragging) return;
+    dragging=false;
+    rect.style.display='none';
+    const r={x:Math.min(e.clientX,startX),y:Math.min(e.clientY,startY),
+              w:Math.abs(e.clientX-startX),h:Math.abs(e.clientY-startY)};
+    if(r.w<5 && r.h<5) return;
+    const clipEls=document.querySelectorAll('.clip');
+    selected.clear();
+    clipEls.forEach(el=>{
+      const er=el.getBoundingClientRect();
+      if(er.left<r.x+r.w && er.right>r.x && er.top<r.y+r.h && er.bottom>r.y){
+        selected.add(el.dataset.clip);
+      }
+    });
+    document.querySelectorAll('.clip').forEach(el=>el.classList.toggle('sel',selected.has(el.dataset.clip)));
+    updateMultiBar(); updateRightInfo();
+  });
+})();
+
+/* sync minimap on timeline scroll */
+document.getElementById('tl-scroll').addEventListener('scroll',()=>renderMinimap());
+
+/* minimap click → scroll timeline */
+document.getElementById('minimap').addEventListener('mousedown',function(e){
+  const mm=document.getElementById('minimap-track');
+  if(!mm) return;
+  function seek(ev){
+    const rect=this.getBoundingClientRect();
+    const x=ev.clientX-rect.left-74;
+    const mmW=rect.width-74-4;
+    if(mmW<=0) return;
+    const totalDur=timelineDur();
+    const t=(x/mmW)*totalDur;
+    playhead=Math.max(0,Math.min(t,totalDur));
+    updatePlayhead();
+    renderMinimap();
+    /* also scroll timeline */
+    const tlScroll=document.getElementById('tl-scroll');
+    const tlInner=document.getElementById('tl-inner');
+    const ratio2=(x/mmW);
+    tlScroll.scrollLeft=ratio2*(tlInner.scrollWidth-74);
+  }
+  seek.call(this,e);
+  const self=this;
+  function mv(ev){ seek.call(self,ev); }
+  function up(){ document.removeEventListener('mousemove',mv); document.removeEventListener('mouseup',up); }
+  document.addEventListener('mousemove',mv);
+  document.addEventListener('mouseup',up);
+  e.preventDefault();
+});
+
 /* ---------- ADD MEDIA TO TIMELINE ---------- */
 function addVideoClipFromLib(label,dur,cardEl){
+  saveState();
   const tr=tracks.find(t=>t.type==='video');
   const end=tr.clips.reduce((m,c)=>Math.max(m,c.start+c.dur),0);
   const c={id:'c'+(nextId++),start:end,dur:dur,label:label,cls:'cv'};
@@ -2232,19 +2467,80 @@ function ctxAction(action){
   }
 }
 
-/* ---------- UNDO / REDO (visual stub) ---------- */
-function cycleHistDot(dir){
-  const dots=[...document.querySelectorAll('.tb-hist-dot')];
-  let idx=dots.findIndex(d=>d.classList.contains('active'));
-  idx=Math.max(0,Math.min(dots.length-1,idx+dir));
-  dots.forEach(d=>d.classList.remove('active'));
-  dots[idx].classList.add('active');
+/* ---------- UNDO / REDO — Tính năng 2: Lịch sử thực ---------- */
+function doUndo(){
+  if(historyIdx<0){ toast('Không còn gì để hoàn tác'); return; }
+  tracks=JSON.parse(JSON.stringify(historyStack[historyIdx]));
+  historyIdx--;
+  selected.clear();
+  renderAll(); updateRightInfo(); updateHistDots();
+  toast('Hoàn tác ✓');
 }
-function doUndo(){ cycleHistDot(-1); toast('Hoàn tác (demo)'); }
-function doRedo(){ cycleHistDot(1); toast('Làm lại (demo)'); }
+function doRedo(){
+  if(historyIdx>=historyStack.length-1){ toast('Không có gì để làm lại'); return; }
+  historyIdx++;
+  tracks=JSON.parse(JSON.stringify(historyStack[historyIdx]));
+  selected.clear();
+  renderAll(); updateRightInfo(); updateHistDots();
+  toast('Làm lại ✓');
+}
 
 /* ---------- AI GENERATE ---------- */
 function openAIGen(){ toast('✨ AI Tạo: tính năng demo — sẽ tạo nội dung bằng AI'); }
+
+/* ---------- Tính năng 8: Xuất phím tắt PDF ---------- */
+function exportShortcutsPDF(){
+  const rows=[
+    ['PHÍM TẮT','MÔ TẢ'],
+    ['Space','Play / Pause'],
+    ['K','Dừng (pause)'],
+    ['J hoặc Home','Về đầu video'],
+    ['L hoặc End','Tới cuối video'],
+    ['← →','Di chuyển playhead ±0.1s'],
+    ['Shift + ← →','Di chuyển playhead ±5s'],
+    [', .','Di chuyển ±1s'],
+    ['S','Cắt clip tại playhead'],
+    ['Delete','Xóa clip đang chọn'],
+    ['Ctrl + D','Nhân đôi clip'],
+    ['Ctrl + C','Sao chép clip'],
+    ['Ctrl + V','Dán clip tại playhead'],
+    ['Ctrl + Z','Hoàn tác'],
+    ['Ctrl + Y','Làm lại'],
+    ['Tab','Chọn clip tiếp theo'],
+    ['↑ ↓','Tăng/Giảm âm lượng (audio)'],
+    ['Alt + Drag','Kéo clip (tắt snap)'],
+    ['Drag trên nền','Chọn nhiều clip'],
+    ['Shift + Click','Thêm vào vùng chọn'],
+    ['Ctrl + +','Phóng to timeline'],
+    ['Ctrl + -','Thu nhỏ timeline'],
+    ['Ctrl + Scroll','Zoom tại con chuột'],
+    ['?','Bảng phím tắt'],
+    ['Esc','Đóng popup'],
+  ];
+  const w=window.open('','_blank','width=700,height=600');
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Phím tắt CapCut</title>
+  <style>
+    body{font-family:Arial,sans-serif;padding:24px;background:#fff;color:#111}
+    h1{font-size:20px;margin-bottom:16px}
+    table{border-collapse:collapse;width:100%}
+    th{background:#1a1a1a;color:#f2f2f2;padding:8px 12px;text-align:left;font-size:12px;letter-spacing:.5px}
+    td{padding:7px 12px;font-size:13px;border-bottom:1px solid #eee}
+    tr:nth-child(even) td{background:#f9f9f9}
+    kbd{background:#f0f0f0;border:1px solid #ccc;border-bottom:2px solid #ccc;border-radius:4px;padding:2px 7px;font-size:11px;font-family:inherit}
+    .footer{margin-top:20px;font-size:11px;color:#888;text-align:center}
+    @media print{button{display:none}}
+  </style></head><body>
+  <h1>⌨️ Bảng phím tắt CapCut</h1>
+  <table><thead><tr>${rows[0].map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>
+  ${rows.slice(1).map(r=>`<tr><td><kbd>${r[0]}</kbd></td><td>${r[1]}</td></tr>`).join('')}
+  </tbody></table>
+  <div class="footer">Tạo bởi CapCut Editor — ${new Date().toLocaleDateString('vi-VN')}</div>
+  <br><button onclick="window.print()" style="padding:8px 18px;background:#D4A017;border:none;border-radius:6px;font-size:13px;cursor:pointer;font-weight:bold">🖨️ In / Lưu PDF</button>
+  </body></html>`;
+  w.document.write(html);
+  w.document.close();
+  toast('Đã mở trang xuất PDF — nhấn "In / Lưu PDF" để lưu');
+}
 
 /* ---------- KEYBOARD CHEAT SHEET ---------- */
 function openKS(){ document.getElementById('ks-overlay').classList.add('open'); }
@@ -2262,14 +2558,18 @@ document.addEventListener('keydown',e=>{
     e.preventDefault();
     if(playing){ playing=false; setPlayIcon(false); clearInterval(playTimer); }
     playhead=Math.max(0, playhead - (e.shiftKey ? 5 : 0.1));
-    updatePlayhead();
+    updatePlayhead(); renderMinimap();
   }
   else if(e.key==='ArrowRight'){
     e.preventDefault();
     if(playing){ playing=false; setPlayIcon(false); clearInterval(playTimer); }
     playhead=Math.min(projectDur(), playhead + (e.shiftKey ? 5 : 0.1));
-    updatePlayhead();
+    updatePlayhead(); renderMinimap();
   }
+
+  /* Tính năng 3: ↑/↓ thay đổi âm lượng clip đang chọn */
+  else if(e.key==='ArrowUp'){ e.preventDefault(); changeVolume(5); }
+  else if(e.key==='ArrowDown'){ e.preventDefault(); changeVolume(-5); }
 
   else if(e.key==='Home'||e.key==='j'||e.key==='J'){ seekStart(); }
   else if(e.key==='End'||e.key==='l'||e.key==='L'){ seekEnd(); }
@@ -2283,9 +2583,15 @@ document.addEventListener('keydown',e=>{
   else if(e.key==='s'||e.key==='S'){ splitClip(); }
   else if(e.key==='Delete'||e.key==='Backspace'){ deleteClip(); }
   else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='d'){ e.preventDefault(); duplicateClip(); }
-  else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){ e.preventDefault(); doUndo(); }
+  else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!e.shiftKey){ e.preventDefault(); doUndo(); }
+  else if((e.ctrlKey||e.metaKey)&&(e.key.toLowerCase()==='y'||(e.key.toLowerCase()==='z'&&e.shiftKey))){ e.preventDefault(); doRedo(); }
+  /* Tính năng 5: Ctrl+C / Ctrl+V */
+  else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='c'){ e.preventDefault(); copyClips(); }
+  else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='v'){ e.preventDefault(); pasteClips(); }
   else if((e.ctrlKey||e.metaKey)&&(e.key==='='||e.key==='+'||e.code==='Equal')){ e.preventDefault(); zoom(1); }
   else if((e.ctrlKey||e.metaKey)&&(e.key==='-'||e.code==='Minus')){ e.preventDefault(); zoom(-1); }
+  /* Tính năng 6: Tab chuyển clip */
+  else if(e.key==='Tab'){ e.preventDefault(); tabSelectNext(); }
   else if(e.key==='?'||e.key==='/'){ e.preventDefault(); toggleKS(); }
   else if(e.key==='Escape'){ closeKS(); }
 });
@@ -2344,6 +2650,11 @@ renderAll();
         <div class="ks-row"><span class="ks-desc">Cắt clip tại playhead</span><span class="ks-keys"><span class="kbd">S</span></span></div>
         <div class="ks-row"><span class="ks-desc">Xóa clip đang chọn</span><span class="ks-keys"><span class="kbd">Delete</span></span></div>
         <div class="ks-row"><span class="ks-desc">Nhân đôi clip</span><span class="ks-keys"><span class="kbd">Ctrl</span><span class="ks-plus">+</span><span class="kbd">D</span></span></div>
+        <div class="ks-row"><span class="ks-desc">Sao chép clip</span><span class="ks-keys"><span class="kbd">Ctrl</span><span class="ks-plus">+</span><span class="kbd">C</span></span></div>
+        <div class="ks-row"><span class="ks-desc">Dán clip tại playhead</span><span class="ks-keys"><span class="kbd">Ctrl</span><span class="ks-plus">+</span><span class="kbd">V</span></span></div>
+        <div class="ks-row"><span class="ks-desc">Chọn clip tiếp theo</span><span class="ks-keys"><span class="kbd">Tab</span></span></div>
+        <div class="ks-row"><span class="ks-desc">Tăng âm lượng (audio)</span><span class="ks-keys"><span class="kbd">↑</span></span></div>
+        <div class="ks-row"><span class="ks-desc">Giảm âm lượng (audio)</span><span class="ks-keys"><span class="kbd">↓</span></span></div>
       </div>
 
       <div class="ks-group">
@@ -2354,14 +2665,27 @@ renderAll();
       </div>
 
       <div class="ks-group">
+        <div class="ks-group-title">🖱️ Kéo thả</div>
+        <div class="ks-row"><span class="ks-desc">Kéo clip (tắt snap)</span><span class="ks-keys"><span class="kbd">Alt</span><span class="ks-plus">+</span><span class="kbd">Drag</span></span></div>
+        <div class="ks-row"><span class="ks-desc">Chọn nhiều (vùng)</span><span class="ks-keys"><span class="kbd">Drag</span><span class="ks-plus">trên nền</span></span></div>
+        <div class="ks-row"><span class="ks-desc">Thêm vào chọn</span><span class="ks-keys"><span class="kbd">Shift</span><span class="ks-plus">+</span><span class="kbd">Click</span></span></div>
+      </div>
+
+      <div class="ks-group">
         <div class="ks-group-title">🔧 Khác</div>
         <div class="ks-row"><span class="ks-desc">Hoàn tác</span><span class="ks-keys"><span class="kbd">Ctrl</span><span class="ks-plus">+</span><span class="kbd">Z</span></span></div>
+        <div class="ks-row"><span class="ks-desc">Làm lại</span><span class="ks-keys"><span class="kbd">Ctrl</span><span class="ks-plus">+</span><span class="kbd">Y</span></span></div>
         <div class="ks-row"><span class="ks-desc">Bảng phím tắt này</span><span class="ks-keys"><span class="kbd">?</span></span></div>
         <div class="ks-row"><span class="ks-desc">Đóng popup</span><span class="ks-keys"><span class="kbd">Esc</span></span></div>
       </div>
 
     </div>
-    <div id="ks-footer">Nhấn <kbd>?</kbd> hoặc <kbd>Esc</kbd> để đóng</div>
+    <div id="ks-footer">
+      Nhấn <kbd>?</kbd> hoặc <kbd>Esc</kbd> để đóng &nbsp;·&nbsp;
+      <button onclick="exportShortcutsPDF()" style="background:var(--bg3);border:1px solid var(--border2);color:var(--t2);border-radius:5px;padding:3px 10px;font-size:10.5px;cursor:pointer;font-family:inherit">
+        📥 Tải PDF
+      </button>
+    </div>
   </div>
 </div>
 
