@@ -2284,9 +2284,24 @@ document.addEventListener('keydown',e=>{
   else if(e.key==='Delete'||e.key==='Backspace'){ deleteClip(); }
   else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='d'){ e.preventDefault(); duplicateClip(); }
   else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){ e.preventDefault(); doUndo(); }
+  else if((e.ctrlKey||e.metaKey)&&(e.key==='='||e.key==='+'||e.code==='Equal')){ e.preventDefault(); zoom(1); }
+  else if((e.ctrlKey||e.metaKey)&&(e.key==='-'||e.code==='Minus')){ e.preventDefault(); zoom(-1); }
   else if(e.key==='?'||e.key==='/'){ e.preventDefault(); toggleKS(); }
   else if(e.key==='Escape'){ closeKS(); }
 });
+
+/* ---------- CTRL+SCROLL ZOOM ON TIMELINE ---------- */
+document.getElementById('tl-scroll').addEventListener('wheel', function(e){
+  if(!e.ctrlKey && !e.metaKey) return;
+  e.preventDefault();
+  const scrollEl = this;
+  const rect = scrollEl.getBoundingClientRect();
+  const mouseX = e.clientX - rect.left + scrollEl.scrollLeft - 74;
+  const timeBefore = Math.max(0, mouseX / pps());
+  zoom(e.deltaY < 0 ? 1 : -1);
+  const timeAfter = timeBefore * pps();
+  scrollEl.scrollLeft = timeAfter - (e.clientX - rect.left - 74);
+}, { passive: false });
 
 /* ---------- INIT ---------- */
 setPlayIcon(false);
@@ -2329,6 +2344,13 @@ renderAll();
         <div class="ks-row"><span class="ks-desc">Cắt clip tại playhead</span><span class="ks-keys"><span class="kbd">S</span></span></div>
         <div class="ks-row"><span class="ks-desc">Xóa clip đang chọn</span><span class="ks-keys"><span class="kbd">Delete</span></span></div>
         <div class="ks-row"><span class="ks-desc">Nhân đôi clip</span><span class="ks-keys"><span class="kbd">Ctrl</span><span class="ks-plus">+</span><span class="kbd">D</span></span></div>
+      </div>
+
+      <div class="ks-group">
+        <div class="ks-group-title">🔍 Zoom Timeline</div>
+        <div class="ks-row"><span class="ks-desc">Phóng to</span><span class="ks-keys"><span class="kbd">Ctrl</span><span class="ks-plus">+</span><span class="kbd">+</span></span></div>
+        <div class="ks-row"><span class="ks-desc">Thu nhỏ</span><span class="ks-keys"><span class="kbd">Ctrl</span><span class="ks-plus">+</span><span class="kbd">−</span></span></div>
+        <div class="ks-row"><span class="ks-desc">Zoom tại con chuột</span><span class="ks-keys"><span class="kbd">Ctrl</span><span class="ks-plus">+</span><span class="kbd">Scroll</span></span></div>
       </div>
 
       <div class="ks-group">
