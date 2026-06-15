@@ -584,6 +584,30 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 @keyframes spin{to{transform:rotate(360deg)}}
 .spin{animation:spin .7s linear infinite;transform-origin:center}
 
+/* ─── KEYFRAME EDITOR ───────────────────────────────── */
+.kf-section{ margin-top:2px; }
+.kf-prop-row{ display:flex; gap:6px; align-items:center; margin-bottom:8px; }
+.kf-prop-select{ flex:1; background:var(--bg3); border:1px solid var(--border2); color:var(--t1); border-radius:5px; padding:4px 7px; font-size:11.5px; outline:none; cursor:pointer; }
+.kf-add-btn{ background:var(--accent); border:none; color:#fff; border-radius:5px; padding:4px 9px; font-size:11px; font-weight:600; cursor:pointer; white-space:nowrap; }
+.kf-add-btn:hover{ filter:brightness(1.15); }
+.kf-strip-wrap{ position:relative; background:var(--bg2); border:1px solid var(--border1); border-radius:5px; height:26px; margin-bottom:8px; overflow:hidden; cursor:pointer; }
+.kf-strip-ph{ position:absolute; top:0; bottom:0; width:2px; background:var(--accent); opacity:.85; pointer-events:none; z-index:3; }
+.kf-marker{ position:absolute; top:50%; transform:translate(-50%,-50%) rotate(45deg); width:9px; height:9px; background:var(--accent); border:1.5px solid #fff; border-radius:1px; cursor:pointer; z-index:2; box-sizing:border-box; }
+.kf-marker:hover,.kf-marker.sel{ background:#fff; border-color:var(--accent); }
+.kf-val-row{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.kf-val-lbl{ font-size:11px; color:var(--t2); flex:1; }
+.kf-val-num{ font-size:12px; color:var(--t1); font-weight:600; min-width:40px; text-align:right; }
+.kf-val-sl{ flex:1; }
+.kf-del-btn{ background:var(--bg3); border:1px solid var(--border2); color:#e84545; border-radius:4px; padding:3px 8px; font-size:10.5px; cursor:pointer; }
+.kf-del-btn:hover{ background:#e84545; color:#fff; }
+.kf-hint{ font-size:10px; color:var(--t3); line-height:1.6; }
+.kf-empty{ font-size:10.5px; color:var(--t3); text-align:center; padding:8px 0; }
+.kf-list{ display:flex; flex-direction:column; gap:4px; margin-bottom:6px; }
+.kf-list-item{ display:flex; align-items:center; gap:6px; font-size:11px; color:var(--t2); background:var(--bg2); border-radius:4px; padding:3px 7px; }
+.kf-list-item span{ flex:1; }
+.kf-list-item button{ background:none; border:none; color:#e84545; cursor:pointer; font-size:12px; padding:0 2px; line-height:1; }
+.kf-list-item.active{ background:var(--bg3); color:var(--t1); }
+
 /* ─── MINIMAP ────────────────────────────────────────── */
 #minimap{
   height:28px;background:var(--bg2);border-top:1px solid var(--border);
@@ -1155,6 +1179,36 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
         <div class="tr-it">Zoom</div>
       </div>
     </div>
+
+    <div class="ps-div"></div>
+
+    <!-- KEYFRAME EDITOR -->
+    <div class="ps kf-section" id="kf-panel">
+      <div class="ps-title">🎯 Keyframe</div>
+      <div class="kf-prop-row">
+        <select class="kf-prop-select" id="kf-prop-sel">
+          <option value="opacity">Độ mờ (Opacity)</option>
+          <option value="volume">Âm lượng (Volume)</option>
+          <option value="brightness">Độ sáng</option>
+          <option value="scale">Phóng to (Scale)</option>
+        </select>
+        <button class="kf-add-btn" onclick="kfAddAtPlayhead()">◆ Thêm</button>
+      </div>
+      <!-- mini strip showing keyframes for selected property -->
+      <div class="kf-strip-wrap" id="kf-strip" title="Click để di chuyển playhead">
+        <div class="kf-strip-ph" id="kf-strip-ph"></div>
+        <!-- markers injected by JS -->
+      </div>
+      <!-- current interpolated value -->
+      <div class="kf-val-row">
+        <span class="kf-val-lbl">Giá trị tại playhead:</span>
+        <span class="kf-val-num" id="kf-cur-val">—</span>
+      </div>
+      <!-- list of keyframes -->
+      <div class="kf-list" id="kf-list"></div>
+      <div class="kf-hint" id="kf-hint">Chọn thuộc tính → Nhấn <strong>◆ Thêm</strong> để thêm keyframe tại vị trí playhead. Click marker để chọn và xóa.</div>
+    </div>
+
   </div>
 </div>
 
@@ -1360,6 +1414,8 @@ function updatePlayhead(){
   document.getElementById('ph-line').style.left=x+'px';
   document.getElementById('ptime').textContent=fmt(playhead)+' / '+fmt(projectDur());
   document.getElementById('ph-tc').textContent=fmt(playhead);
+  /* apply keyframes at current time for selected clip */
+  if(typeof kfApplyAllActiveClips==='function') kfApplyAllActiveClips();
 }
 
 /* ---------- DRAG TOOLTIP ---------- */
@@ -2265,6 +2321,7 @@ function updateRightInfo(){
     document.getElementById('ic-dur').textContent='--:--';
     document.getElementById('ic-type').innerHTML='';
   }
+  renderKFEditor();
 }
 
 /* ---------- GENERIC PANEL INTERACTIONS (delegated) ---------- */
@@ -2484,6 +2541,223 @@ function doRedo(){
   renderAll(); updateRightInfo(); updateHistDots();
   toast('Làm lại ✓');
 }
+
+/* ================================================================
+   KEYFRAME ANIMATION ENGINE
+   ================================================================ */
+
+/* Default value range cho từng thuộc tính */
+const KF_DEFAULTS = {
+  opacity:    { def:100, min:0,    max:100,  unit:'%',  suffix:'%' },
+  volume:     { def:100, min:0,    max:200,  unit:'%',  suffix:'%' },
+  brightness: { def:0,   min:-100, max:100,  unit:'',   suffix:'' },
+  scale:      { def:100, min:10,   max:300,  unit:'%',  suffix:'%' },
+};
+
+/* Linear interpolation giữa 2 keyframe */
+function kfInterpolate(kfs, t){
+  if(!kfs || kfs.length===0) return null;
+  if(kfs.length===1) return kfs[0].v;
+  const sorted=[...kfs].sort((a,b)=>a.t-b.t);
+  if(t<=sorted[0].t) return sorted[0].v;
+  if(t>=sorted[sorted.length-1].t) return sorted[sorted.length-1].v;
+  for(let i=0;i<sorted.length-1;i++){
+    if(t>=sorted[i].t && t<=sorted[i+1].t){
+      const frac=(t-sorted[i].t)/(sorted[i+1].t-sorted[i].t);
+      return sorted[i].v + frac*(sorted[i+1].v-sorted[i].v);
+    }
+  }
+  return sorted[sorted.length-1].v;
+}
+
+/* Lấy giá trị keyframe của clip tại thời điểm absTime */
+function kfGetValue(clip, prop, absTime){
+  if(!clip.keyframes || !clip.keyframes[prop] || clip.keyframes[prop].length===0) return null;
+  const relT = absTime - clip.start; /* relative to clip start */
+  return kfInterpolate(clip.keyframes[prop], relT);
+}
+
+/* Thêm keyframe tại playhead */
+function kfAddAtPlayhead(){
+  if(selected.size!==1){ toast('Chọn đúng 1 clip để thêm keyframe'); return; }
+  const id=[...selected][0];
+  const found=findClip(id);
+  if(!found){ return; }
+  const {clip}=found;
+  const relT = playhead - clip.start;
+  if(relT<0||relT>clip.dur){ toast('Playhead ngoài phạm vi clip'); return; }
+
+  const prop=document.getElementById('kf-prop-sel')?.value || 'opacity';
+  if(!clip.keyframes) clip.keyframes={};
+  if(!clip.keyframes[prop]) clip.keyframes[prop]=[];
+
+  /* Tránh duplicate tại cùng vị trí (±0.05s) */
+  const dup=clip.keyframes[prop].find(k=>Math.abs(k.t-relT)<0.05);
+  if(dup){ toast('Đã có keyframe tại vị trí này'); return; }
+
+  const meta=KF_DEFAULTS[prop];
+  const curVal=kfInterpolate(clip.keyframes[prop],relT);
+  const v = curVal!==null ? Math.round(curVal) : meta.def;
+  saveState();
+  clip.keyframes[prop].push({t:parseFloat(relT.toFixed(3)), v});
+  clip.keyframes[prop].sort((a,b)=>a.t-b.t);
+
+  renderKFEditor();
+  toast('◆ Keyframe thêm tại '+fmt(playhead));
+}
+
+/* Xóa keyframe */
+function kfRemove(prop, idx){
+  if(selected.size!==1) return;
+  const id=[...selected][0];
+  const found=findClip(id);
+  if(!found) return;
+  const {clip}=found;
+  if(!clip.keyframes||!clip.keyframes[prop]) return;
+  saveState();
+  clip.keyframes[prop].splice(idx,1);
+  renderKFEditor();
+  toast('Đã xóa keyframe');
+}
+
+/* Cập nhật giá trị keyframe qua slider */
+function kfUpdateVal(prop, idx, val){
+  if(selected.size!==1) return;
+  const id=[...selected][0];
+  const found=findClip(id);
+  if(!found) return;
+  const {clip}=found;
+  if(!clip.keyframes||!clip.keyframes[prop]) return;
+  clip.keyframes[prop][idx].v=parseFloat(val);
+  renderKFEditor(false); /* no full re-render to avoid losing focus */
+}
+
+/* Render/refresh keyframe editor panel */
+function renderKFEditor(fullRender=true){
+  const panel=document.getElementById('kf-panel');
+  if(!panel) return;
+  const stripEl=document.getElementById('kf-strip');
+  const listEl=document.getElementById('kf-list');
+  const curValEl=document.getElementById('kf-cur-val');
+  const phEl=document.getElementById('kf-strip-ph');
+  const hintEl=document.getElementById('kf-hint');
+  const propSel=document.getElementById('kf-prop-sel');
+  if(!stripEl||!listEl||!curValEl||!phEl) return;
+
+  const prop=propSel?.value||'opacity';
+  const meta=KF_DEFAULTS[prop]||KF_DEFAULTS.opacity;
+
+  /* no clip selected */
+  if(selected.size!==1){
+    stripEl.innerHTML='<div class="kf-strip-ph" id="kf-strip-ph"></div>';
+    listEl.innerHTML='<div class="kf-empty">Chọn 1 clip để chỉnh keyframe</div>';
+    curValEl.textContent='—';
+    return;
+  }
+
+  const id=[...selected][0];
+  const found=findClip(id);
+  if(!found){ return; }
+  const {clip}=found;
+  const kfs=(clip.keyframes&&clip.keyframes[prop])||[];
+  const dur=clip.dur;
+  const relT=playhead-clip.start;
+  const phPct=Math.max(0,Math.min(1,relT/dur));
+
+  /* --- strip --- */
+  let stripHTML='<div class="kf-strip-ph" id="kf-strip-ph" style="left:'+Math.round(phPct*100)+'%"></div>';
+  kfs.forEach((k,i)=>{
+    const pct=Math.max(0,Math.min(1,k.t/dur));
+    stripHTML+=`<div class="kf-marker" title="${fmt(k.t+clip.start)}: ${Math.round(k.v)}${meta.suffix}" style="left:${Math.round(pct*100)}%" onclick="kfSelectMarker('${prop}',${i})"></div>`;
+  });
+  stripEl.innerHTML=stripHTML;
+
+  /* --- current interpolated value --- */
+  const curV=kfInterpolate(kfs, relT);
+  curValEl.textContent = curV!==null ? Math.round(curV)+meta.suffix : (meta.def+meta.suffix+' (gốc)');
+
+  /* --- keyframe list --- */
+  if(kfs.length===0){
+    listEl.innerHTML='<div class="kf-empty">Chưa có keyframe nào</div>';
+    if(hintEl) hintEl.style.display='';
+  } else {
+    if(hintEl) hintEl.style.display='none';
+    listEl.innerHTML=kfs.map((k,i)=>`
+      <div class="kf-list-item" id="kf-item-${i}">
+        <span>⏱ ${fmt(k.t+clip.start)}</span>
+        <input type="range" min="${meta.min}" max="${meta.max}" value="${Math.round(k.v)}"
+          style="flex:1;height:3px;accent-color:var(--accent)"
+          oninput="kfUpdateVal('${prop}',${i},this.value);this.nextElementSibling.textContent=this.value+'${meta.suffix}'"
+          onchange="saveState()">
+        <span style="min-width:38px;text-align:right;font-size:11px;color:var(--t1)">${Math.round(k.v)}${meta.suffix}</span>
+        <button onclick="kfRemove('${prop}',${i})" title="Xóa keyframe">✕</button>
+      </div>`).join('');
+  }
+
+  /* apply to preview overlay */
+  kfApplyPreview(clip, prop);
+}
+
+/* Highlight marker when selected */
+function kfSelectMarker(prop, idx){
+  document.querySelectorAll('.kf-marker').forEach((m,i)=>m.classList.toggle('sel',i===idx));
+}
+
+/* Apply interpolated keyframe values to the preview video overlay */
+function kfApplyPreview(clip, prop){
+  if(!clip) return;
+  const relT=playhead-clip.start;
+  const kfs=(clip.keyframes&&clip.keyframes[prop])||[];
+  const val=kfInterpolate(kfs,relT);
+  if(val===null) return;
+  const preview=document.getElementById('phone-el');
+  if(!preview) return;
+  const cur=preview.style.filter||'';
+
+  if(prop==='opacity'){
+    preview.style.opacity=(val/100).toFixed(2);
+  } else if(prop==='brightness'){
+    /* merge into filter */
+    const bri=`brightness(${1+val/100})`;
+    preview.style.filter=cur.replace(/brightness\([^)]*\)/,'')+' '+bri;
+  } else if(prop==='scale'){
+    preview.style.transform=`scale(${val/100})`;
+  }
+  /* volume doesn't affect preview visually */
+}
+
+/* Called during playback to apply keyframes at current time */
+function kfApplyAllActiveClips(){
+  if(selected.size!==1) return;
+  const id=[...selected][0];
+  const found=findClip(id);
+  if(!found) return;
+  const {clip}=found;
+  if(!clip.keyframes) return;
+  Object.keys(clip.keyframes).forEach(prop=>kfApplyPreview(clip,prop));
+  renderKFEditor(false);
+}
+
+/* Strip click → seek playhead within clip */
+document.addEventListener('click',function(e){
+  const strip=e.target.closest('#kf-strip');
+  if(!strip||e.target.classList.contains('kf-marker')) return;
+  if(selected.size!==1) return;
+  const id=[...selected][0];
+  const found=findClip(id);
+  if(!found) return;
+  const {clip}=found;
+  const rect=strip.getBoundingClientRect();
+  const pct=(e.clientX-rect.left)/rect.width;
+  playhead=clip.start+Math.max(0,Math.min(clip.dur,pct*clip.dur));
+  updatePlayhead();
+  renderKFEditor();
+});
+
+/* Re-render editor when property selector changes */
+document.addEventListener('change',function(e){
+  if(e.target.id==='kf-prop-sel') renderKFEditor();
+});
 
 /* ---------- AI GENERATE ---------- */
 function openAIGen(){ toast('✨ AI Tạo: tính năng demo — sẽ tạo nội dung bằng AI'); }
