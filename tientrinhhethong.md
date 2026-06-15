@@ -1,70 +1,103 @@
-# 📋 TIẾN TRÌNH HỆ THỐNG — CapCut Video Editor
+# TIẾN TRÌNH DỰ ÁN — CapCut Video Editor Clone
 
-> Tự động cập nhật sau mỗi lần build tính năng mới.  
-> Cập nhật lần cuối: 15/06/2026
-
----
-
-## ✅ TÍNH NĂNG ĐÃ BUILD
-
-| # | Tính năng | Mô tả | Ngày hoàn thành |
-|---|-----------|--------|-----------------|
-| 1 | **Khởi chạy dự án** | Cài workflow Python HTTP server phục vụ file tĩnh trên cổng 5000, cấu hình deploy static site | 15/06/2026 |
-| 2 | **Phím tắt phát lại** | `Space` play/pause, `K` dừng, `J`/`Home` về đầu, `L`/`End` về cuối | 15/06/2026 |
-| 3 | **Phím tắt di chuyển playhead** | `←`/`→` lùi/tiến 0.1s, `Shift+←`/`→` lùi/tiến 5s, `,`/`.` lùi/tiến 1s | 15/06/2026 |
-| 4 | **Phím tắt chỉnh sửa** | `S` cắt clip, `Delete` xóa, `Ctrl+D` nhân đôi, `Ctrl+Z` hoàn tác | 15/06/2026 |
-| 5 | **Popup bảng phím tắt** | Nhấn `?` hoặc click nút `?` trên toolbar mở bảng cheat sheet đầy đủ, `Esc` đóng | 15/06/2026 |
-| 6 | **Nút ? trên toolbar** | Nút truy cập nhanh bảng phím tắt ngay trên thanh công cụ | 15/06/2026 |
-| 7 | **Zoom timeline bằng phím** | `Ctrl++` phóng to, `Ctrl+-` thu nhỏ timeline | 15/06/2026 |
-| 8 | **Zoom timeline bằng Ctrl+Scroll** | Cuộn chuột + Ctrl để zoom tại vị trí con trỏ, giữ nguyên điểm nhìn | 15/06/2026 |
-| 9 | **Snap to Grid nâng cao** | Clip tự hút vào mốc thời gian tròn (1s/5s tùy zoom), `Alt+Drag` để tắt snap tạm thời | 15/06/2026 |
-| 10 | **Lịch sử hoàn tác thực** | Undo/Redo stack thực sự (tối đa 50 bước), `Ctrl+Z` hoàn tác, `Ctrl+Y` làm lại, dots trên topbar cập nhật theo | 15/06/2026 |
-| 11 | **Phím tắt âm lượng** | `↑`/`↓` tăng/giảm 5% volume clip audio đang chọn | 15/06/2026 |
-| 12 | **Chọn nhiều clip** | `Shift+Click` thêm vào chọn, kéo chuột trên nền timeline để chọn vùng (rubber-band) | 15/06/2026 |
-| 13 | **Copy/Paste clip** | `Ctrl+C` sao chép, `Ctrl+V` dán tại vị trí playhead | 15/06/2026 |
-| 14 | **Phím tắt chuyển track** | `Tab` chuyển sang clip tiếp theo theo thứ tự thời gian, tự cuộn timeline vào view | 15/06/2026 |
-| 15 | **Minimap timeline** | Thanh tổng quan phía dưới timeline hiển thị tất cả clips theo màu track, viewport indicator, click/kéo để cuộn timeline, playhead marker | 15/06/2026 |
-| 16 | **Xuất danh sách phím tắt PDF** | Nút "📥 Tải PDF" trong popup phím tắt, mở trang in với toàn bộ shortcuts, hỗ trợ Print to PDF | 15/06/2026 |
-| 17 | **Keyframe Animation** | Panel "🎯 Keyframe" trong right panel: thêm/xóa keyframe tại playhead cho 4 thuộc tính (Opacity, Volume, Brightness, Scale), mini strip hiển thị vị trí keyframe, slider chỉnh giá trị từng keyframe, linear interpolation, apply visual preview lên khung hình khi phát | 15/06/2026 |
-| 18 | **Easing Curves** | 6 loại easing cho keyframe: Linear, Ease In (cubic), Ease Out (cubic), Ease In-Out, Bounce Out, Elastic. Mỗi keyframe có hàng chọn easing + canvas preview vẽ đường cong thực tế bằng easing function | 15/06/2026 |
+**Cập nhật lần cuối:** 15/06/2026  
+**Trạng thái:** Đang phát triển tích cực  
+**File chính:** `capcut.html` · **Server:** Python HTTP cổng 5000 · **UI:** Tiếng Việt
 
 ---
 
-## 🔨 TÍNH NĂNG CẦN BUILD
+## TỔNG QUAN DỰ ÁN
 
-*Không còn tính năng nào trong backlog — tất cả đã hoàn thành!*
+Ứng dụng chỉnh sửa video trên trình duyệt theo phong cách CapCut, xây dựng bằng HTML/CSS/JS thuần trong một file duy nhất. Phục vụ qua Python HTTP Server, triển khai dưới dạng static site trên Replit.
 
----
-
-## 🔄 QUY TRÌNH KẾ TIẾP
-
-### Bước 1 — Đề xuất tính năng mới
-- Người dùng đề xuất tính năng mới để thêm vào danh sách
-- Hoặc Agent tự đề xuất dựa trên nhu cầu thực tế
-
-### Bước 2 — Build
-1. Đọc file này trước để nắm tình trạng
-2. Đọc code hiện tại liên quan đến tính năng (`grep` → `read`)
-3. Thiết kế thay đổi (CSS / HTML / JS)
-4. Thực hiện chỉnh sửa file `capcut.html`
-5. Chụp màn hình kiểm tra kết quả
-
-### Bước 3 — Cập nhật file này
-Sau khi build xong, thêm tính năng vào bảng **ĐÃ BUILD**:
-- Thêm hàng mới với ngày hoàn thành
-- Cập nhật dòng `Cập nhật lần cuối` ở đầu file
-
----
-
-## 📝 GHI CHÚ KỸ THUẬT
-
-| Mục | Chi tiết |
-|-----|----------|
-| File chính | `capcut.html` (toàn bộ app trong 1 file) |
-| Server dev | Python `http.server` cổng 5000 |
-| Deploy | Static site (Replit) |
+| Thông số | Giá trị |
+|----------|---------|
+| Kiến trúc | Single-file SPA (HTML + CSS + JS) |
+| Runtime | Python 3.11 HTTP Server |
+| Cổng | 5000 |
+| Triển khai | Replit Static Site |
 | Ngôn ngữ UI | Tiếng Việt |
-| Phím tắt popup | `?` hoặc nút `?` trên toolbar |
-| Undo/Redo | Stack thực, tối đa 50 bước |
-| Minimap | Tự động cập nhật khi cuộn/zoom/thêm clip |
-| Snap | Grid + edge snap, `Alt` để tắt khi drag |
+| Hệ thống Undo | Stack thực, tối đa 50 bước |
+
+---
+
+## TÍNH NĂNG ĐÃ HOÀN THÀNH
+
+### Nhóm 1 — Hạ tầng & Khởi động
+
+| ID | Tính năng | Chi tiết | Ngày |
+|----|-----------|----------|------|
+| F01 | Khởi chạy dự án | Cài workflow Python HTTP Server, cấu hình deploy static site trên Replit | 15/06/2026 |
+
+### Nhóm 2 — Phím tắt & Điều hướng
+
+| ID | Tính năng | Chi tiết | Ngày |
+|----|-----------|----------|------|
+| F02 | Phím tắt phát lại | `Space` play/pause · `K` dừng · `J`/`Home` về đầu · `L`/`End` về cuối | 15/06/2026 |
+| F03 | Di chuyển playhead | `←`/`→` ±0.1s · `Shift+←`/`→` ±5s · `,`/`.` ±1s | 15/06/2026 |
+| F04 | Phím tắt chỉnh sửa | `S` cắt · `Delete` xóa · `Ctrl+D` nhân đôi · `Ctrl+Z` hoàn tác | 15/06/2026 |
+| F05 | Bảng phím tắt | Nhấn `?` hoặc nút toolbar để mở cheat sheet đầy đủ · `Esc` đóng | 15/06/2026 |
+| F06 | Phím tắt âm lượng | `↑`/`↓` tăng/giảm 5% volume cho clip audio đang chọn | 15/06/2026 |
+| F07 | Chuyển clip bằng Tab | `Tab` chọn clip tiếp theo theo thứ tự thời gian, timeline tự cuộn vào view | 15/06/2026 |
+| F08 | Xuất phím tắt PDF | Nút "📥 Tải PDF" trong popup mở trang in đầy đủ, hỗ trợ Print to PDF | 15/06/2026 |
+
+### Nhóm 3 — Timeline & Zoom
+
+| ID | Tính năng | Chi tiết | Ngày |
+|----|-----------|----------|------|
+| F09 | Zoom bằng phím | `Ctrl++` phóng to · `Ctrl+-` thu nhỏ timeline | 15/06/2026 |
+| F10 | Zoom bằng chuột | `Ctrl+Scroll` zoom tại vị trí con trỏ, giữ nguyên điểm nhìn | 15/06/2026 |
+| F11 | Snap to Grid nâng cao | Clip tự hút vào mốc 1s/5s tùy mức zoom · `Alt+Drag` để tắt snap tạm thời | 15/06/2026 |
+| F12 | Minimap Timeline | Thanh tổng quan phía dưới: hiển thị tất cả clip theo màu track, viewport indicator, playhead marker · Click/kéo để scroll nhanh | 15/06/2026 |
+
+### Nhóm 4 — Chỉnh sửa Clip
+
+| ID | Tính năng | Chi tiết | Ngày |
+|----|-----------|----------|------|
+| F13 | Undo/Redo thực | History stack thực (tối đa 50 bước) · `Ctrl+Z` hoàn tác · `Ctrl+Y` làm lại · dots trên topbar phản ánh trạng thái | 15/06/2026 |
+| F14 | Chọn nhiều clip | `Shift+Click` thêm vào chọn · Kéo chuột trên nền timeline để chọn vùng (rubber-band selection) | 15/06/2026 |
+| F15 | Copy / Paste | `Ctrl+C` sao chép · `Ctrl+V` dán tại vị trí playhead | 15/06/2026 |
+
+### Nhóm 5 — Keyframe Animation
+
+| ID | Tính năng | Chi tiết | Ngày |
+|----|-----------|----------|------|
+| F16 | Keyframe Editor | Panel 🎯 Keyframe trong right panel: thêm/xóa keyframe tại playhead cho 4 thuộc tính (Opacity, Volume, Brightness, Scale) · Mini strip hiển thị vị trí · Slider chỉnh giá trị · Áp dụng preview trực tiếp lên khung hình khi phát | 15/06/2026 |
+| F17 | Easing Curves | 6 loại easing: **Linear · Ease In · Ease Out · Ease In-Out · Bounce Out · Elastic** · Mỗi keyframe chọn riêng loại easing · Canvas mini vẽ đường cong thực tế theo hàm toán học | 15/06/2026 |
+
+---
+
+## BACKLOG — TÍNH NĂNG CẦN BUILD
+
+> Thêm tính năng mới vào đây trước khi bắt đầu build.
+
+| Ưu tiên | Tính năng | Mô tả yêu cầu |
+|---------|-----------|---------------|
+| — | *(trống)* | Chưa có yêu cầu mới |
+
+---
+
+## QUY TRÌNH LÀM VIỆC
+
+```
+1. ĐỌC   → Mở file này, nắm trạng thái hiện tại
+2. PHÂN TÍCH → grep + read code liên quan trong capcut.html
+3. THIẾT KẾ  → Xác định thay đổi CSS / HTML / JS cần làm
+4. BUILD     → Chỉnh sửa capcut.html (edit song song nếu có thể)
+5. KIỂM TRA  → Chụp screenshot, xem console log
+6. CẬP NHẬT → Di chuyển tính năng từ Backlog → Đã hoàn thành
+```
+
+---
+
+## GHI CHÚ KỸ THUẬT QUAN TRỌNG
+
+| Chủ đề | Ghi chú |
+|--------|---------|
+| **TPL_CLIP** | Snapshot của `#rp-body` lúc load, dùng cho tab Chỉnh sửa. Thêm HTML vào `#rp-body` trước dòng `const TPL_CLIP = ...` |
+| **saveState()** | Phải gọi trước mọi thao tác thay đổi `tracks[]` để Undo hoạt động đúng |
+| **renderAll()** | Gọi sau mọi thay đổi state. Tự động gọi `renderMinimap()` và `renderKFEditor()` |
+| **Keyframe data** | `clip.keyframes[prop] = [{t, v, easing}]` — `t` là giây tính từ đầu clip |
+| **Easing engine** | `kfInterpolate()` dùng easing của keyframe *trước* (out-going), không phải keyframe sau |
+| **Snap** | `SNAP_PX = 6` pixels, bắt vào grid (1s/5s) và cạnh clip lân cận. `Alt` key disable |
+| **Minimap** | `renderMinimap()` đọc `tl-scroll.scrollLeft` → không gọi trong scroll handler vòng lặp |
