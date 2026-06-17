@@ -6384,6 +6384,35 @@ window.switchRP=function(tab){
   }catch(e){}
 })();
 
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTO-BUILD: [F39] Gộp nhiều clip thành 1
+   Ngày: 17/06/2026  |  Chọn nhiều clip cùng track → Ctrl+G để gộp thành 1 clip liên tiếp
+   ═══════════════════════════════════════════════════════════════ */
+(function(){
+  document.addEventListener('keydown',e=>{
+    if(!e.ctrlKey||e.key!=='g') return;
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+    e.preventDefault();
+    if(typeof tracks==='undefined'||typeof selected==='undefined'||selected.size<2){
+      if(typeof toast==='function') toast('⚠ Chọn ít nhất 2 clip để gộp');return;
+    }
+    if(typeof saveState==='function') saveState();
+    for(const tr of tracks){
+      const sel=tr.clips.filter(c=>selected.has(c.id));
+      if(sel.length<2) continue;
+      const st=Math.min(...sel.map(c=>c.start));
+      const en=Math.max(...sel.map(c=>c.start+c.dur));
+      const merged={id:'c'+Date.now(),start:st,dur:en-st,label:sel.map(c=>c.label).join('+'),cls:sel[0].cls};
+      tr.clips=tr.clips.filter(c=>!selected.has(c.id));
+      tr.clips.push(merged);tr.clips.sort((a,b)=>a.start-b.start);
+      selected.clear();selected.add(merged.id);
+      if(typeof toast==='function') toast('✅ Đã gộp '+sel.length+' clip · '+((en-st).toFixed(1))+'s');
+    }
+    if(typeof renderAll==='function') renderAll();
+  });
+})();
+
 </script>
 </body>
 </html>

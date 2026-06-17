@@ -194,6 +194,13 @@
 |----|-----------|----------|------|
 | F37 | Tự động lưu định kỳ | Tự động lưu dự án vào localStorage mỗi 60 giây; badge xanh xác nhận đã lưu | 17/06/2026 |
 
+
+### Nhóm 4 — Chỉnh sửa Clip
+
+| ID | Tính năng | Chi tiết | Ngày |
+|----|-----------|----------|------|
+| F39 | Gộp nhiều clip thành 1 | Chọn nhiều clip cùng track → Ctrl+G để gộp thành 1 clip liên tiếp | 17/06/2026 |
+
 ---
 
 ## BACKLOG — TÍNH NĂNG CẦN BUILD
