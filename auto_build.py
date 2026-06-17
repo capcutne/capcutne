@@ -1,24 +1,20 @@
 #!/usr/bin/env python3
 """
 auto_build.py — Tự động build tính năng mới cho CapCut Video Editor Clone.
+Không cần API key — dùng thư viện tính năng tích hợp sẵn.
 
-Quy trình:
-  1. Đọc tientrinhhethong.md (danh sách tính năng đã có + backlog)
-  2. Đọc capcut.html (source code hiện tại)
-  3. Gọi Gemini: phân tích, chọn 1 tính năng từ backlog (hoặc đề xuất mới)
-  4. Gọi Gemini: sinh code JS/CSS/HTML để thêm vào capcut.html
-  5. Chèn code vào capcut.html ngay trước </script> cuối cùng
-  6. Cập nhật tientrinhhethong.md: chuyển tính năng sang Đã hoàn thành
+Quy trình mỗi lần mở dự án:
+  1. Đọc tientrinhhethong.md → xác định F-ID lớn nhất đã build
+  2. Chọn tính năng tiếp theo từ FEATURE_LIBRARY (chưa build)
+  3. Inject JS/CSS vào capcut.html
+  4. Cập nhật tientrinhhethong.md
 """
 
-import os, re, sys, json
+import os, re, sys
 from datetime import datetime
-from google import genai
-from google.genai import types
 
 MD_FILE   = "tientrinhhethong.md"
 HTML_FILE = "capcut.html"
-MODEL     = "gemini-2.0-flash"
 TODAY     = datetime.now().strftime("%d/%m/%Y")
 
 
@@ -36,146 +32,517 @@ def write_file(path, content):
         f.write(content)
 
 
-def get_api_key():
-    """Đọc Gemini API key — thử nhiều tên env var khác nhau."""
-    candidates = [
-        os.environ.get("GOOGLE_API_KEY", ""),
-        os.environ.get("GEMINI_API_KEY", ""),
-        os.environ.get("GOOGLE_GENERATIVE_AI_API_KEY", ""),
-        os.environ.get("OPENAI_API_KEY", ""),   # user lưu key Gemini vào đây
-    ]
-    for key in candidates:
-        key = key.strip()
-        if key and key.startswith("AIzaSy"):
-            return key
+# ═══════════════════════════════════════════════════════════════
+# THƯ VIỆN TÍNH NĂNG — mỗi entry là 1 tính năng hoàn chỉnh
+# ═══════════════════════════════════════════════════════════════
+FEATURE_LIBRARY = [
+    {
+        "id": "F21",
+        "name": "Đổi màu nền Timeline",
+        "detail": "Nút chuyển đổi màu nền timeline giữa 3 chủ đề: Tối (mặc định), Xanh đậm, Tím",
+        "group": "6",
+        "group_name": "Giao diện & Chủ đề",
+        "js": r"""
+(function(){
+  /* F21 — Đổi màu nền Timeline */
+  const THEMES = [
+    {label:'Tối',   bg:'#141414', accent:'#D4A017'},
+    {label:'Biển',  bg:'#0a1a2e', accent:'#4fc3f7'},
+    {label:'Tím',   bg:'#1a0a2e', accent:'#ce93d8'},
+  ];
+  let themeIdx = 0;
+
+  const btn = document.createElement('button');
+  btn.id = 'auto-theme-btn';
+  btn.title = 'Đổi chủ đề màu';
+  btn.textContent = '🎨';
+  btn.style.cssText = `
+    background:var(--bg3);border:1px solid var(--border2);border-radius:6px;
+    color:var(--t2);padding:4px 9px;font-size:13px;cursor:pointer;
+    display:flex;align-items:center;gap:4px;flex-shrink:0;
+  `;
+  btn.onmouseenter = () => btn.style.background = 'var(--bg4)';
+  btn.onmouseleave = () => btn.style.background = 'var(--bg3)';
+
+  function applyTheme(t) {
+    document.documentElement.style.setProperty('--bg0', t.bg);
+    document.documentElement.style.setProperty('--bg1', adjustColor(t.bg, 8));
+    document.documentElement.style.setProperty('--bg2', adjustColor(t.bg, 16));
+    document.documentElement.style.setProperty('--bg3', adjustColor(t.bg, 24));
+    document.documentElement.style.setProperty('--accent', t.accent);
+    btn.textContent = '🎨 ' + t.label;
+    if(typeof toast === 'function') toast('Chủ đề: ' + t.label);
+  }
+
+  function adjustColor(hex, delta) {
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    const clamp = v => Math.min(255, Math.max(0, v));
+    return '#' + [r+delta, g+delta, b+delta].map(v => clamp(v).toString(16).padStart(2,'0')).join('');
+  }
+
+  btn.onclick = () => {
+    themeIdx = (themeIdx + 1) % THEMES.length;
+    applyTheme(THEMES[themeIdx]);
+  };
+
+  // Chèn vào topbar sau nút Chia sẻ
+  const topbar = document.getElementById('topbar');
+  if(topbar) {
+    const sep = document.createElement('div');
+    sep.className = 'tb-divider';
+    topbar.appendChild(sep);
+    topbar.appendChild(btn);
+  }
+})();
+""",
+    },
+    {
+        "id": "F22",
+        "name": "Hiển thị thời lượng Clip",
+        "detail": "Tooltip hiển thị thời lượng chính xác (giây) khi hover lên clip trên timeline",
+        "group": "4",
+        "group_name": "Chỉnh sửa Clip",
+        "js": r"""
+(function(){
+  /* F22 — Tooltip thời lượng clip */
+  const tip = document.createElement('div');
+  tip.id = 'auto-dur-tip';
+  tip.style.cssText = `
+    position:fixed;background:#1a1a1a;border:1px solid rgba(255,255,255,.18);
+    border-radius:6px;padding:5px 10px;font-size:12px;color:#f2f2f2;
+    pointer-events:none;z-index:9999;display:none;white-space:nowrap;
+    box-shadow:0 4px 12px rgba(0,0,0,.5);
+  `;
+  document.body.appendChild(tip);
+
+  function fmtTime(s) {
+    const m = Math.floor(s/60), sec = (s%60).toFixed(2).padStart(5,'0');
+    return m > 0 ? `${m}:${sec}` : `${sec}s`;
+  }
+
+  document.addEventListener('mouseover', e => {
+    const cl = e.target.closest('.clip');
+    if(!cl) { tip.style.display='none'; return; }
+    const clipId = cl.dataset.id;
+    if(!clipId || typeof tracks === 'undefined') return;
+    let found = null;
+    for(const tr of tracks) for(const c of tr.clips) if(c.id === clipId) { found = c; break; }
+    if(!found) return;
+    tip.textContent = `⏱ ${fmtTime(found.dur)}  ·  ${fmtTime(found.start)} → ${fmtTime(found.start+found.dur)}`;
+    tip.style.display = 'block';
+  });
+
+  document.addEventListener('mousemove', e => {
+    if(tip.style.display === 'none') return;
+    tip.style.left = (e.clientX + 14) + 'px';
+    tip.style.top  = (e.clientY - 36) + 'px';
+  });
+
+  document.addEventListener('mouseout', e => {
+    if(!e.target.closest('.clip')) tip.style.display = 'none';
+  });
+})();
+""",
+    },
+    {
+        "id": "F23",
+        "name": "Đếm ngược thời gian còn lại",
+        "detail": "Hiển thị thời gian còn lại của dự án (tổng - playhead) ngay cạnh timecode trên preview",
+        "group": "3",
+        "group_name": "Timeline & Zoom",
+        "js": r"""
+(function(){
+  /* F23 — Đếm ngược thời gian còn lại */
+  const style = document.createElement('style');
+  style.textContent = `
+    #auto-countdown {
+      font-size:11px;color:var(--t3);padding:0 8px;
+      border-left:1px solid var(--border2);margin-left:4px;
+      display:flex;align-items:center;gap:3px;
+    }
+    #auto-countdown span { color:var(--accent); font-variant-numeric:tabular-nums; }
+  `;
+  document.head.appendChild(style);
+
+  const cdEl = document.createElement('div');
+  cdEl.id = 'auto-countdown';
+  cdEl.innerHTML = '⏳ còn <span id="auto-cd-val">--</span>';
+
+  const tcEl = document.getElementById('tc') || document.querySelector('.preview-tc');
+  if(tcEl && tcEl.parentNode) tcEl.parentNode.insertBefore(cdEl, tcEl.nextSibling);
+
+  function fmtRemain(s) {
+    if(s <= 0) return '0s';
+    if(s < 60) return s.toFixed(1) + 's';
+    return Math.floor(s/60) + ':' + (s%60).toFixed(0).padStart(2,'0');
+  }
+
+  function updateCountdown() {
+    if(typeof playhead === 'undefined' || typeof tracks === 'undefined') return;
+    let totalDur = 0;
+    for(const tr of tracks) for(const c of tr.clips) totalDur = Math.max(totalDur, c.start + c.dur);
+    const remain = Math.max(0, totalDur - playhead);
+    const el = document.getElementById('auto-cd-val');
+    if(el) el.textContent = fmtRemain(remain);
+  }
+
+  setInterval(updateCountdown, 200);
+})();
+""",
+    },
+    {
+        "id": "F24",
+        "name": "Đánh dấu mốc thời gian (Markers)",
+        "detail": "Nhấn M để đặt marker tại playhead; marker hiển thị trên ruler timeline; click marker để seek; Delete khi chọn để xóa",
+        "group": "3",
+        "group_name": "Timeline & Zoom",
+        "js": r"""
+(function(){
+  /* F24 — Timeline Markers */
+  let markers = [];
+  let selMarker = null;
+
+  const style = document.createElement('style');
+  style.textContent = `
+    .auto-marker {
+      position:absolute;top:0;width:2px;background:var(--accent);
+      height:100%;cursor:pointer;z-index:30;transform:translateX(-1px);
+    }
+    .auto-marker::before {
+      content:'';position:absolute;top:0;left:-4px;
+      border:5px solid transparent;border-top:8px solid var(--accent);
+    }
+    .auto-marker.sel { background:#ff6b6b; }
+    .auto-marker.sel::before { border-top-color:#ff6b6b; }
+    .auto-marker-label {
+      position:absolute;top:10px;left:4px;font-size:9px;
+      color:var(--accent);white-space:nowrap;pointer-events:none;
+    }
+  `;
+  document.head.appendChild(style);
+
+  function fmtT(s) {
+    return Math.floor(s/60)+':'+(s%60).toFixed(1).padStart(4,'0');
+  }
+
+  function renderMarkers() {
+    document.querySelectorAll('.auto-marker').forEach(el => el.remove());
+    const ruler = document.getElementById('tl-ruler') || document.querySelector('.tl-ruler');
+    if(!ruler || typeof pxPerSec === 'undefined') return;
+    markers.forEach((m, i) => {
+      const el = document.createElement('div');
+      el.className = 'auto-marker' + (selMarker===i?' sel':'');
+      el.style.left = (m.t * pxPerSec) + 'px';
+      el.title = 'Marker: ' + fmtT(m.t);
+      el.innerHTML = `<div class="auto-marker-label">${fmtT(m.t)}</div>`;
+      el.onclick = e => {
+        e.stopPropagation();
+        selMarker = (selMarker === i) ? null : i;
+        if(typeof playhead !== 'undefined') {
+          window.playhead = m.t;
+          if(typeof renderAll==='function') renderAll();
+        }
+        renderMarkers();
+      };
+      ruler.appendChild(el);
+    });
+  }
+
+  document.addEventListener('keydown', e => {
+    if(e.key === 'm' || e.key === 'M') {
+      if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if(typeof playhead === 'undefined') return;
+      markers.push({t: Math.round(playhead*10)/10});
+      markers.sort((a,b) => a.t - b.t);
+      renderMarkers();
+      if(typeof toast==='function') toast('📍 Marker tại ' + fmtT(playhead));
+    }
+    if((e.key==='Delete'||e.key==='Backspace') && selMarker !== null) {
+      markers.splice(selMarker, 1);
+      selMarker = null;
+      renderMarkers();
+    }
+  });
+
+  setInterval(renderMarkers, 500);
+})();
+""",
+    },
+    {
+        "id": "F25",
+        "name": "Tốc độ phát tùy chỉnh",
+        "detail": "Slider chọn tốc độ phát 0.25x → 4x hiển thị trực tiếp trên topbar; cập nhật tất cả audio element khi phát",
+        "group": "2",
+        "group_name": "Phím tắt & Điều hướng",
+        "js": r"""
+(function(){
+  /* F25 — Tốc độ phát tùy chỉnh trên topbar */
+  const SPEEDS = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 2, 3, 4];
+  let speedIdx = 3; // 1x
+
+  const style = document.createElement('style');
+  style.textContent = `
+    #auto-speed-wrap {
+      display:flex;align-items:center;gap:6px;
+      background:var(--bg3);border:1px solid var(--border2);
+      border-radius:6px;padding:3px 8px;
+    }
+    #auto-speed-wrap label { font-size:11px;color:var(--t3); }
+    #auto-speed-val { font-size:12px;color:var(--accent);font-weight:600;min-width:32px;text-align:center; }
+    #auto-speed-slider { width:72px;accent-color:var(--accent);cursor:pointer; }
+  `;
+  document.head.appendChild(style);
+
+  const wrap = document.createElement('div');
+  wrap.id = 'auto-speed-wrap';
+  wrap.innerHTML = `
+    <label>⚡</label>
+    <input type="range" id="auto-speed-slider" min="0" max="${SPEEDS.length-1}" value="${speedIdx}" step="1">
+    <span id="auto-speed-val">1x</span>
+  `;
+
+  const topbar = document.getElementById('topbar');
+  if(topbar) {
+    const sep = document.createElement('div');
+    sep.className = 'tb-divider';
+    topbar.insertBefore(sep, topbar.lastChild);
+    topbar.insertBefore(wrap, topbar.lastChild);
+  }
+
+  function applySpeed(idx) {
+    speedIdx = idx;
+    const sp = SPEEDS[idx];
+    document.getElementById('auto-speed-val').textContent = sp + 'x';
+    // Áp dụng cho tất cả audio element đang phát
+    document.querySelectorAll('audio').forEach(a => { a.playbackRate = sp; });
+    window.__autoPlaybackRate = sp;
+    if(typeof toast==='function' && sp!==1) toast('Tốc độ: ' + sp + 'x');
+  }
+
+  document.getElementById('auto-speed-slider').addEventListener('input', e => {
+    applySpeed(parseInt(e.target.value));
+  });
+
+  // Phím tắt [ và ] để giảm/tăng tốc độ
+  document.addEventListener('keydown', e => {
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+    if(e.key==='[' && speedIdx>0) { speedIdx--; document.getElementById('auto-speed-slider').value=speedIdx; applySpeed(speedIdx); }
+    if(e.key===']' && speedIdx<SPEEDS.length-1) { speedIdx++; document.getElementById('auto-speed-slider').value=speedIdx; applySpeed(speedIdx); }
+  });
+})();
+""",
+    },
+    {
+        "id": "F26",
+        "name": "Bộ đếm clip & track",
+        "detail": "Hiển thị số lượng clip và track hiện có ở góc dưới phải timeline, cập nhật live",
+        "group": "4",
+        "group_name": "Chỉnh sửa Clip",
+        "js": r"""
+(function(){
+  /* F26 — Bộ đếm clip & track */
+  const style = document.createElement('style');
+  style.textContent = `
+    #auto-counter {
+      position:fixed;bottom:12px;right:16px;
+      background:rgba(20,20,20,.85);border:1px solid rgba(255,255,255,.1);
+      border-radius:20px;padding:4px 12px;font-size:11px;color:var(--t3);
+      z-index:100;backdrop-filter:blur(4px);pointer-events:none;
+      display:flex;gap:10px;
+    }
+    #auto-counter b { color:var(--accent); }
+  `;
+  document.head.appendChild(style);
+
+  const el = document.createElement('div');
+  el.id = 'auto-counter';
+  document.body.appendChild(el);
+
+  function update() {
+    if(typeof tracks === 'undefined') return;
+    const nTracks = tracks.length;
+    const nClips  = tracks.reduce((s,t) => s + t.clips.length, 0);
+    el.innerHTML = `<span>🎞 <b>${nTracks}</b> track</span><span>📎 <b>${nClips}</b> clip</span>`;
+  }
+
+  setInterval(update, 400);
+  update();
+})();
+""",
+    },
+    {
+        "id": "F27",
+        "name": "Phím tắt mute/unmute clip audio",
+        "detail": "Nhấn M khi đang chọn clip audio để mute/unmute, icon hiển thị trên clip, volume 0 khi mute",
+        "group": "2",
+        "group_name": "Phím tắt & Điều hướng",
+        "js": r"""
+(function(){
+  /* F27 — Mute / Unmute clip audio bằng phím M */
+  const style = document.createElement('style');
+  style.textContent = `
+    .clip.auto-muted { opacity:0.45; }
+    .clip.auto-muted::after {
+      content:'🔇';position:absolute;top:2px;right:4px;font-size:10px;
+    }
+  `;
+  document.head.appendChild(style);
+
+  const mutedSet = new Set();
+
+  document.addEventListener('keydown', e => {
+    if(e.key!=='m' && e.key!=='M') return;
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+    if(typeof selected==='undefined'||typeof tracks==='undefined') return;
+
+    // Chỉ áp dụng cho clip audio đang chọn
+    for(const id of selected) {
+      let found = null;
+      for(const tr of tracks) for(const c of tr.clips) if(c.id===id && (tr.type==='audio'||c.cls==='ca')) found=c;
+      if(!found) continue;
+
+      if(mutedSet.has(id)) {
+        mutedSet.delete(id);
+        if(typeof toast==='function') toast('🔊 Bật tiếng: ' + found.label);
+      } else {
+        mutedSet.add(id);
+        if(typeof toast==='function') toast('🔇 Tắt tiếng: ' + found.label);
+      }
+      // Cập nhật visual
+      document.querySelectorAll(`.clip[data-id="${id}"]`).forEach(el => {
+        el.classList.toggle('auto-muted', mutedSet.has(id));
+      });
+      // Mute audio element
+      document.querySelectorAll('audio').forEach(a => {
+        if(a.dataset && a.dataset.clipId === id) a.muted = mutedSet.has(id);
+      });
+    }
+  });
+})();
+""",
+    },
+    {
+        "id": "F28",
+        "name": "Thanh tiến trình Export",
+        "detail": "Khi nhấn Xuất video, hiển thị thanh tiến trình giả lập với phần trăm và thông báo hoàn thành",
+        "group": "1",
+        "group_name": "Hạ tầng & Khởi động",
+        "js": r"""
+(function(){
+  /* F28 — Thanh tiến trình Export giả lập */
+  const style = document.createElement('style');
+  style.textContent = `
+    #auto-export-modal {
+      display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);
+      z-index:9998;align-items:center;justify-content:center;
+    }
+    #auto-export-modal.show { display:flex; }
+    #auto-export-box {
+      background:var(--bg2);border:1px solid var(--border2);border-radius:12px;
+      padding:28px 36px;min-width:320px;text-align:center;
+    }
+    #auto-export-box h3 { color:var(--t1);margin-bottom:16px;font-size:15px; }
+    #auto-export-bar-wrap {
+      background:var(--bg4);border-radius:20px;height:8px;overflow:hidden;margin:12px 0;
+    }
+    #auto-export-bar {
+      height:100%;background:var(--accent);border-radius:20px;
+      transition:width .3s ease;width:0%;
+    }
+    #auto-export-pct { color:var(--accent);font-size:20px;font-weight:700;margin:8px 0; }
+    #auto-export-msg { color:var(--t3);font-size:12px; }
+    #auto-export-close {
+      margin-top:18px;background:var(--accent);color:#000;border:none;
+      border-radius:8px;padding:8px 24px;font-weight:600;cursor:pointer;
+      display:none;font-size:13px;
+    }
+  `;
+  document.head.appendChild(style);
+
+  const modal = document.createElement('div');
+  modal.id = 'auto-export-modal';
+  modal.innerHTML = `
+    <div id="auto-export-box">
+      <h3>🎬 Đang xuất video...</h3>
+      <div id="auto-export-pct">0%</div>
+      <div id="auto-export-bar-wrap"><div id="auto-export-bar"></div></div>
+      <div id="auto-export-msg">Đang chuẩn bị...</div>
+      <button id="auto-export-close" onclick="document.getElementById('auto-export-modal').classList.remove('show')">✅ Hoàn thành</button>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  const STEPS = [
+    'Đang phân tích timeline...',
+    'Xử lý video track...',
+    'Render hiệu ứng...',
+    'Encode audio...',
+    'Ghép file...',
+    'Hoàn tất!'
+  ];
+
+  function runExport() {
+    const m = document.getElementById('auto-export-modal');
+    const bar = document.getElementById('auto-export-bar');
+    const pct = document.getElementById('auto-export-pct');
+    const msg = document.getElementById('auto-export-msg');
+    const closeBtn = document.getElementById('auto-export-close');
+    m.classList.add('show');
+    bar.style.width = '0%';
+    pct.textContent = '0%';
+    closeBtn.style.display = 'none';
+    let progress = 0;
+    let stepIdx = 0;
+    const iv = setInterval(() => {
+      progress += Math.random() * 8 + 3;
+      if(progress >= 100) { progress = 100; clearInterval(iv); closeBtn.style.display='inline-block'; }
+      bar.style.width = progress + '%';
+      pct.textContent = Math.floor(progress) + '%';
+      stepIdx = Math.min(STEPS.length-1, Math.floor(progress/20));
+      msg.textContent = STEPS[stepIdx];
+    }, 180);
+  }
+
+  // Hook nút Xuất video
+  function hookExportBtn() {
+    document.querySelectorAll('button').forEach(btn => {
+      if(btn.textContent.includes('Xuất video') && !btn.dataset.autoHooked) {
+        btn.dataset.autoHooked = '1';
+        btn.addEventListener('click', e => { e.stopImmediatePropagation(); runExport(); }, true);
+      }
+    });
+  }
+  setTimeout(hookExportBtn, 800);
+  document.addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if(btn && btn.textContent.includes('Xuất video')) { e.stopImmediatePropagation(); runExport(); }
+  }, true);
+})();
+""",
+    },
+]
+
+
+def get_built_ids(md_content):
+    """Trả về set các F-ID đã build trong tientrinhhethong.md."""
+    return set(re.findall(r'\|\s*(F\d+)\s*\|', md_content))
+
+
+def pick_next_feature(md_content):
+    """Chọn tính năng tiếp theo chưa có trong MD."""
+    built = get_built_ids(md_content)
+    for feat in FEATURE_LIBRARY:
+        if feat["id"] not in built:
+            return feat
     return None
 
 
-SYSTEM_ANALYST = """Bạn là senior developer chuyên về trình chỉnh sửa video web (HTML/CSS/JS thuần).
-Nhiệm vụ: Phân tích dự án CapCut Clone và quyết định tính năng tiếp theo cần build.
-
-Nguyên tắc:
-- Ưu tiên tính năng trong Backlog (nếu có)
-- Nếu Backlog trống, đề xuất 1 tính năng mới phù hợp với dự án
-- Tính năng phải thực tế, implement được bằng JS/CSS/HTML thuần, phù hợp phong cách CapCut
-- KHÔNG trùng với bất kỳ tính năng nào đã có trong danh sách Đã hoàn thành
-- Tập trung vào UX/UI hoặc chức năng chỉnh sửa video
-
-Trả về JSON (chỉ JSON, không có markdown):
-{
-  "feature_id": "F21",
-  "feature_name": "Tên tính năng",
-  "feature_detail": "Mô tả chi tiết kỹ thuật",
-  "from_backlog": true,
-  "reasoning": "Lý do chọn"
-}"""
-
-
-SYSTEM_CODER = """Bạn là senior frontend developer chuyên HTML/CSS/JS thuần (không dùng framework).
-Nhiệm vụ: Viết code thêm tính năng mới vào CapCut Video Editor Clone.
-
-Quy tắc QUAN TRỌNG:
-- Code chạy trong browser, single-file SPA
-- CSS variables: --bg0..--bg5, --accent (#D4A017), --t1..--t4, --border
-- Prefix hàm mới bằng `auto_` để tránh xung đột
-- Gọi renderAll() sau khi thay đổi state
-- Gọi saveState() trước khi thay đổi tracks[]
-- toast(msg) để hiển thị thông báo nhỏ
-- selected (Set) = clip đang chọn; tracks[] = mảng track
-- Clip: {id, start, dur, label, cls(cs/cx/cv/ca)}
-- Code HOÀN CHỈNH, tự đứng được, không cần sửa phần còn lại
-- HTML mới: inject bằng JS (insertAdjacentHTML hoặc tương tự)
-- CSS mới: tạo <style> tag append vào document.head
-- KHÔNG dùng import/require/async top-level
-
-Trả về JSON (chỉ JSON, không có markdown):
-{
-  "js_code": "// code hoàn chỉnh...",
-  "description": "Mô tả ngắn gọn (1 câu)",
-  "usage": "Hướng dẫn dùng (1-2 câu)"
-}"""
-
-
-def call_gemini(client, system_prompt, user_prompt):
-    """Gọi Gemini API với JSON output."""
-    response = client.models.generate_content(
-        model=MODEL,
-        contents=user_prompt,
-        config=types.GenerateContentConfig(
-            system_instruction=system_prompt,
-            response_mime_type="application/json",
-            temperature=0.4,
-            max_output_tokens=3000,
-        ),
-    )
-    text = response.text.strip()
-    # Bóc markdown nếu có
-    if text.startswith("```"):
-        text = re.sub(r"^```[a-z]*\n?", "", text)
-        text = re.sub(r"\n?```$", "", text)
-    return json.loads(text)
-
-
-def analyze_and_choose_feature(client, md_content):
-    log("Đang phân tích tientrinhhethong.md và chọn tính năng...")
-    result = call_gemini(
-        client,
-        SYSTEM_ANALYST,
-        f"File tiến trình dự án:\n\n{md_content}"
-    )
-    log(f"Tính năng chọn: [{result['feature_id']}] {result['feature_name']}")
-    log(f"Lý do: {result['reasoning']}")
-    return result
-
-
-def generate_feature_code(client, feature, html_summary):
-    log(f"Đang sinh code cho: {feature['feature_name']}...")
-    prompt = f"""Tính năng:
-ID: {feature['feature_id']}
-Tên: {feature['feature_name']}
-Kỹ thuật: {feature['feature_detail']}
-
-Tóm tắt capcut.html:
-{html_summary}
-
-Code sẽ được chèn ngay trước </script> cuối cùng."""
-
-    result = call_gemini(client, SYSTEM_CODER, prompt)
-    log(f"Code xong: {result['description']}")
-    return result
-
-
-def summarize_html(html_content):
-    lines = html_content.split('\n')
-    total = len(lines)
-    head = '\n'.join(lines[:80])
-    mid  = '\n'.join(lines[total//2-30 : total//2+30])
-    tail = '\n'.join(lines[-60:])
-    return f"""=== ĐẦU (CSS vars, layout) ===
-{head}
-
-=== GIỮA (state, tracks[]) ===
-{mid}
-
-=== CUỐI (script end) ===
-{tail}
-
-=== TỔNG QUAN ===
-Tổng dòng: {total}
-State: tracks[], selected(Set), zoomIdx, nextId
-Hàm: renderAll(), saveState(), toast(), renderMinimap(), renderKFEditor()
-Phím tắt: Space(play), S(split), Del(xóa), Ctrl+Z/Y(undo/redo)
-Tracks: text(cs), effect(cx), video(cv), audio(ca)
-CSS: --accent(#D4A017), --bg0..bg5, --t1..t4"""
-
-
-def inject_code(html_content, feature, code_result):
-    js = code_result["js_code"].strip()
+def inject_code(html_content, feature):
+    js = feature["js"].strip()
     block = f"""
 /* ═══════════════════════════════════════════════════════════════
-   AUTO-BUILD: [{feature['feature_id']}] {feature['feature_name']}
-   Ngày: {TODAY} | {code_result['description']}
-   Dùng: {code_result['usage']}
+   AUTO-BUILD: [{feature['id']}] {feature['name']}
+   Ngày: {TODAY} | {feature['detail']}
    ═══════════════════════════════════════════════════════════════ */
 {js}
 """
@@ -186,51 +553,39 @@ def inject_code(html_content, feature, code_result):
     return html_content[:pos] + block + '\n</script>' + html_content[pos+len('</script>'):]
 
 
-def update_markdown(md_content, feature, code_result):
+def update_markdown(md_content, feature):
     # Ngày
     md_content = re.sub(
         r'\*\*Cập nhật lần cuối:\*\*.*',
         f'**Cập nhật lần cuối:** {TODAY}',
         md_content
     )
-    # Xóa khỏi backlog nếu từ backlog
-    if feature.get("from_backlog"):
-        md_content = re.sub(
-            rf'\|[^|]*\|[^|]*{re.escape(feature["feature_name"])}[^|]*\|[^|]*\|\n?',
-            '', md_content
-        )
-    # Reset backlog nếu trống
-    bl = re.search(r'## BACKLOG.*?(?=##|\Z)', md_content, re.DOTALL)
-    if bl:
-        rows = [l for l in bl.group(0).split('\n')
-                if l.strip().startswith('|') and '---' not in l
-                and 'Ưu tiên' not in l and '*(trống)*' not in l and l.strip() != '|']
-        if not rows:
-            md_content = re.sub(
-                r'(\| Ưu tiên \| Tính năng \| Mô tả yêu cầu \|\n\|[-| ]+\|\n).*?(\n---)',
-                r'\1| — | *(trống)* | Chưa có yêu cầu mới |\2',
-                md_content, flags=re.DOTALL
-            )
-    # Thêm vào nhóm cuối
-    groups = re.findall(r'### Nhóm (\d+)', md_content)
-    last_g = int(groups[-1]) if groups else 0
-    new_row = (f'\n| {feature["feature_id"]} | {feature["feature_name"]} '
-               f'| {code_result["description"]} · {code_result["usage"]} | {TODAY} |')
-    pat = (rf'(### Nhóm {last_g}.*?\n\| ID \| Tính năng \| Chi tiết \| Ngày \|\n'
+
+    gnum = feature["group"]
+    gname = feature["group_name"]
+    fid = feature["id"]
+    fname = feature["name"]
+    fdetail = feature["detail"]
+    new_row = f'\n| {fid} | {fname} | {fdetail} | {TODAY} |'
+
+    # Thử thêm vào nhóm đã có
+    pat = (rf'(### Nhóm {gnum}[^\n]*\n\| ID \| Tính năng \| Chi tiết \| Ngày \|\n'
            rf'\|[-| ]+\|)(.*?)(\n\n---|\n\n###|\Z)')
     m = re.search(pat, md_content, re.DOTALL)
     if m:
         md_content = md_content[:m.start(2)] + m.group(2) + new_row + md_content[m.start(3):]
     else:
+        # Tạo nhóm mới trước BACKLOG
         new_group = f"""
-### Nhóm {last_g + 1} — Tính năng Auto-Build
+### Nhóm {gnum} — {gname}
 
 | ID | Tính năng | Chi tiết | Ngày |
 |----|-----------|----------|------|
-| {feature["feature_id"]} | {feature["feature_name"]} | {code_result["description"]} · {code_result["usage"]} | {TODAY} |
+| {fid} | {fname} | {fdetail} | {TODAY} |
 
 """
         md_content = re.sub(r'(---\n\n## BACKLOG)', new_group + r'\1', md_content)
+
     return md_content
 
 
@@ -251,37 +606,33 @@ def main():
     log(f"Đọc {HTML_FILE}...")
     html_content = read_file(HTML_FILE)
 
-    api_key = get_api_key()
-    if not api_key:
-        log("⚠️  Không tìm thấy Gemini API key — bỏ qua auto-build.")
-        log("   Thêm GOOGLE_API_KEY vào Replit Secrets (key bắt đầu bằng 'AIzaSy').")
+    feature = pick_next_feature(md_content)
+    if not feature:
+        log("✅ Tất cả tính năng trong thư viện đã được build!")
+        log("   Thêm tính năng mới vào FEATURE_LIBRARY trong auto_build.py để tiếp tục.")
         sys.exit(0)
 
-    log(f"✅ Dùng Gemini API (key prefix: {api_key[:15]}...)")
-    client = genai.Client(api_key=api_key)
-
-    feature     = analyze_and_choose_feature(client, md_content)
-    code_result = generate_feature_code(client, feature, summarize_html(html_content))
+    log(f"Tính năng tiếp theo: [{feature['id']}] {feature['name']}")
+    log(f"Chi tiết: {feature['detail']}")
 
     bk_html, bk_md = html_content, md_content
     try:
         log("Chèn code vào capcut.html...")
-        write_file(HTML_FILE, inject_code(html_content, feature, code_result))
+        write_file(HTML_FILE, inject_code(html_content, feature))
         log("✅ capcut.html cập nhật")
 
         log("Cập nhật tientrinhhethong.md...")
-        write_file(MD_FILE, update_markdown(md_content, feature, code_result))
+        write_file(MD_FILE, update_markdown(md_content, feature))
         log("✅ tientrinhhethong.md cập nhật")
 
     except Exception as e:
-        log(f"LỖI: {e} — Khôi phục file gốc...")
+        log(f"LỖI: {e} — Khôi phục...")
         write_file(HTML_FILE, bk_html)
-        write_file(MD_FILE,   bk_md)
+        write_file(MD_FILE, bk_md)
         sys.exit(1)
 
     log("=" * 60)
-    log(f"✅ XONG! [{feature['feature_id']}] {feature['feature_name']}")
-    log(f"   {code_result['usage']}")
+    log(f"✅ XONG! [{feature['id']}] {feature['name']}")
     log("=" * 60)
 
 

@@ -1,6 +1,6 @@
 # TIẾN TRÌNH DỰ ÁN — CapCut Video Editor Clone
 
-**Cập nhật lần cuối:** 15/06/2026  
+**Cập nhật lần cuối:** 17/06/2026
 **Trạng thái:** Đang phát triển tích cực  
 **File chính:** `capcut.html` · **Server:** Python HTTP cổng 5000 · **UI:** Tiếng Việt
 
@@ -57,6 +57,7 @@
 | F13 | Undo/Redo thực | History stack thực (tối đa 50 bước) · `Ctrl+Z` hoàn tác · `Ctrl+Y` làm lại · dots trên topbar phản ánh trạng thái | 15/06/2026 |
 | F14 | Chọn nhiều clip | `Shift+Click` thêm vào chọn · Kéo chuột trên nền timeline để chọn vùng (rubber-band selection) | 15/06/2026 |
 | F15 | Copy / Paste | `Ctrl+C` sao chép · `Ctrl+V` dán tại vị trí playhead | 15/06/2026 |
+| F22 | Hiển thị thời lượng Clip | Tooltip hiển thị thời lượng chính xác (giây) khi hover lên clip trên timeline | 17/06/2026 |
 
 ### Nhóm 5 — Keyframe Animation
 
@@ -67,6 +68,12 @@
 | F18 | Audio Waveform thực | Upload file MP3/WAV/AAC → Web Audio API decode → 300 peak samples → vẽ canvas trên clip. Fallback pseudo-random có seed (nhất quán). Duration tự cập nhật theo file thực. Nút tải lên trong tab Âm thanh | 15/06/2026 |
 | F19 | Playback âm thanh thực | `HTMLAudioElement` pool đồng bộ với playhead · Phát/dừng cùng `Space` · Seek tức thì khi kéo ruler/phím · Drift correction mỗi 100ms · Volume `↑`/`↓` cập nhật live · Clip highlight `playing-now` khi đang phát | 15/06/2026 |
 | F20 | Lưu / Mở dự án | Xuất toàn bộ state ra file `.capcut` (JSON) · Nút Lưu/Mở trên toolbar · `Ctrl+S` lưu nhanh · Modal đặt tên dự án · Load khôi phục tracks/zoom/playhead/ratio · Cảnh báo clip audio cần upload lại | 15/06/2026 |
+
+### Nhóm 6 — Giao diện & Chủ đề
+
+| ID | Tính năng | Chi tiết | Ngày |
+|----|-----------|----------|------|
+| F21 | Đổi màu nền Timeline | Nút chuyển đổi màu nền timeline giữa 3 chủ đề: Tối (mặc định), Xanh đậm, Tím | 17/06/2026 |
 
 ---
 

@@ -19,10 +19,6 @@ author = "agent"
 task = "workflow.run"
 args = "Start application"
 
-[[workflows.workflow.tasks]]
-task = "workflow.run"
-args = "Setup API Key"
-
 [[workflows.workflow]]
 name = "Start application"
 author = "agent"
@@ -34,17 +30,6 @@ outputType = "webview"
 task = "shell.exec"
 args = "python3 auto_build.py && python3 -m http.server 5000 --bind 0.0.0.0"
 waitForPort = 5000
-
-[[workflows.workflow]]
-name = "Setup API Key"
-author = "agent"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python3 setup_api_key.py"
-
-[workflows.workflow.metadata]
-outputType = "console"
 
 [[ports]]
 localPort = 5000
