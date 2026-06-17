@@ -1080,6 +1080,8 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
         <div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:70%;height:3px;background:linear-gradient(90deg,transparent,#ff8c00,#ffb300,#ff8c00,transparent);border-radius:2px"></div>
       </div>
       <div id="ph-ground" style="height:45%;background:linear-gradient(180deg,#0d2010 0%,#050e08 100%)"></div>
+      <video id="pv-real-vid" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;z-index:1;" playsinline></video>
+      <img id="pv-real-img" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none;z-index:1;" alt="">
       <div id="pv-overlay"></div>
       <div class="pv-sub" id="ph-sub">Cảnh hoàng hôn ở bờ biển</div>
       <div class="pv-tc" id="ph-tc">00:03</div>
@@ -1667,6 +1669,51 @@ function renderAll(){
   renderMinimap();
   setTimeout(paintWaveformCanvases, 0); /* paint real waveforms after DOM update */
 }
+function updatePreviewMedia(){
+  const videoTrack = tracks.find(t => t.type === 'video');
+  const vidEl  = document.getElementById('pv-real-vid');
+  const imgEl  = document.getElementById('pv-real-img');
+  const skyEl  = document.getElementById('ph-sky');
+  const gndEl  = document.getElementById('ph-ground');
+  if(!vidEl || !imgEl) return;
+
+  let activeClip = null;
+  if(videoTrack){
+    activeClip = videoTrack.clips.find(c =>
+      c.objUrl && playhead >= c.start && playhead < c.start + c.dur
+    );
+  }
+
+  if(activeClip){
+    const isImg = /\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(activeClip.label);
+    if(isImg){
+      if(imgEl.src !== activeClip.objUrl) imgEl.src = activeClip.objUrl;
+      imgEl.style.display = 'block';
+      vidEl.style.display = 'none';
+      if(!vidEl.paused) vidEl.pause();
+    } else {
+      if(vidEl.src !== activeClip.objUrl){
+        vidEl.src = activeClip.objUrl;
+        vidEl.load();
+      }
+      vidEl.style.display = 'block';
+      imgEl.style.display = 'none';
+      const relT = Math.max(0, playhead - activeClip.start);
+      if(Math.abs(vidEl.currentTime - relT) > 0.25) vidEl.currentTime = relT;
+      if(playing && vidEl.paused) vidEl.play().catch(()=>{});
+      if(!playing && !vidEl.paused) vidEl.pause();
+    }
+    if(skyEl) skyEl.style.display = 'none';
+    if(gndEl) gndEl.style.display = 'none';
+  } else {
+    vidEl.style.display  = 'none';
+    imgEl.style.display  = 'none';
+    if(!vidEl.paused) vidEl.pause();
+    if(skyEl) skyEl.style.display = '';
+    if(gndEl) gndEl.style.display = '';
+  }
+}
+
 function updatePlayhead(){
   const x=HEAD_W+playhead*pps();
   document.getElementById('ph-line').style.left=x+'px';
@@ -1674,6 +1721,7 @@ function updatePlayhead(){
   document.getElementById('ph-tc').textContent=fmt(playhead);
   /* apply keyframes at current time for selected clip */
   if(typeof kfApplyAllActiveClips==='function') kfApplyAllActiveClips();
+  updatePreviewMedia();
 }
 
 /* ---------- DRAG TOOLTIP ---------- */
@@ -2387,6 +2435,7 @@ function togglePlay(){
   }else{
     clearInterval(playTimer);
     audioPause();
+    updatePreviewMedia();
   }
 }
 function seekStart(){ playhead=0; updatePlayhead(); audioSeek(); }
