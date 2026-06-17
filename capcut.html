@@ -376,6 +376,8 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 .clip-waveform{position:absolute;top:0;left:0;right:0;bottom:0;opacity:.22;pointer-events:none}
 .clip-waveform-canvas{position:absolute;top:0;left:0;width:100%;height:100%;opacity:.35;pointer-events:none;border-radius:inherit}
 .wf-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:rgba(255,255,255,.5);pointer-events:none;letter-spacing:.5px}
+.vol-badge{position:absolute;top:3px;right:5px;font-size:9px;font-weight:700;color:rgba(255,255,255,.85);background:rgba(0,0,0,.4);border-radius:3px;padding:1px 4px;pointer-events:none;z-index:4;display:none}
+.clip.playing-now{box-shadow:0 0 0 2px #fff inset,0 0 8px rgba(255,255,255,.3)}
 .clip-label{position:relative;z-index:1;pointer-events:none;text-overflow:ellipsis;overflow:hidden}
 .cv{background:var(--tv);color:var(--tvt)}
 .ca{background:var(--ta);color:var(--tat)}
@@ -1771,6 +1773,8 @@ function changeVolume(delta){
     const f=findClip(id); if(!f) return;
     if(f.clip.cls!=='ca') return;
     f.clip.volume=Math.max(0,Math.min(200,(f.clip.volume||100)+delta));
+    /* apply immediately to live audio element */
+    if(audioPlayers[id]) audioPlayers[id].el.volume=clipVolLevel(f.clip);
     toast('Âm lượng: '+f.clip.volume+'%');
   });
 }
@@ -1984,37 +1988,135 @@ function handleAudioUpload(input){
   const end=tr ? tr.clips.reduce((m,c)=>Math.max(m,c.start+c.dur),0) : 0;
   saveState();
   const newId='c'+(nextId++);
-  const dur=10; /* will refine after decode */
-  const clip={id:newId, start:end, dur:dur, label:'🎵 '+f.name, cls:'ca', wave:true};
+  const dur=10;
+  const objUrl=URL.createObjectURL(f);
+  const clip={id:newId, start:end, dur:dur, label:'🎵 '+f.name, cls:'ca', wave:true, audioUrl:objUrl};
   if(tr) tr.clips.push(clip);
   else tracks.push({id:'tr'+(nextId++),type:'audio',label:'Âm thanh',icon:ICONS.audio,clips:[clip]});
 
-  /* Show loading state immediately */
   renderAll();
   toast('⏳ Đang phân tích sóng âm...');
 
-  /* Analyse with Web Audio API */
   analyseAudioFile(newId, f, function(peaks){
-    if(peaks){
-      /* Update duration from actual audio length */
-      const AC2=new (window.AudioContext||window.webkitAudioContext)();
-      const reader2=new FileReader();
-      reader2.onload=function(e2){
-        AC2.decodeAudioData(e2.target.result, function(buf){
-          const realDur=Math.round(buf.duration*10)/10;
-          clip.dur=realDur;
-          AC2.close();
-          renderAll();
-          toast('✅ Sóng âm thực: "'+f.name+'" ('+fmt(realDur)+')');
-        }, function(){ AC2.close(); renderAll(); });
-      };
-      reader2.readAsArrayBuffer(f);
-    } else {
-      renderAll();
-      toast('🎵 Đã thêm "'+f.name+'" (sóng ngẫu nhiên)');
-    }
+    const AC2=new (window.AudioContext||window.webkitAudioContext)();
+    const reader2=new FileReader();
+    reader2.onload=function(e2){
+      AC2.decodeAudioData(e2.target.result, function(buf){
+        const realDur=Math.round(buf.duration*10)/10;
+        clip.dur=realDur;
+        AC2.close();
+        renderAll();
+        if(peaks) toast('✅ Sóng âm thực: "'+f.name+'" ('+fmt(realDur)+') — nhấn ▶ để phát');
+        else toast('🎵 Đã thêm "'+f.name+'" ('+fmt(realDur)+') — nhấn ▶ để phát');
+      }, function(){ AC2.close(); renderAll(); });
+    };
+    reader2.readAsArrayBuffer(f);
   });
   input.value='';
+}
+
+/* ================================================================
+   AUDIO PLAYBACK ENGINE
+   ================================================================ */
+
+/* Map: clipId → { el: HTMLAudioElement, clip } */
+const audioPlayers = {};
+
+/* Get all clips that have a real audioUrl */
+function getPlayableClips(){
+  const clips=[];
+  tracks.forEach(tr=>tr.clips.forEach(c=>{ if(c.audioUrl) clips.push(c); }));
+  return clips;
+}
+
+/* Volume level 0-1 based on clip.volume (0-200 %) */
+function clipVolLevel(c){ return Math.min(1, (c.volume||100)/100); }
+
+/* Create or get HTMLAudioElement for a clip */
+function getAudioEl(clip){
+  if(!audioPlayers[clip.id]){
+    const el=new Audio(clip.audioUrl);
+    el.preload='auto';
+    el.volume=clipVolLevel(clip);
+    audioPlayers[clip.id]={el, clip};
+  }
+  return audioPlayers[clip.id].el;
+}
+
+/* Start all audio clips whose range covers current playhead */
+function audioPlay(){
+  getPlayableClips().forEach(c=>{
+    const el=getAudioEl(c);
+    el.volume=clipVolLevel(c);
+    const relT=playhead-c.start;
+    if(relT>=0 && relT<c.dur){
+      el.currentTime=relT;
+      el.play().catch(()=>{});
+    }
+  });
+}
+
+/* Pause all playing audio */
+function audioPause(){
+  Object.values(audioPlayers).forEach(({el})=>{ if(!el.paused) el.pause(); });
+}
+
+/* Seek all audio to match playhead — called on manual seek */
+function audioSeek(){
+  getPlayableClips().forEach(c=>{
+    if(!audioPlayers[c.id]) return;
+    const el=audioPlayers[c.id].el;
+    const relT=playhead-c.start;
+    el.volume=clipVolLevel(c);
+    if(relT>=0 && relT<c.dur){
+      el.currentTime=relT;
+      if(playing && el.paused) el.play().catch(()=>{});
+    } else {
+      if(!el.paused) el.pause();
+    }
+  });
+}
+
+/* Tick: pause clips that playhead has passed, start clips just entered */
+function audioTick(){
+  getPlayableClips().forEach(c=>{
+    if(!audioPlayers[c.id]) return;
+    const el=audioPlayers[c.id].el;
+    const relT=playhead-c.start;
+    const clipEl=document.querySelector(`[data-clip="${c.id}"]`);
+    if(relT>=0 && relT<c.dur){
+      el.volume=clipVolLevel(c);
+      if(el.paused && playing) el.play().catch(()=>{});
+      /* drift correction: if off by >0.3s, re-seek */
+      if(Math.abs(el.currentTime-relT)>0.3) el.currentTime=relT;
+      if(clipEl) clipEl.classList.add('playing-now');
+    } else {
+      if(!el.paused) el.pause();
+      if(clipEl) clipEl.classList.remove('playing-now');
+    }
+  });
+}
+
+/* Clean up blob URLs and audio elements when clip is deleted */
+function disposeAudioPlayer(clipId){
+  if(audioPlayers[clipId]){
+    audioPlayers[clipId].el.pause();
+    delete audioPlayers[clipId];
+  }
+}
+
+/* Volume indicator overlay on audio clips */
+function updateVolumeBadges(){
+  document.querySelectorAll('.clip.ca').forEach(el=>{
+    const id=el.dataset.clip;
+    const found=findClip(id);
+    if(!found) return;
+    const v=found.clip.volume||100;
+    let badge=el.querySelector('.vol-badge');
+    if(!badge){ badge=document.createElement('span'); badge.className='vol-badge'; el.appendChild(badge); }
+    badge.textContent=v+'%';
+    badge.style.display=v!==100?'block':'none';
+  });
 }
 
 /* ---------- PLAYBACK ---------- */
@@ -2028,20 +2130,26 @@ function togglePlay(){
   playing=!playing;
   setPlayIcon(playing);
   if(playing){
+    audioPlay();
     playTimer=setInterval(()=>{
       playhead+=0.1;
-      if(playhead>=projectDur()){ playhead=0; }
+      if(playhead>=projectDur()){
+        playhead=0;
+        audioPause();
+      }
       updatePlayhead();
+      audioTick();
     },100);
   }else{
     clearInterval(playTimer);
+    audioPause();
   }
 }
-function seekStart(){ playhead=0; updatePlayhead(); }
-function seekEnd(){ playhead=projectDur(); updatePlayhead(); }
-function stepBack(){ playhead=Math.max(0,playhead-1); updatePlayhead(); }
-function stepFwd(){ playhead=Math.min(projectDur(),playhead+1); updatePlayhead(); }
-function seekTo(t){ playhead=t; updatePlayhead(); }
+function seekStart(){ playhead=0; updatePlayhead(); audioSeek(); }
+function seekEnd(){ playhead=projectDur(); updatePlayhead(); audioPause(); }
+function stepBack(){ playhead=Math.max(0,playhead-1); updatePlayhead(); audioSeek(); }
+function stepFwd(){ playhead=Math.min(projectDur(),playhead+1); updatePlayhead(); audioSeek(); }
+function seekTo(t){ playhead=t; updatePlayhead(); audioSeek(); }
 
 /* ---------- RULER SEEK / PLAYHEAD DRAG ---------- */
 function seekFromEvent(e){
@@ -2049,6 +2157,7 @@ function seekFromEvent(e){
   const x=e.clientX-rect.left-HEAD_W;
   playhead=Math.max(0, Math.min(x/pps(), projectDur()));
   updatePlayhead();
+  audioSeek();
 }
 document.getElementById('ruler').addEventListener('mousedown', e=>{
   seekFromEvent(e);
@@ -3052,15 +3161,15 @@ document.addEventListener('keydown',e=>{
 
   else if(e.key==='ArrowLeft'){
     e.preventDefault();
-    if(playing){ playing=false; setPlayIcon(false); clearInterval(playTimer); }
+    if(playing){ playing=false; setPlayIcon(false); clearInterval(playTimer); audioPause(); }
     playhead=Math.max(0, playhead - (e.shiftKey ? 5 : 0.1));
-    updatePlayhead(); renderMinimap();
+    updatePlayhead(); renderMinimap(); audioSeek();
   }
   else if(e.key==='ArrowRight'){
     e.preventDefault();
-    if(playing){ playing=false; setPlayIcon(false); clearInterval(playTimer); }
+    if(playing){ playing=false; setPlayIcon(false); clearInterval(playTimer); audioPause(); }
     playhead=Math.min(projectDur(), playhead + (e.shiftKey ? 5 : 0.1));
-    updatePlayhead(); renderMinimap();
+    updatePlayhead(); renderMinimap(); audioSeek();
   }
 
   /* Tính năng 3: ↑/↓ thay đổi âm lượng clip đang chọn */
