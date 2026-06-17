@@ -829,9 +829,83 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
   background:var(--bg3);border:1px solid var(--border3);border-bottom:2px solid var(--border3);
   border-radius:4px;padding:1px 6px;font-size:10px;color:var(--t2);margin:0 2px
 }
+/* ═══════════════════════════════════════════════════════
+   ADVANCED SUBTITLE ENGINE — CSS
+   ═══════════════════════════════════════════════════════ */
+
+/* Template selection grid */
+.sub-tpl-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:2px}
+.sub-tpl-item{
+  background:var(--bg2);border:2px solid var(--border);border-radius:8px;
+  padding:7px 4px 5px;cursor:pointer;text-align:center;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  transition:border-color .12s,background .12s;
+}
+.sub-tpl-item:hover{background:var(--bg3);border-color:var(--border2)}
+.sub-tpl-item.on{border-color:var(--accent);background:var(--accentdim)}
+.sub-tpl-preview{
+  font-size:8.5px;font-weight:700;padding:2px 5px;border-radius:3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;line-height:1.4
+}
+.sub-tpl-name{font-size:9px;color:var(--t2);line-height:1.2}
+.sub-tpl-item.on .sub-tpl-name{color:var(--accent2)}
+
+/* TikTok template */
+.sub-tpl-item.tpl-tiktok .sub-tpl-preview{background:#000;color:#fff;font-weight:900;text-shadow:0 0 6px #ff0050}
+.pv-sub-tiktok{background:rgba(0,0,0,.85)!important;color:#fff!important;font-weight:900!important;font-size:20px!important;border-radius:6px!important;padding:7px 16px!important;text-shadow:0 1px 6px rgba(0,0,0,.8)}
+
+/* MrBeast template */
+.sub-tpl-item.tpl-mrbeast .sub-tpl-preview{background:#ffd400;color:#000;font-weight:900;text-transform:uppercase;letter-spacing:.8px}
+.pv-sub-mrbeast{color:#ffd400!important;font-weight:900!important;font-size:22px!important;background:transparent!important;text-transform:uppercase;letter-spacing:.5px;-webkit-text-stroke:2px #000;text-shadow:3px 3px 0 #000,-3px -3px 0 #000,3px -3px 0 #000,-3px 3px 0 #000;padding:4px 10px!important}
+
+/* Podcast template */
+.sub-tpl-item.tpl-podcast .sub-tpl-preview{background:rgba(255,255,255,.08);color:#ccc;font-weight:400;border:1px solid rgba(255,255,255,.12)}
+.pv-sub-podcast{background:rgba(0,0,0,.55)!important;color:#e8e8e8!important;font-weight:400!important;font-size:13px!important;border-radius:2px!important;padding:4px 14px!important;letter-spacing:.3px}
+
+/* Netflix template */
+.sub-tpl-item.tpl-netflix .sub-tpl-preview{background:rgba(0,0,0,.9);color:#fff;border:1px solid rgba(255,255,255,.25);font-weight:600}
+.pv-sub-netflix{background:rgba(0,0,0,.88)!important;color:#fff!important;font-weight:700!important;font-size:16px!important;border-radius:3px!important;padding:5px 16px!important}
+
+/* Gaming template */
+.sub-tpl-item.tpl-gaming .sub-tpl-preview{background:#050f20;color:#00ffcc;font-weight:700;text-shadow:0 0 5px #00ffcc;border:1px solid rgba(0,255,204,.35)}
+.pv-sub-gaming{background:rgba(0,8,24,.82)!important;color:#00ffcc!important;font-weight:700!important;font-size:18px!important;text-shadow:0 0 8px #00ffcc,0 0 18px rgba(0,200,160,.5)!important;border:1px solid rgba(0,255,204,.3)!important;border-radius:4px!important;padding:5px 14px!important}
+
+/* Word-level spans */
+.sub-word{display:inline;transition:color .08s}
+.sub-word.kw{color:#ffd400;font-weight:800}
+.sub-word.wbw-active{color:#ffd400;font-weight:800;text-shadow:0 0 8px rgba(255,212,0,.6)}
+.pv-sub-tiktok .sub-word.wbw-active{color:#ff0050;text-shadow:0 0 10px rgba(255,0,80,.5)}
+.pv-sub-gaming  .sub-word.wbw-active{color:#fff;text-shadow:0 0 14px #00ffcc}
+.pv-sub-mrbeast .sub-word.wbw-active{color:#fff}
+
+/* Emoji overlay */
+#ph-sub-emoji{position:absolute;right:-10px;top:-10px;font-size:18px;pointer-events:none;z-index:10;filter:drop-shadow(0 1px 4px rgba(0,0,0,.7));display:none}
+
+/* Advanced sub-item badges */
+.adv-sub-item .sub-badges{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}
+.sub-badge{font-size:9px;padding:1px 6px;border-radius:10px;background:var(--bg4);color:var(--t3);border:1px solid var(--border)}
+.sub-badge.tpl{color:var(--accent2);border-color:var(--accentdim)}
+.sub-badge.kw-badge{color:#ffd400;border-color:rgba(255,212,0,.3);background:rgba(255,212,0,.08)}
+
+/* Emoji picker row in sub item */
+.sub-emoji-row{display:flex;flex-wrap:wrap;gap:2px;margin-top:4px;align-items:center}
+.sub-emoji-btn{cursor:pointer;font-size:13px;padding:1px 2px;border-radius:3px;opacity:.5;transition:opacity .1s}
+.sub-emoji-btn:hover,.sub-emoji-btn.on{opacity:1;background:var(--bg4)}
+
+/* Keyword input section */
+.sub-kw-row{display:flex;gap:6px;align-items:center;margin:6px 0}
+.sub-kw-input{flex:1;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;color:var(--t1);font-size:11px;padding:5px 9px;outline:none;font-family:inherit}
+.sub-kw-input:focus{border-color:var(--accent)}
+.sub-kw-add-btn{background:var(--bg4);border:1px solid var(--border2);border-radius:6px;color:var(--t1);font-size:15px;width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sub-kw-add-btn:hover{background:var(--bg5)}
+.sub-kw-tag{display:inline-flex;align-items:center;gap:4px;background:var(--accentdim);color:var(--accent2);border-radius:10px;padding:2px 8px;font-size:10px;cursor:pointer;margin:2px;border:1px solid rgba(212,160,23,.2)}
+.sub-kw-tag:hover{background:rgba(212,160,23,.25)}
+#sub-kw-tags{margin-top:4px;display:flex;flex-wrap:wrap}
+
 </style>
 <script src="/js/actions.js"></script>
 <script src="/js/ai.js" defer></script>
+<script src="/js/subtitles.js" defer></script>
 </head>
 <body>
 <div id="app">
@@ -3258,6 +3332,37 @@ const TPL_CROP = `
   <button class="exp-btn" style="margin:8px 12px" onclick="confirmCrop()">✅ Áp dụng Crop</button>`;
 
 const TPL_SUBTITLE = `
+  <div class="ps">
+    <div class="ps-title">Subtitle Templates</div>
+    <div class="sub-tpl-grid">
+      <div class="sub-tpl-item tpl-tiktok" onclick="window.SubEngine&&SubEngine.applyTemplate('tiktok',this)" title="Bold word-by-word, yellow highlight">
+        <div class="sub-tpl-preview">Hello!</div>
+        <div class="sub-tpl-name">📱 TikTok</div>
+      </div>
+      <div class="sub-tpl-item tpl-mrbeast" onclick="window.SubEngine&&SubEngine.applyTemplate('mrbeast',this)" title="ALL CAPS dramatic outline">
+        <div class="sub-tpl-preview">WOW!</div>
+        <div class="sub-tpl-name">👑 MrBeast</div>
+      </div>
+      <div class="sub-tpl-item tpl-podcast" onclick="window.SubEngine&&SubEngine.applyTemplate('podcast',this)" title="Clean minimal lower third">
+        <div class="sub-tpl-preview">Podcast</div>
+        <div class="sub-tpl-name">🎙 Podcast</div>
+      </div>
+      <div class="sub-tpl-item tpl-netflix" onclick="window.SubEngine&&SubEngine.applyTemplate('netflix',this)" title="Netflix-style black box">
+        <div class="sub-tpl-preview">Netflix</div>
+        <div class="sub-tpl-name">🎬 Netflix</div>
+      </div>
+      <div class="sub-tpl-item tpl-gaming" onclick="window.SubEngine&&SubEngine.applyTemplate('gaming',this)" title="Neon cyan glow, top position">
+        <div class="sub-tpl-preview">GG WP!</div>
+        <div class="sub-tpl-name">🎮 Gaming</div>
+      </div>
+    </div>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps" id="sub-kw-section">
+    <div class="ps-title">Keyword Highlights</div>
+    <div style="font-size:11px;color:var(--t3);line-height:1.5">Select a template above, then add words to always highlight in every subtitle.</div>
+  </div>
+  <div class="ps-div"></div>
   <div class="ps">
     <div class="ps-title">Tạo phụ đề</div>
     <div class="toggle-row"><span class="tg-lbl">Nhận diện giọng nói (ASR)</span>
