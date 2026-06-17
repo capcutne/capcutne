@@ -988,11 +988,130 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 /* Shorts toolbar button glow */
 #tb-shorts.on svg{color:var(--accent2);filter:drop-shadow(0 0 6px var(--accent))}
 
+/* ═══════════════════════════════════════════════════════
+   PROJECT SAVE SYSTEM — CSS
+   ═══════════════════════════════════════════════════════ */
+
+/* Auto-save indicator in topbar */
+.as-indicator{display:flex;align-items:center;gap:5px;padding:0 6px;flex-shrink:0}
+.as-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:background .3s}
+.as-dot.ok{background:#27ae60}
+.as-dot.saving{background:#f39c12;animation:as-pulse 1s ease-in-out infinite}
+.as-dot.err{background:#e74c3c}
+@keyframes as-pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.as-label{font-size:10px;color:var(--t3);white-space:nowrap}
+.pm-open-topbar{background:var(--bg4)!important;border-color:var(--border3)!important}
+
+/* Project Manager overlay */
+#pm-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:500;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity .18s;
+}
+#pm-overlay.open{opacity:1;pointer-events:all}
+#pm-modal{
+  background:var(--bg1);border-radius:14px;border:1px solid var(--border2);
+  width:540px;max-width:96vw;max-height:82vh;
+  display:flex;flex-direction:column;overflow:hidden;
+  box-shadow:0 20px 60px rgba(0,0,0,.7);
+  transform:translateY(8px);transition:transform .18s;
+}
+#pm-overlay.open #pm-modal{transform:translateY(0)}
+
+.pm-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 18px;border-bottom:1px solid var(--border2);flex-shrink:0;
+  font-size:14px;font-weight:600;color:var(--t1);background:var(--bg2);
+}
+.pm-header-left{display:flex;align-items:center;gap:8px}
+.pm-close{background:none;border:none;color:var(--t3);cursor:pointer;font-size:15px;padding:2px 6px;border-radius:4px;line-height:1}
+.pm-close:hover{background:var(--bg4);color:var(--t1)}
+
+.pm-save-row{
+  padding:14px 18px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;
+}
+.pm-save-field{display:flex;gap:8px;align-items:center}
+.pm-name-input{
+  flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;
+  color:var(--t1);font-size:12px;padding:7px 10px;outline:none;font-family:inherit;
+}
+.pm-name-input:focus{border-color:var(--accent)}
+.pm-save-btn{
+  padding:7px 14px;background:var(--accent);color:#000;border:none;border-radius:8px;
+  font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;
+  transition:background .12s;
+}
+.pm-save-btn:hover{background:var(--accent2)}
+.pm-autosave-row{display:flex;align-items:center;gap:5px;margin-top:8px}
+
+.pm-section-title{
+  padding:10px 18px 6px;font-size:10px;font-weight:700;color:var(--t3);
+  letter-spacing:.6px;flex-shrink:0;
+}
+
+.pm-list{
+  flex:1;overflow-y:auto;padding:0 14px 14px;
+}
+.pm-list::-webkit-scrollbar{width:4px}
+.pm-list::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px}
+.pm-empty{font-size:11px;color:var(--t3);text-align:center;padding:24px 0;line-height:1.8}
+
+/* Project cards */
+.pm-project-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:10px;
+  margin-bottom:8px;overflow:hidden;transition:border-color .12s;
+}
+.pm-project-card:hover{border-color:var(--border2)}
+.pm-card-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:11px 13px;cursor:pointer;gap:10px;
+}
+.pm-card-info{flex:1;min-width:0}
+.pm-card-name{font-size:12px;font-weight:600;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pm-card-meta{font-size:10px;color:var(--t3);margin-top:3px}
+.pm-card-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.pm-open-btn{
+  padding:4px 12px;background:var(--bg3);border:1px solid var(--border2);
+  border-radius:6px;color:var(--t1);font-size:11px;cursor:pointer;
+  transition:background .1s;
+}
+.pm-open-btn:hover{background:var(--accentdim);color:var(--accent2);border-color:var(--accentdim)}
+.pm-expand-arr{
+  font-size:9px;color:var(--t3);transition:transform .15s;display:inline-block;
+}
+.pm-project-card.expanded .pm-expand-arr{transform:rotate(90deg)}
+
+/* Version history rows */
+.pm-versions{
+  border-top:1px solid var(--border);display:none;
+  padding:6px 13px 10px;background:var(--bg1);
+}
+.pm-project-card.expanded .pm-versions{display:block}
+.pm-version-row{
+  display:flex;align-items:center;gap:8px;padding:5px 0;
+  border-bottom:1px solid var(--border);
+}
+.pm-version-row:last-child{border-bottom:none}
+.pm-ver-label{font-size:10px;font-weight:700;color:var(--accent2);width:22px;flex-shrink:0}
+.pm-ver-time{font-size:10px;color:var(--t3);width:75px;flex-shrink:0}
+.pm-ver-info{flex:1;font-size:10px;color:var(--t3)}
+.pm-ver-open{
+  padding:3px 10px;background:var(--bg3);border:1px solid var(--border2);
+  border-radius:5px;color:var(--t2);font-size:10px;cursor:pointer;
+}
+.pm-ver-open:hover{background:var(--accentdim);color:var(--accent2)}
+.pm-ver-del{
+  background:none;border:none;color:var(--t4);cursor:pointer;
+  font-size:10px;padding:2px 4px;border-radius:3px;
+}
+.pm-ver-del:hover{color:#e74c3c;background:rgba(231,76,60,.1)}
+
 </style>
 <script src="/js/actions.js"></script>
 <script src="/js/ai.js" defer></script>
 <script src="/js/subtitles.js" defer></script>
 <script src="/js/shorts.js" defer></script>
+<script src="/js/project.js" defer></script>
 </head>
 <body>
 <div id="app">
@@ -1032,7 +1151,7 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
     <svg class="ic" width="15" height="15" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
   </button>
   <button class="tb-btn" title="Phím tắt (?)" onclick="toggleKS()" style="font-size:14px;font-weight:700;color:var(--t2)">?</button>
-  <button class="tb-save" title="Lưu dự án" onclick="openSaveModal()">
+  <button class="tb-save" title="Lưu dự án (Ctrl+S)" onclick="openSaveModal()">
     <svg class="ic" width="13" height="13" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
     Lưu
   </button>
@@ -1040,6 +1159,14 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
     <svg class="ic" width="13" height="13" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
     Mở
   </button>
+  <button class="tb-save pm-open-topbar" title="Project Manager (Ctrl+Shift+S)" onclick="window.ProjectManager&&ProjectManager.openManager()">
+    <svg class="ic" width="13" height="13" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+    Projects
+  </button>
+  <div class="as-indicator" id="as-indicator">
+    <span class="as-dot ok" id="as-dot"></span>
+    <span class="as-label" id="as-label">Auto-save on</span>
+  </div>
   <input type="file" id="proj-file-input" accept=".capcut,.json" style="display:none" onchange="loadProjectFromFile(this)">
   <button class="tb-btn-label" title="Chia sẻ">
     <svg class="ic" width="14" height="14" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>
@@ -1050,6 +1177,8 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
     Xuất video
   </button>
 </div>
+
+<!-- PROJECT MANAGER MODAL (created dynamically by js/project.js) -->
 
 <!-- SAVE PROJECT MODAL -->
 <div id="save-modal-overlay">
@@ -6224,6 +6353,35 @@ window.switchRP=function(tab){
     for(let x=0;x<W;x+=step*5){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
   }
   setInterval(draw,500);draw();
+})();
+
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTO-BUILD: [F37] Tự động lưu định kỳ
+   Ngày: 17/06/2026  |  Tự động lưu dự án vào localStorage mỗi 60 giây; badge xanh xác nhận đã lưu
+   ═══════════════════════════════════════════════════════════════ */
+(function(){
+  const KEY='capcut_autosave';
+  const st=document.createElement('style');
+  st.textContent='#auto-sv{position:fixed;bottom:44px;right:16px;background:rgba(20,20,20,.85);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:3px 10px;font-size:10px;color:var(--t3);z-index:100;backdrop-filter:blur(4px);pointer-events:none;opacity:0;transition:opacity .5s;}#auto-sv.show{opacity:1;}';
+  document.head.appendChild(st);
+  const badge=document.createElement('div');badge.id='auto-sv';badge.textContent='💾 Đã lưu tự động';document.body.appendChild(badge);
+  function autoSave(){
+    try{
+      if(typeof tracks==='undefined') return;
+      const data=JSON.stringify({tracks,savedAt:Date.now()});
+      localStorage.setItem(KEY,data);
+      badge.classList.add('show');
+      setTimeout(()=>badge.classList.remove('show'),2000);
+    }catch(e){}
+  }
+  setInterval(autoSave,60000);
+  // Khôi phục gợi ý
+  try{
+    const d=localStorage.getItem(KEY);
+    if(d){const p=JSON.parse(d),ago=Math.round((Date.now()-p.savedAt)/60000);
+    if(typeof toast==='function') toast(`💾 Có autosave từ ${ago} phút trước`);}
+  }catch(e){}
 })();
 
 </script>

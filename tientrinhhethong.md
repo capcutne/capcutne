@@ -187,6 +187,13 @@
 |----|-----------|----------|------|
 | F36 | Hiển thị grid thời gian | Đường kẻ dọc mờ theo mốc thời gian trên timeline để căn chỉnh dễ hơn | 17/06/2026 |
 
+
+### Nhóm 1 — Hạ tầng & Khởi động
+
+| ID | Tính năng | Chi tiết | Ngày |
+|----|-----------|----------|------|
+| F37 | Tự động lưu định kỳ | Tự động lưu dự án vào localStorage mỗi 60 giây; badge xanh xác nhận đã lưu | 17/06/2026 |
+
 ---
 
 ## BACKLOG — TÍNH NĂNG CẦN BUILD

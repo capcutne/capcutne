@@ -13,6 +13,9 @@ import socketserver
 from pathlib import Path
 from openai import OpenAI
 
+PROJECTS_DIR = Path("projects")
+PROJECTS_DIR.mkdir(exist_ok=True)
+
 # the newest OpenAI model is "gpt-5" which was released August 7, 2025.
 # do not change this unless explicitly requested by the user
 MODEL = "gpt-5-mini"
@@ -49,7 +52,24 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/" or self.path == "":
             self.path = "/capcut.html"
+            return super().do_GET()
+        if self.path == "/project/list":
+            return self.send_json(project_list())
+        if self.path.startswith("/project/") and len(self.path) > 9:
+            pid = self.path[9:].strip("/")
+            data = project_get(pid)
+            if data:
+                return self.send_json(data)
+            return self.send_json({"error": "Not found"}, 404)
         super().do_GET()
+
+    def do_DELETE(self):
+        self.send_response(204)
+        self._cors()
+        self.end_headers()
+        if self.path.startswith("/project/") and len(self.path) > 9:
+            pid = self.path[9:].strip("/")
+            project_delete(pid)
 
     def do_POST(self):
         if self.path not in AI_PATHS:
@@ -60,6 +80,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         body = json.loads(self.rfile.read(length)) if length else {}
 
         try:
+            if self.path == "/project/save":
+                result = project_save(body)
+                return self.send_json(result)
             if self.path == "/ai/subtitle":
                 result = handle_subtitle(body)
             elif self.path == "/ai/title":
@@ -263,6 +286,45 @@ Return the actions JSON now."""
         max_completion_tokens=1024,
     )
     return json.loads(resp.choices[0].message.content)
+
+
+def project_save(body):
+    pid = body.get("id") or ("proj_" + str(int(__import__("time").time() * 1000)))
+    body["id"] = pid
+    path = PROJECTS_DIR / (pid + ".json")
+    path.write_text(json.dumps(body, ensure_ascii=False), encoding="utf-8")
+    return {"ok": True, "id": pid}
+
+
+def project_get(pid):
+    path = PROJECTS_DIR / (pid + ".json")
+    if not path.exists():
+        return None
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def project_list():
+    projects = []
+    for f in sorted(PROJECTS_DIR.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True):
+        try:
+            data = json.loads(f.read_text(encoding="utf-8"))
+            projects.append({
+                "id":          data.get("id", f.stem),
+                "name":        data.get("name", "Untitled"),
+                "createdAt":   data.get("createdAt", ""),
+                "updatedAt":   data.get("updatedAt", ""),
+                "duration":    data.get("duration", 0),
+                "trackCount":  data.get("trackCount", 0),
+            })
+        except Exception:
+            pass
+    return {"projects": projects}
+
+
+def project_delete(pid):
+    path = PROJECTS_DIR / (pid + ".json")
+    if path.exists():
+        path.unlink()
 
 
 def handle_generate_shorts(body):
