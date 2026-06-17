@@ -1112,6 +1112,7 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 <script src="/js/subtitles.js" defer></script>
 <script src="/js/shorts.js" defer></script>
 <script src="/js/project.js" defer></script>
+<script src="/js/media.js" defer></script>
 </head>
 <body>
 <div id="app">
@@ -1262,62 +1263,8 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
       <svg class="ic" width="13" height="13" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
     </button>
   </div>
-  <div class="mp-tabs">
-    <div class="mp-tab on" onclick="setMpTab(this,'video')">Video</div>
-    <div class="mp-tab" onclick="setMpTab(this,'audio')">Âm thanh</div>
-    <div class="mp-tab" onclick="setMpTab(this,'stock')">Stock</div>
-  </div>
-  <div class="mp-body" id="mp-body">
-    <button class="mp-upload" onclick="document.getElementById('vid-file-input').click()">
-      <svg class="ic" width="13" height="13" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      Tải lên ảnh / video
-    </button>
-
-    <div class="mp-section">Đã tải lên</div>
-    <div class="mp-grid" id="mp-uploaded-grid"></div>
-    <div class="mp-grid">
-      <div class="mp-card active" onclick="addVideoClipFromLib('sunset_beach.mp4',8,this)">
-        <div class="mp-thumb" style="background:linear-gradient(180deg,#0d1f3a 0%,#1a3050 40%,#2a1e08 80%,#1a1208 100%)">🌅
-          <span class="mp-thumb-tag">00:08</span>
-        </div>
-        <div class="mp-card-name">sunset_beach.mp4</div>
-      </div>
-      <div class="mp-card" onclick="addVideoClipFromLib('forest_walk.mp4',12,this)">
-        <div class="mp-thumb" style="background:linear-gradient(135deg,#1a3a2a 0%,#0e2018 100%)">🌲
-          <span class="mp-thumb-tag">00:12</span>
-        </div>
-        <div class="mp-card-name">forest_walk.mp4</div>
-      </div>
-      <div class="mp-card" onclick="addVideoClipFromLib('city_night.mp4',5,this)">
-        <div class="mp-thumb" style="background:linear-gradient(135deg,#3a2a4a 0%,#1c1530 100%)">🏙️
-          <span class="mp-thumb-tag">00:05</span>
-        </div>
-        <div class="mp-card-name">city_night.mp4</div>
-      </div>
-      <div class="mp-card" onclick="addVideoClipFromLib('coffee_shop.jpg',3,this)">
-        <div class="mp-thumb" style="background:linear-gradient(135deg,#2a3a4a 0%,#13202c 100%)">☕
-          <span class="mp-thumb-tag">00:03</span>
-        </div>
-        <div class="mp-card-name">coffee_shop.jpg</div>
-      </div>
-    </div>
-
-    <div class="mp-section">Mẫu có sẵn</div>
-    <div class="mp-grid">
-      <div class="mp-card" onclick="addVideoClipFromLib('travel_vlog_01',15,this)">
-        <div class="mp-thumb" style="background:linear-gradient(135deg,#4a2a2a 0%,#200e0e 100%)">🎬
-          <span class="mp-thumb-tag">00:15</span>
-        </div>
-        <div class="mp-card-name">travel_vlog_01</div>
-      </div>
-      <div class="mp-card" onclick="addVideoClipFromLib('product_demo',20,this)">
-        <div class="mp-thumb" style="background:linear-gradient(135deg,#2a4a3a 0%,#0e2018 100%)">🎞️
-          <span class="mp-thumb-tag">00:20</span>
-        </div>
-        <div class="mp-card-name">product_demo</div>
-      </div>
-    </div>
-  </div>
+  <!-- Managed by js/media.js — do not add static content here -->
+  <div id="mp-body" style="flex:1;display:flex;flex-direction:column;overflow:hidden;padding:0"></div>
 </div>
 
 <!-- CENTER -->
@@ -2583,45 +2530,34 @@ function _renderUploadedGrid(){
 }
 
 function handleVideoUpload(input){
+  /* Delegate to MediaManager if available */
+  if(window.MediaManager){ MediaManager.processFiles(input.files); input.value=''; return; }
   const f = input.files && input.files[0]; if(!f) return;
   const objUrl = URL.createObjectURL(f);
   const isImage = f.type.startsWith('image/');
-
   function finalize(dur, thumb){
     const uf = {name: f.name, dur: dur, objUrl: objUrl, thumb: thumb||null};
-    _uploadedFiles.unshift(uf); /* mới nhất lên đầu */
+    _uploadedFiles.unshift(uf);
     _renderUploadedGrid();
-    /* Thêm ngay vào timeline */
     addVideoClipFromLib(f.name, dur, null, objUrl);
     toast('✅ Đã tải lên "'+f.name+'" ('+fmt(dur)+')');
   }
-
   if(isImage){
-    /* Ảnh: lấy thumbnail và dùng thời lượng mặc định 5s */
     const img = new Image();
     img.onload = function(){
-      const cv = document.createElement('canvas');
-      cv.width=80; cv.height=60;
+      const cv = document.createElement('canvas'); cv.width=80; cv.height=60;
       cv.getContext('2d').drawImage(img,0,0,80,60);
-      finalize(5, cv.toDataURL());
-      URL.revokeObjectURL(objUrl); /* ảnh đã lưu trong thumb */
+      finalize(5, cv.toDataURL()); URL.revokeObjectURL(objUrl);
     };
     img.onerror = function(){ finalize(5, null); };
     img.src = objUrl;
   } else {
-    /* Video: đọc duration thực từ metadata */
     const vid = document.createElement('video');
-    vid.preload = 'metadata';
-    vid.muted = true;
-    vid.onloadedmetadata = function(){
-      const dur = Math.round((vid.duration||5)*10)/10;
-      /* Chụp frame đầu làm thumbnail */
-      vid.currentTime = Math.min(0.5, dur/2);
-    };
+    vid.preload = 'metadata'; vid.muted = true;
+    vid.onloadedmetadata = function(){ vid.currentTime = Math.min(0.5,(vid.duration||5)/2); };
     vid.onseeked = function(){
       try{
-        const cv = document.createElement('canvas');
-        cv.width=80; cv.height=60;
+        const cv = document.createElement('canvas'); cv.width=80; cv.height=60;
         cv.getContext('2d').drawImage(vid,0,0,80,60);
         finalize(Math.round((vid.duration||5)*10)/10, cv.toDataURL());
       } catch(e){ finalize(Math.round((vid.duration||5)*10)/10, null); }
@@ -2632,31 +2568,27 @@ function handleVideoUpload(input){
   input.value='';
 }
 function handleAudioUpload(input){
+  /* Delegate to MediaManager if available */
+  if(window.MediaManager){ MediaManager.processFiles(input.files); input.value=''; return; }
   const f=input.files && input.files[0]; if(!f) return;
   const tr=tracks.find(t=>t.type==='audio');
   const end=tr ? tr.clips.reduce((m,c)=>Math.max(m,c.start+c.dur),0) : 0;
   saveState();
   const newId='c'+(nextId++);
-  const dur=10;
   const objUrl=URL.createObjectURL(f);
-  const clip={id:newId, start:end, dur:dur, label:'🎵 '+f.name, cls:'ca', wave:true, audioUrl:objUrl};
+  const clip={id:newId, start:end, dur:10, label:'🎵 '+f.name, cls:'ca', wave:true, audioUrl:objUrl};
   if(tr) tr.clips.push(clip);
   else tracks.push({id:'tr'+(nextId++),type:'audio',label:'Âm thanh',icon:ICONS.audio,clips:[clip]});
-
   renderAll();
   toast('⏳ Đang phân tích sóng âm...');
-
   analyseAudioFile(newId, f, function(peaks){
     const AC2=new (window.AudioContext||window.webkitAudioContext)();
     const reader2=new FileReader();
     reader2.onload=function(e2){
       AC2.decodeAudioData(e2.target.result, function(buf){
         const realDur=Math.round(buf.duration*10)/10;
-        clip.dur=realDur;
-        AC2.close();
-        renderAll();
-        if(peaks) toast('✅ Sóng âm thực: "'+f.name+'" ('+fmt(realDur)+') — nhấn ▶ để phát');
-        else toast('🎵 Đã thêm "'+f.name+'" ('+fmt(realDur)+') — nhấn ▶ để phát');
+        clip.dur=realDur; AC2.close(); renderAll();
+        toast((peaks?'✅ Sóng âm thực: ':'🎵 Đã thêm ')+ '"'+f.name+'" ('+fmt(realDur)+') — nhấn ▶ để phát');
       }, function(){ AC2.close(); renderAll(); });
     };
     reader2.readAsArrayBuffer(f);
@@ -2851,7 +2783,8 @@ function cycleRatio(){
 }
 
 /* ---------- MEDIA PANEL ---------- */
-const MP_VIDEO = document.getElementById('mp-body').innerHTML;
+/* MP_VIDEO/MP_AUDIO/MP_STOCK are kept for backward compat but overridden by media.js */
+const MP_VIDEO = '';
 const MP_AUDIO = `
   <button class="mp-upload" onclick="document.getElementById('aud-file-input').click()" style="margin-bottom:10px">
     <svg class="ic" width="14" height="14" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
