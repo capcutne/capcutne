@@ -799,6 +799,41 @@ def pick_feature(md_content):
     return None
 
 
+def sanitize_html(html_content):
+    """
+    Quét HTML, tìm và tự sửa khai báo JS bị trùng ở global scope.
+    Khai báo đầu tiên: giữ nguyên (let X = ...)
+    Khai báo trùng tiếp theo: chuyển thành phép gán (X = ...)
+    Trả về (html_sạch, danh_sách_sửa)
+    """
+    DECL_RE = re.compile(r'^(let|const|var)\s+([A-Za-z_$][A-Za-z0-9_$]*)')
+    seen  = {}
+    fixes = []
+    lines = html_content.split('\n')
+
+    for i, line in enumerate(lines):
+        # Chỉ xét dòng không thụt lề (global scope)
+        if not line or line[0] in (' ', '\t'):
+            continue
+        m = DECL_RE.match(line)
+        if not m:
+            continue
+        kw, name = m.group(1), m.group(2)
+        if name in seen:
+            fixes.append((i + 1, name, kw, seen[name]))
+        else:
+            seen[name] = i + 1
+
+    if not fixes:
+        return html_content, []
+
+    for lineno, name, kw, first_no in fixes:
+        idx = lineno - 1
+        lines[idx] = re.sub(rf'^{kw}\s+', '', lines[idx])
+
+    return '\n'.join(lines), fixes
+
+
 def inject_code(html_content, feature):
     js = feature["js"].strip()
     block = f"""
@@ -913,10 +948,27 @@ def main():
     log(f"▶  Build: [{feature['id']}] {feature['name']}")
     log(f"   Chi tiết: {feature['detail']}")
 
+    # ── Bước 0: Kiểm tra & sửa khai báo JS trùng lặp ────────────────────────
+    log("🔍 Kiểm tra khai báo JS trùng trong capcut.html...")
+    html_content, fixes = sanitize_html(html_content)
+    if fixes:
+        for lineno, name, kw, first_no in fixes:
+            log(f"  ⚠️  Sửa dòng {lineno}: `{kw} {name}` → `{name}` (đã khai báo ở dòng {first_no})")
+        log(f"  ✅ Đã sửa {len(fixes)} khai báo trùng")
+    else:
+        log("  ✅ Không có khai báo trùng")
+
     bk_html, bk_md = html_content, md_content
     try:
         log("Chèn code vào capcut.html...")
-        write_file(HTML_FILE, inject_code(html_content, feature))
+        new_html = inject_code(html_content, feature)
+        # Chạy lại sanitize sau inject (phòng code mới có biến trùng)
+        new_html, fixes2 = sanitize_html(new_html)
+        if fixes2:
+            for lineno, name, kw, first_no in fixes2:
+                log(f"  ⚠️  [post-inject] Sửa dòng {lineno}: `{kw} {name}` → `{name}`")
+            log(f"  ✅ Post-inject: sửa thêm {len(fixes2)} khai báo trùng")
+        write_file(HTML_FILE, new_html)
         log("✅ capcut.html cập nhật")
 
         log("Cập nhật tientrinhhethong.md...")

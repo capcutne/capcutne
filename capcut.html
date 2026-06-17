@@ -5246,6 +5246,43 @@ window.switchRP=function(tab){
   setInterval(render,600);
 })();
 
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTO-BUILD: [F25] Slider tốc độ phát tùy chỉnh
+   Ngày: 17/06/2026  |  Slider 0.25x→4x trên topbar; phím [ ] để tăng/giảm tốc; áp dụng lên tất cả audio
+   ═══════════════════════════════════════════════════════════════ */
+(function(){
+  const SPEEDS=[0.25,0.5,0.75,1,1.25,1.5,2,3,4];let si=3;
+  const st=document.createElement('style');
+  st.textContent='#auto-spw{display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;}#auto-spw label{font-size:11px;color:var(--t3);}#auto-spv{font-size:12px;color:var(--accent);font-weight:600;min-width:34px;text-align:center;}#auto-sps{width:68px;accent-color:var(--accent);cursor:pointer;}';
+  document.head.appendChild(st);
+  const w=document.createElement('div');w.id='auto-spw';
+  w.innerHTML=`<label>⚡</label><input type="range" id="auto-sps" min="0" max="${SPEEDS.length-1}" value="${si}" step="1"><span id="auto-spv">1x</span>`;
+  const tb=document.getElementById('topbar');
+  if(tb){const s=document.createElement('div');s.className='tb-divider';tb.insertBefore(s,tb.lastChild);tb.insertBefore(w,tb.lastChild);}
+  function apply(i){si=i;const sp=SPEEDS[i];document.getElementById('auto-spv').textContent=sp+'x';document.querySelectorAll('audio').forEach(a=>a.playbackRate=sp);window.__autoRate=sp;if(typeof toast==='function'&&sp!==1) toast('Tốc độ: '+sp+'x');}
+  document.getElementById('auto-sps').addEventListener('input',e=>apply(parseInt(e.target.value)));
+  document.addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+    if(e.key==='['&&si>0){si--;document.getElementById('auto-sps').value=si;apply(si);}
+    if(e.key===']'&&si<SPEEDS.length-1){si++;document.getElementById('auto-sps').value=si;apply(si);}
+  });
+})();
+
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTO-BUILD: [F26] Bộ đếm Clip & Track
+   Ngày: 17/06/2026  |  Badge góc dưới phải hiển thị số track và clip hiện có, cập nhật live
+   ═══════════════════════════════════════════════════════════════ */
+(function(){
+  const st=document.createElement('style');
+  st.textContent='#auto-cnt{position:fixed;bottom:12px;right:16px;background:rgba(20,20,20,.85);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:4px 12px;font-size:11px;color:var(--t3);z-index:100;backdrop-filter:blur(4px);pointer-events:none;display:flex;gap:10px;}#auto-cnt b{color:var(--accent);}';
+  document.head.appendChild(st);
+  const el=document.createElement('div');el.id='auto-cnt';document.body.appendChild(el);
+  function upd(){if(typeof tracks==='undefined') return;const nc=tracks.reduce((s,t)=>s+t.clips.length,0);el.innerHTML=`<span>🎞 <b>${tracks.length}</b> track</span><span>📎 <b>${nc}</b> clip</span>`;}
+  setInterval(upd,400);upd();
+})();
+
 </script>
 </body>
 </html>

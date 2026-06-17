@@ -103,6 +103,20 @@
 |----|-----------|----------|------|
 | F24 | Đánh dấu mốc thời gian (Markers) | Phím M đặt marker tại playhead; hiển thị trên ruler; click để seek; Delete để xóa | 17/06/2026 |
 
+
+### Nhóm 2 — Phím tắt & Điều hướng
+
+| ID | Tính năng | Chi tiết | Ngày |
+|----|-----------|----------|------|
+| F25 | Slider tốc độ phát tùy chỉnh | Slider 0.25x→4x trên topbar; phím [ ] để tăng/giảm tốc; áp dụng lên tất cả audio | 17/06/2026 |
+
+
+### Nhóm 4 — Chỉnh sửa Clip
+
+| ID | Tính năng | Chi tiết | Ngày |
+|----|-----------|----------|------|
+| F26 | Bộ đếm Clip & Track | Badge góc dưới phải hiển thị số track và clip hiện có, cập nhật live | 17/06/2026 |
+
 ---
 
 ## BACKLOG — TÍNH NĂNG CẦN BUILD
