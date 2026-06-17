@@ -19,7 +19,7 @@ MODEL = "gpt-5-mini"
 
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-AI_PATHS = {"/ai/subtitle", "/ai/title", "/ai/describe"}
+AI_PATHS = {"/ai/subtitle", "/ai/title", "/ai/describe", "/ai/translate"}
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -65,6 +65,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 result = handle_title(body)
             elif self.path == "/ai/describe":
                 result = handle_describe(body)
+            elif self.path == "/ai/translate":
+                result = handle_translate(body)
             self.send_json(result)
         except Exception as e:
             err = str(e)
@@ -133,6 +135,41 @@ Chỉ trả JSON."""
         messages=[{"role": "user", "content": prompt}],
         response_format={"type": "json_object"},
         max_completion_tokens=256,
+    )
+    return json.loads(resp.choices[0].message.content)
+
+
+def handle_translate(body):
+    lines = body.get("lines", [])
+    src_lang = body.get("srcLang", "vi")
+    dst_lang = body.get("dstLang", "en")
+    if not lines:
+        return {"translations": []}
+
+    lang_names = {
+        "vi": "Tiếng Việt", "en": "English", "ko": "Korean (한국어)",
+        "ja": "Japanese (日本語)", "zh": "Chinese (中文)", "fr": "French",
+        "de": "German", "es": "Spanish", "th": "Thai", "id": "Indonesian",
+        "ms": "Malay", "pt": "Portuguese", "ar": "Arabic", "ru": "Russian", "hi": "Hindi"
+    }
+    src_name = lang_names.get(src_lang, src_lang)
+    dst_name = lang_names.get(dst_lang, dst_lang)
+
+    numbered = "\n".join(f"{i+1}. {line}" for i, line in enumerate(lines))
+    prompt = f"""Dịch các dòng văn bản sau từ {src_name} sang {dst_name}.
+Giữ nguyên số thứ tự. Trả về JSON:
+{{"translations": ["dòng 1 đã dịch", "dòng 2 đã dịch", ...]}}
+
+Văn bản gốc:
+{numbered}
+
+Chỉ trả JSON, không giải thích."""
+
+    resp = client.chat.completions.create(
+        model=MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+        max_completion_tokens=1024,
     )
     return json.loads(resp.choices[0].message.content)
 

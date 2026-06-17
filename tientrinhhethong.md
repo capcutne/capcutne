@@ -152,6 +152,13 @@
 |----|-----------|----------|------|
 | F31 | Nhóm chọn clip bằng Ctrl+A | Ctrl+A chọn tất cả clip; Ctrl+Shift+A bỏ chọn tất cả | 17/06/2026 |
 
+
+### Nhóm 5 — Keyframe Animation
+
+| ID | Tính năng | Chi tiết | Ngày |
+|----|-----------|----------|------|
+| F32 | Xem trước màu Bộ lọc | Hover lên thumbnail bộ lọc hiển thị tên và mô tả hiệu ứng màu trong tooltip | 17/06/2026 |
+
 ---
 
 ## BACKLOG — TÍNH NĂNG CẦN BUILD

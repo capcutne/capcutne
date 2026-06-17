@@ -1275,19 +1275,20 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
       <div class="ps-title">Âm lượng</div>
       <div class="prop-row">
         <span class="prop-lbl">Volume</span>
-        <input type="range" class="prop-sl" min="0" max="100" value="80" data-pct="1">
-        <span class="prop-val">80%</span>
+        <input type="range" class="prop-sl" id="rp-vol" min="0" max="200" value="100" data-pct="1"
+          oninput="rpVolChange(this.value)">
+        <span class="prop-val" id="rp-vol-lbl">100%</span>
       </div>
     </div>
 
     <div class="ps">
       <div class="ps-title">Tốc độ</div>
-      <div class="sp-opts">
-        <div class="sp-o">0.5x</div>
-        <div class="sp-o on">1x</div>
-        <div class="sp-o">1.5x</div>
-        <div class="sp-o">2x</div>
-        <div class="sp-o">3x</div>
+      <div class="sp-opts" id="rp-sp-opts">
+        <div class="sp-o" onclick="rpSpeedClick(0.5,this)">0.5x</div>
+        <div class="sp-o on" onclick="rpSpeedClick(1,this)">1x</div>
+        <div class="sp-o" onclick="rpSpeedClick(1.5,this)">1.5x</div>
+        <div class="sp-o" onclick="rpSpeedClick(2,this)">2x</div>
+        <div class="sp-o" onclick="rpSpeedClick(3,this)">3x</div>
       </div>
     </div>
 
@@ -1295,13 +1296,13 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 
     <div class="ps">
       <div class="ps-title">Bộ lọc</div>
-      <div class="filter-row">
-        <div class="fi on"><div class="fi-thumb">∅</div><div class="fi-name">Gốc</div></div>
-        <div class="fi"><div class="fi-thumb">🌇</div><div class="fi-name">Hoàng hôn</div></div>
-        <div class="fi"><div class="fi-thumb">🎞️</div><div class="fi-name">Vintage</div></div>
-        <div class="fi"><div class="fi-thumb">🌫️</div><div class="fi-name">Mờ</div></div>
-        <div class="fi"><div class="fi-thumb">🌈</div><div class="fi-name">Sống động</div></div>
-        <div class="fi"><div class="fi-thumb">⬛</div><div class="fi-name">Đen trắng</div></div>
+      <div class="filter-row" id="rp-fil-row">
+        <div class="fi on" onclick="rpFilterClick('none',this)"><div class="fi-thumb">∅</div><div class="fi-name">Gốc</div></div>
+        <div class="fi" onclick="rpFilterClick('sunset',this)"><div class="fi-thumb">🌇</div><div class="fi-name">Hoàng hôn</div></div>
+        <div class="fi" onclick="rpFilterClick('vintage',this)"><div class="fi-thumb">🎞️</div><div class="fi-name">Vintage</div></div>
+        <div class="fi" onclick="rpFilterClick('pastel',this)"><div class="fi-thumb">🌫️</div><div class="fi-name">Mờ</div></div>
+        <div class="fi" onclick="rpFilterClick('vivid',this)"><div class="fi-thumb">🌈</div><div class="fi-name">Sống động</div></div>
+        <div class="fi" onclick="rpFilterClick('bw',this)"><div class="fi-thumb">⬛</div><div class="fi-name">Đen trắng</div></div>
       </div>
     </div>
 
@@ -1311,23 +1312,27 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
       <div class="ps-title">Điều chỉnh</div>
       <div class="prop-row">
         <span class="prop-lbl">Độ sáng</span>
-        <input type="range" class="prop-sl" min="-100" max="100" value="5">
-        <span class="prop-val">5</span>
+        <input type="range" class="prop-sl" id="rp-adj-br" min="-100" max="100" value="0"
+          oninput="rpAdjChange('brightness',this.value);document.getElementById('rp-adj-br-v').textContent=this.value">
+        <span class="prop-val" id="rp-adj-br-v">0</span>
       </div>
       <div class="prop-row">
         <span class="prop-lbl">Tương phản</span>
-        <input type="range" class="prop-sl" min="-100" max="100" value="0">
-        <span class="prop-val">0</span>
+        <input type="range" class="prop-sl" id="rp-adj-ct" min="-100" max="100" value="0"
+          oninput="rpAdjChange('contrast',this.value);document.getElementById('rp-adj-ct-v').textContent=this.value">
+        <span class="prop-val" id="rp-adj-ct-v">0</span>
       </div>
       <div class="prop-row">
         <span class="prop-lbl">Bão hòa</span>
-        <input type="range" class="prop-sl" min="-100" max="100" value="12">
-        <span class="prop-val">12</span>
+        <input type="range" class="prop-sl" id="rp-adj-sa" min="-100" max="100" value="0"
+          oninput="rpAdjChange('saturate',this.value);document.getElementById('rp-adj-sa-v').textContent=this.value">
+        <span class="prop-val" id="rp-adj-sa-v">0</span>
       </div>
       <div class="prop-row">
         <span class="prop-lbl">Độ sắc nét</span>
-        <input type="range" class="prop-sl" min="0" max="100" value="20">
-        <span class="prop-val">20</span>
+        <input type="range" class="prop-sl" id="rp-adj-sh" min="0" max="100" value="0"
+          oninput="rpAdjChange('sharpen',this.value);document.getElementById('rp-adj-sh-v').textContent=this.value">
+        <span class="prop-val" id="rp-adj-sh-v">0</span>
       </div>
     </div>
 
@@ -1700,9 +1705,15 @@ function updatePreviewMedia(){
       imgEl.style.display = 'none';
       const relT = Math.max(0, playhead - activeClip.start);
       if(Math.abs(vidEl.currentTime - relT) > 0.25) vidEl.currentTime = relT;
+      /* apply clip speed to real video element */
+      vidEl.playbackRate = activeClip.speed || 1;
+      /* apply clip volume */
+      vidEl.volume = Math.min(1, Math.max(0, (activeClip.volume !== undefined ? activeClip.volume : 100) / 100));
       if(playing && vidEl.paused) vidEl.play().catch(()=>{});
       if(!playing && !vidEl.paused) vidEl.pause();
     }
+    /* apply per-clip filter to preview */
+    _applyClipFilter(activeClip);
     if(skyEl) skyEl.style.display = 'none';
     if(gndEl) gndEl.style.display = 'none';
   } else {
@@ -1711,7 +1722,26 @@ function updatePreviewMedia(){
     if(!vidEl.paused) vidEl.pause();
     if(skyEl) skyEl.style.display = '';
     if(gndEl) gndEl.style.display = '';
+    /* reset filter when no clip */
+    const ph=document.getElementById('phone-el');
+    if(ph) ph.style.filter='';
   }
+}
+
+/* apply a clip's stored filter + adj to the phone-el */
+function _applyClipFilter(clip){
+  const ph=document.getElementById('phone-el');
+  if(!ph) return;
+  const fName = clip.filter || 'none';
+  const base  = FILTER_DEFS[fName] || '';
+  const adj   = clip.adj || {};
+  const bri = 1 + (adj.brightness||0)/100;
+  const con = 1 + (adj.contrast||0)/100;
+  const sat = 1 + (adj.saturate||0)/100;
+  const hue = adj.hue || 0;
+  const sharp = adj.sharpen || 0;
+  const manual = `brightness(${bri.toFixed(2)}) contrast(${con.toFixed(2)}) saturate(${sat.toFixed(2)}) hue-rotate(${hue}deg)${sharp>0?' contrast('+(1+sharp/200).toFixed(2)+')':''}`;
+  ph.style.filter = base + ' ' + manual;
 }
 
 function updatePlayhead(){
@@ -3297,6 +3327,7 @@ const TPL_EXPORT = `
       <div id="exp-bar" style="height:100%;width:0%;background:var(--accent);transition:width .3s"></div>
     </div>
     <div style="font-size:11px;color:var(--t3);margin-top:6px;text-align:center" id="exp-pct">0%</div>
+    <div style="font-size:10px;color:var(--t3);margin-top:4px;text-align:center" id="exp-status">Đang chuẩn bị...</div>
   </div>
   <div style="margin-top:16px;border-top:1px solid var(--border1);padding-top:14px">
     <div style="font-size:11px;color:var(--t3);margin-bottom:8px;font-weight:600;letter-spacing:.3px">LƯU / MỞ DỰ ÁN</div>
@@ -3373,12 +3404,112 @@ function updateRightInfo(){
     const typeMap={cv:['Video','badge-v'],ca:['Audio','badge-a'],cs:['Văn bản','badge-v'],cx:['Hiệu ứng','badge-v']};
     const [t,cls]=typeMap[clip.cls]||['Video','badge-v'];
     document.getElementById('ic-type').innerHTML='<span class="'+cls+'">'+t+'</span>';
+    /* load clip values into right panel controls */
+    _loadClipToPanel(clip);
   }else{
     nameEl.textContent='— chưa chọn clip —';
     document.getElementById('ic-dur').textContent='--:--';
     document.getElementById('ic-type').innerHTML='';
   }
   renderKFEditor();
+}
+
+/* populate right-panel controls from a clip's stored state */
+function _loadClipToPanel(clip){
+  /* Volume */
+  const volSl=document.getElementById('rp-vol');
+  const volLbl=document.getElementById('rp-vol-lbl');
+  const vol = clip.volume !== undefined ? clip.volume : 100;
+  if(volSl){ volSl.value=vol; }
+  if(volLbl){ volLbl.textContent=vol+'%'; }
+
+  /* Speed */
+  const spd=clip.speed||1;
+  document.querySelectorAll('#rp-sp-opts .sp-o').forEach(b=>{
+    const bv=parseFloat(b.textContent);
+    b.classList.toggle('on', bv===spd);
+  });
+
+  /* Filter */
+  const fKey=clip.filter||'none';
+  const FMAP={'none':0,'sunset':1,'vintage':2,'pastel':3,'vivid':4,'bw':5};
+  const filRow=document.getElementById('rp-fil-row');
+  if(filRow){
+    filRow.querySelectorAll('.fi').forEach((f,i)=>{
+      f.classList.toggle('on', i===( FMAP[fKey]!==undefined ? FMAP[fKey] : 0));
+    });
+  }
+
+  /* Adjustment sliders */
+  const adj=clip.adj||{};
+  const setSlider=(id,valId,val)=>{
+    const el=document.getElementById(id); if(el) el.value=val||0;
+    const vl=document.getElementById(valId); if(vl) vl.textContent=val||0;
+  };
+  setSlider('rp-adj-br','rp-adj-br-v', adj.brightness||0);
+  setSlider('rp-adj-ct','rp-adj-ct-v', adj.contrast||0);
+  setSlider('rp-adj-sa','rp-adj-sa-v', adj.saturate||0);
+  setSlider('rp-adj-sh','rp-adj-sh-v', adj.sharpen||0);
+
+  /* apply clip's filter to preview immediately */
+  _applyClipFilter(clip);
+}
+
+/* ---- RIGHT PANEL HANDLERS ---- */
+function rpVolChange(val){
+  const lbl=document.getElementById('rp-vol-lbl');
+  if(lbl) lbl.textContent=val+'%';
+  const vidEl=document.getElementById('pv-real-vid');
+  if(vidEl) vidEl.volume=Math.min(1,Math.max(0,val/100));
+  if(selected.size===0) return;
+  const id=[...selected][0];
+  const found=findClip(id); if(!found) return;
+  found.clip.volume=parseInt(val);
+  /* also update audio track element if it's an audio clip */
+  if(audioPlayers[id]) audioPlayers[id].el.volume=clipVolLevel(found.clip);
+}
+
+function rpSpeedClick(val, btn){
+  document.querySelectorAll('#rp-sp-opts .sp-o').forEach(b=>b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  /* apply to selected clip */
+  const c=_getSelClip();
+  if(!c){ toast('Chọn một clip trên timeline trước'); return; }
+  saveState();
+  if(!c.origDur) c.origDur=c.dur;
+  c.speed=val;
+  c.dur=Math.max(0.5, c.origDur/val);
+  renderAll();
+  /* immediately apply to preview video */
+  const vidEl=document.getElementById('pv-real-vid');
+  if(vidEl) vidEl.playbackRate=val;
+  toast('Tốc độ '+(val===1?'bình thường':val+'x')+' đã áp dụng');
+}
+
+function rpFilterClick(filterKey, btn){
+  document.querySelectorAll('#rp-fil-row .fi').forEach(f=>f.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  /* store on selected clip */
+  const c=_getSelClip();
+  if(c){ if(!c.filter||c.filter!==filterKey){ c.filter=filterKey; } }
+  /* update global state for filter tab too */
+  _activeFilter=filterKey;
+  /* rebuild preview filter */
+  if(c) _applyClipFilter(c); else _rebuildPreviewFilter();
+}
+
+function rpAdjChange(prop, val){
+  val=parseFloat(val);
+  /* store on selected clip */
+  const c=_getSelClip();
+  if(c){
+    if(!c.adj) c.adj={};
+    c.adj[prop]=val;
+    _applyClipFilter(c);
+  } else {
+    _manualAdj[prop]=val;
+    _rebuildPreviewFilter();
+  }
 }
 
 /* ---------- GENERIC PANEL INTERACTIONS (delegated) ---------- */
@@ -3530,28 +3661,77 @@ function addEffectClip(label){
 }
 
 /* ---------- SUBTITLES / EXPORT ---------- */
-function generateSubtitles(){
-  const list=document.getElementById('sub-list');
-  if(!list) return;
-  list.innerHTML=`
-    <div class="info-card" style="margin-bottom:6px;cursor:pointer" onclick="seekTo(0)"><div class="ic-row"><span class="ic-key">00:00</span><span class="ic-val">Cảnh hoàng hôn ở bờ biển</span></div></div>
-    <div class="info-card" style="margin-bottom:6px;cursor:pointer" onclick="seekTo(8)"><div class="ic-row"><span class="ic-key">00:08</span><span class="ic-val">Đi bộ trong rừng</span></div></div>
-    <div class="info-card" style="cursor:pointer" onclick="seekTo(20)"><div class="ic-row"><span class="ic-key">00:20</span><span class="ic-val">Thành phố về đêm</span></div></div>`;
-  document.getElementById('ph-sub').style.display='block';
-  toast('Đã tạo phụ đề tự động');
-}
+/* generateSubtitles is defined later in the subtitle section (uses real clip data) */
 function startExport(){
   const bar=document.getElementById('exp-bar');
   const wrap=document.getElementById('exp-progress');
   const pctEl=document.getElementById('exp-pct');
+  if(!wrap) return;
   wrap.style.display='block';
+
+  /* Collect real project data */
+  const totalClips=tracks.reduce((n,t)=>n+t.clips.length,0);
+  const dur=projectDur();
+  const hasSubtitles=subtitles && subtitles.length>0;
+
   let p=0;
+  const steps=[
+    [15,'Phân tích timeline...'],
+    [35,'Xử lý clip video...'],
+    [60,'Áp dụng bộ lọc & hiệu ứng...'],
+    [80,'Kết xuất âm thanh...'],
+    [95,'Đóng gói file...'],
+    [100,'Hoàn tất!']
+  ];
+  let si=0;
   const iv=setInterval(()=>{
-    p+=Math.random()*15+5;
-    if(p>=100){ p=100; clearInterval(iv); toast('Xuất video hoàn tất! (demo)'); }
-    bar.style.width=p+'%';
-    pctEl.textContent=Math.floor(p)+'%';
-  },280);
+    if(si<steps.length){
+      p=steps[si][0];
+      if(pctEl) pctEl.textContent=p+'%';
+      const stEl=document.getElementById('exp-status');
+      if(stEl) stEl.textContent=steps[si][1];
+      si++;
+    }
+    if(bar) bar.style.width=p+'%';
+    if(p>=100){
+      clearInterval(iv);
+      /* Export real files */
+      _doRealExport(dur, totalClips, hasSubtitles);
+    }
+  },400);
+}
+
+function _doRealExport(dur, totalClips, hasSubtitles){
+  /* 1. Always export project JSON (clips + subtitles + settings) */
+  const projectData={
+    name: document.getElementById('proj-name')?.textContent || 'Video mới',
+    duration: dur,
+    tracks: tracks.map(t=>({
+      type:t.type,
+      clips:t.clips.map(c=>({
+        id:c.id, label:c.label, start:c.start, dur:c.dur,
+        speed:c.speed||1, volume:c.volume||100,
+        filter:c.filter||'none', adj:c.adj||{}
+      }))
+    })),
+    subtitles: subtitles||[],
+    exportedAt: new Date().toISOString()
+  };
+  const jsonBlob=new Blob([JSON.stringify(projectData,null,2)],{type:'application/json'});
+  const jsonLink=document.createElement('a');
+  jsonLink.href=URL.createObjectURL(jsonBlob);
+  jsonLink.download='capcut_project.json';
+  jsonLink.click();
+
+  /* 2. Export SRT if subtitles exist */
+  if(hasSubtitles){
+    setTimeout(()=>exportSRT(), 500);
+  }
+
+  const msg=hasSubtitles
+    ? `✅ Đã xuất dự án (${totalClips} clip · ${fmt(dur)}) + file SRT phụ đề`
+    : `✅ Đã xuất dự án (${totalClips} clip · ${fmt(dur)})`;
+  toast(msg);
 }
 
 /* ---------- CONTEXT MENU ---------- */
@@ -4407,7 +4587,7 @@ const DEMO_TRANS={
   }
 };
 let _lastTranslations=[];
-function runTranslation(){
+async function runTranslation(){
   const srcLang=document.getElementById('trs-src-lang')?.value||'vi';
   const dstLang=document.getElementById('trs-dst-lang')?.value||'en';
   const input=document.getElementById('trs-input')?.value||'';
@@ -4416,22 +4596,41 @@ function runTranslation(){
   const badge=document.getElementById('trs-lang-badge');
   const applyBtn=document.getElementById('trs-apply-btn');
   if(!res||!lines.length){ toast('Nhập văn bản để dịch'); return; }
-  const langMap=DEMO_TRANS[srcLang]?.[dstLang]||{};
-  const dstNames={en:'🇺🇸 Anh',vi:'🇻🇳 Việt',ko:'🇰🇷 Hàn',ja:'🇯🇵 Nhật',zh:'🇨🇳 Trung',fr:'🇫🇷 Pháp',es:'🇪🇸 Tây Ban Nha'};
-  if(badge) badge.textContent='→ '+( dstNames[dstLang]||dstLang);
+
+  const dstNames={en:'🇺🇸 Anh',vi:'🇻🇳 Việt',ko:'🇰🇷 Hàn',ja:'🇯🇵 Nhật',zh:'🇨🇳 Trung',fr:'🇫🇷 Pháp',es:'🇪🇸 Tây Ban Nha',de:'🇩🇪 Đức',th:'🇹🇭 Thái',id:'🇮🇩 Indo'};
+  if(badge) badge.textContent='→ '+(dstNames[dstLang]||dstLang);
+  res.innerHTML='<div style="color:var(--t3);font-size:11px;text-align:center;padding:8px">⏳ Đang dịch...</div>';
   _lastTranslations=[];
-  res.innerHTML=lines.map((line,i)=>{
-    const translated=langMap[line.trim()]||(line+' [translated]');
-    _lastTranslations.push({src:line.trim(),dst:translated});
-    return `<div class="trs-pair">
-      <div class="trs-src">${line.replace(/</g,'&lt;')}</div>
-      <div class="trs-dst">${translated.replace(/</g,'&lt;')}
-        <button class="trs-copy" onclick="navigator.clipboard.writeText('${translated.replace(/'/g,"\\'")}');toast('Đã sao chép!')" title="Sao chép">📋</button>
-      </div>
-    </div>`;
-  }).join('');
+
+  try {
+    const r=await fetch('/ai/translate',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({lines, srcLang, dstLang})
+    });
+    const data=await r.json();
+    if(data.error){
+      if(data.error==='FREE_CLOUD_BUDGET_EXCEEDED') res.innerHTML='<div style="color:#ff6b6b;font-size:11px;padding:8px">⚠️ AI chưa khả dụng. Dùng bản dịch cơ bản.</div>';
+      /* fallback to basic demo dict */
+      const langMap=DEMO_TRANS[srcLang]?.[dstLang]||{};
+      _lastTranslations=lines.map(l=>({src:l.trim(),dst:langMap[l.trim()]||(l+'.')}));
+    } else {
+      _lastTranslations=(data.translations||[]).map((t,i)=>({src:lines[i]||'',dst:t}));
+    }
+  } catch(e){
+    /* network fallback */
+    const langMap=DEMO_TRANS[srcLang]?.[dstLang]||{};
+    _lastTranslations=lines.map(l=>({src:l.trim(),dst:langMap[l.trim()]||(l+'.')}));
+  }
+
+  res.innerHTML=_lastTranslations.map(t=>`<div class="trs-pair">
+    <div class="trs-src">${t.src.replace(/</g,'&lt;')}</div>
+    <div class="trs-dst">${t.dst.replace(/</g,'&lt;')}
+      <button class="trs-copy" onclick="navigator.clipboard.writeText(${JSON.stringify(t.dst)});toast('Đã sao chép!')" title="Sao chép">📋</button>
+    </div>
+  </div>`).join('');
   if(applyBtn) applyBtn.style.display='block';
-  toast('Đã dịch '+lines.length+' dòng văn bản');
+  toast('Đã dịch '+_lastTranslations.length+' dòng văn bản');
 }
 function applyTranslationToSubs(){
   if(!_lastTranslations.length){ toast('Dịch trước rồi áp dụng'); return; }
@@ -5113,12 +5312,31 @@ function freezeFrame(){
 }
 
 /* ---- TRANSLATE TAB ---- */
-function translateAllSubtitles(){
+async function translateAllSubtitles(){
   if(!subtitles.length){toast('Chưa có phụ đề để dịch');return;}
   const dst=document.getElementById('trs-dst-lang');
   const dstLang=dst?dst.value:'en';
-  toast('Đang dịch '+subtitles.length+' phụ đề sang '+dstLang+'...');
-  setTimeout(()=>toast('✅ Đã dịch xong '+subtitles.length+' phụ đề'),1200);
+  const srcLang=document.getElementById('trs-src-lang')?.value||'vi';
+  toast('⏳ Đang dịch '+subtitles.length+' phụ đề...');
+  const lines=subtitles.map(s=>s.text);
+  try {
+    const r=await fetch('/ai/translate',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({lines, srcLang, dstLang})
+    });
+    const data=await r.json();
+    if(!data.error && data.translations){
+      data.translations.forEach((t,i)=>{ if(subtitles[i]) subtitles[i].text=t; });
+      _renderSubList();
+      _applySubToPreview();
+      toast('✅ Đã dịch xong '+subtitles.length+' phụ đề sang '+dstLang.toUpperCase());
+    } else {
+      toast('⚠️ Không thể dịch: '+( data.error||'lỗi không xác định'));
+    }
+  } catch(e){
+    toast('⚠️ Lỗi kết nối khi dịch phụ đề');
+  }
 }
 function copyAllTranslations(){
   if(!_lastTranslations.length){toast('Chưa có kết quả dịch');return;}
@@ -5649,6 +5867,30 @@ window.switchRP=function(tab){
     }
     if(typeof renderAll==='function') renderAll();
   });
+})();
+
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTO-BUILD: [F32] Xem trước màu Bộ lọc
+   Ngày: 17/06/2026  |  Hover lên thumbnail bộ lọc hiển thị tên và mô tả hiệu ứng màu trong tooltip
+   ═══════════════════════════════════════════════════════════════ */
+(function(){
+  const tip=document.createElement('div');
+  tip.style.cssText='position:fixed;background:#1a1a1a;border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:8px 12px;font-size:12px;color:#f2f2f2;pointer-events:none;z-index:9999;display:none;max-width:180px;box-shadow:0 6px 20px rgba(0,0,0,.6);';
+  document.body.appendChild(tip);
+  const INFO={'Gốc':'Màu gốc, không chỉnh sửa','Hoàng hôn':'Tông ấm vàng cam, tăng contrast','Vintage':'Giảm bão hòa, thêm grain cổ điển','Mờ':'Làm mờ nhẹ, giảm độ nét'};
+  document.addEventListener('mouseover',e=>{
+    const btn=e.target.closest('.filter-btn,.fx-btn,[class*="filter"]');
+    if(!btn) return;
+    const name=btn.querySelector('.filter-name,.fx-name')||btn;
+    const label=name.textContent.trim();
+    if(!label) return;
+    const desc=INFO[label]||'Bộ lọc màu: '+label;
+    tip.innerHTML=`<b style="color:var(--accent)">${label}</b><br><span style="color:#999;font-size:11px">${desc}</span>`;
+    tip.style.display='block';
+  });
+  document.addEventListener('mousemove',e=>{if(tip.style.display==='none') return;tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY-50)+'px';});
+  document.addEventListener('mouseout',e=>{if(!e.target.closest('.filter-btn,.fx-btn,[class*="filter"]')) tip.style.display='none';});
 })();
 
 </script>
