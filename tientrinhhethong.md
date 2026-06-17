@@ -66,6 +66,7 @@
 | F17 | Easing Curves | 6 loại easing: **Linear · Ease In · Ease Out · Ease In-Out · Bounce Out · Elastic** · Mỗi keyframe chọn riêng loại easing · Canvas mini vẽ đường cong thực tế theo hàm toán học | 15/06/2026 |
 | F18 | Audio Waveform thực | Upload file MP3/WAV/AAC → Web Audio API decode → 300 peak samples → vẽ canvas trên clip. Fallback pseudo-random có seed (nhất quán). Duration tự cập nhật theo file thực. Nút tải lên trong tab Âm thanh | 15/06/2026 |
 | F19 | Playback âm thanh thực | `HTMLAudioElement` pool đồng bộ với playhead · Phát/dừng cùng `Space` · Seek tức thì khi kéo ruler/phím · Drift correction mỗi 100ms · Volume `↑`/`↓` cập nhật live · Clip highlight `playing-now` khi đang phát | 15/06/2026 |
+| F20 | Lưu / Mở dự án | Xuất toàn bộ state ra file `.capcut` (JSON) · Nút Lưu/Mở trên toolbar · `Ctrl+S` lưu nhanh · Modal đặt tên dự án · Load khôi phục tracks/zoom/playhead/ratio · Cảnh báo clip audio cần upload lại | 15/06/2026 |
 
 ---
 

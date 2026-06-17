@@ -378,6 +378,26 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 .wf-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:rgba(255,255,255,.5);pointer-events:none;letter-spacing:.5px}
 .vol-badge{position:absolute;top:3px;right:5px;font-size:9px;font-weight:700;color:rgba(255,255,255,.85);background:rgba(0,0,0,.4);border-radius:3px;padding:1px 4px;pointer-events:none;z-index:4;display:none}
 .clip.playing-now{box-shadow:0 0 0 2px #fff inset,0 0 8px rgba(255,255,255,.3)}
+/* Save / Load buttons */
+.tb-save{display:flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border2);color:var(--t2);border-radius:7px;padding:5px 11px;font-size:12px;cursor:pointer;font-family:inherit;transition:background .15s,color .15s}
+.tb-save:hover{background:var(--bg4);color:var(--t1)}
+/* Project save modal */
+#save-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9000;align-items:center;justify-content:center}
+#save-modal-overlay.open{display:flex}
+#save-modal{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:24px 28px;width:360px;max-width:90vw}
+#save-modal h2{font-size:15px;font-weight:700;color:var(--t1);margin:0 0 16px}
+.sm-field{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+.sm-label{font-size:11px;color:var(--t3);font-weight:600;letter-spacing:.4px;text-transform:uppercase}
+.sm-input{background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--t1);padding:8px 11px;font-size:13px;font-family:inherit;outline:none}
+.sm-input:focus{border-color:var(--accent)}
+.sm-row{display:flex;gap:8px;margin-top:4px}
+.sm-btn{flex:1;padding:9px;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit}
+.sm-btn-primary{background:var(--accent);color:#000}
+.sm-btn-primary:hover{filter:brightness(1.1)}
+.sm-btn-secondary{background:var(--bg3);color:var(--t2);border:1px solid var(--border2)}
+.sm-btn-secondary:hover{background:var(--bg4)}
+.sm-info{font-size:10.5px;color:var(--t3);line-height:1.6;margin-top:8px}
+.sm-warn{color:#e8a045;font-size:10.5px;margin-top:6px;line-height:1.5}
 .clip-label{position:relative;z-index:1;pointer-events:none;text-overflow:ellipsis;overflow:hidden}
 .cv{background:var(--tv);color:var(--tvt)}
 .ca{background:var(--ta);color:var(--tat)}
@@ -728,6 +748,15 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
     <svg class="ic" width="15" height="15" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
   </button>
   <button class="tb-btn" title="Phím tắt (?)" onclick="toggleKS()" style="font-size:14px;font-weight:700;color:var(--t2)">?</button>
+  <button class="tb-save" title="Lưu dự án" onclick="openSaveModal()">
+    <svg class="ic" width="13" height="13" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+    Lưu
+  </button>
+  <button class="tb-save" title="Mở dự án" onclick="document.getElementById('proj-file-input').click()">
+    <svg class="ic" width="13" height="13" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+    Mở
+  </button>
+  <input type="file" id="proj-file-input" accept=".capcut,.json" style="display:none" onchange="loadProjectFromFile(this)">
   <button class="tb-btn-label" title="Chia sẻ">
     <svg class="ic" width="14" height="14" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>
     Chia sẻ
@@ -736,6 +765,26 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
     <svg class="ic" width="14" height="14" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
     Xuất video
   </button>
+</div>
+
+<!-- SAVE PROJECT MODAL -->
+<div id="save-modal-overlay">
+  <div id="save-modal">
+    <h2>💾 Lưu dự án</h2>
+    <div class="sm-field">
+      <span class="sm-label">Tên dự án</span>
+      <input class="sm-input" id="sm-proj-name" type="text" placeholder="Ví dụ: video_quang_cao_01">
+    </div>
+    <div class="sm-info">
+      Dự án được lưu dạng file <strong>.capcut</strong> (JSON) trên máy của bạn.<br>
+      Mở lại bằng nút <strong>Mở</strong> trên thanh công cụ.
+    </div>
+    <div class="sm-warn">⚠ File âm thanh đã tải lên sẽ không được lưu kèm — cần upload lại khi mở dự án.</div>
+    <div class="sm-row" style="margin-top:16px">
+      <button class="sm-btn sm-btn-secondary" onclick="closeSaveModal()">Hủy</button>
+      <button class="sm-btn sm-btn-primary" onclick="saveProjectConfirm()">💾 Lưu xuống máy</button>
+    </div>
+  </div>
 </div>
 
 <!-- MAIN -->
@@ -2486,6 +2535,20 @@ const TPL_EXPORT = `
       <div id="exp-bar" style="height:100%;width:0%;background:var(--accent);transition:width .3s"></div>
     </div>
     <div style="font-size:11px;color:var(--t3);margin-top:6px;text-align:center" id="exp-pct">0%</div>
+  </div>
+  <div style="margin-top:16px;border-top:1px solid var(--border1);padding-top:14px">
+    <div style="font-size:11px;color:var(--t3);margin-bottom:8px;font-weight:600;letter-spacing:.3px">LƯU / MỞ DỰ ÁN</div>
+    <div style="display:flex;gap:8px">
+      <button class="sm-btn sm-btn-secondary" style="flex:1;font-size:12px" onclick="openSaveModal()">
+        💾 Lưu dự án (.capcut)
+      </button>
+      <button class="sm-btn sm-btn-secondary" style="flex:1;font-size:12px" onclick="document.getElementById('proj-file-input').click()">
+        📂 Mở dự án
+      </button>
+    </div>
+    <div style="font-size:10px;color:var(--t3);margin-top:8px;line-height:1.6">
+      Phím tắt: <kbd style="background:var(--bg3);padding:1px 5px;border-radius:3px;font-size:10px">Ctrl+S</kbd> để lưu nhanh
+    </div>
   </div>`;
 
 /* ---------- TOOL / TAB SWITCHING ---------- */
@@ -3088,6 +3151,127 @@ document.addEventListener('click',function(e){
 /* Re-render editor when property selector changes */
 document.addEventListener('change',function(e){
   if(e.target.id==='kf-prop-sel') renderKFEditor();
+});
+
+/* ================================================================
+   SAVE / LOAD PROJECT  (F20)
+   ================================================================ */
+
+const PROJECT_VERSION = '1.1';
+
+function openSaveModal(){
+  const inp=document.getElementById('sm-proj-name');
+  if(inp && !inp.value){
+    const titleEl=document.getElementById('proj-title');
+    inp.value=(titleEl?titleEl.textContent:'').trim()||'du_an_capcut';
+  }
+  document.getElementById('save-modal-overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('sm-proj-name')?.focus(),80);
+}
+function closeSaveModal(){
+  document.getElementById('save-modal-overlay').classList.remove('open');
+}
+document.getElementById('save-modal-overlay').addEventListener('click',function(e){
+  if(e.target===this) closeSaveModal();
+});
+
+/* Serialise tracks — strip blob audioUrls (not portable) */
+function serialiseTracks(){
+  return JSON.parse(JSON.stringify(tracks)).map(tr=>({
+    ...tr,
+    clips: tr.clips.map(c=>{
+      const {audioUrl, ...rest}=c;
+      if(audioUrl) rest._hadAudio=true; /* flag so user knows to re-upload */
+      return rest;
+    })
+  }));
+}
+
+function saveProjectConfirm(){
+  const nameEl=document.getElementById('sm-proj-name');
+  const name=(nameEl?nameEl.value.trim():'')||'du_an_capcut';
+  const titleEl=document.getElementById('proj-title');
+  if(titleEl) titleEl.textContent=name;
+
+  const payload={
+    version: PROJECT_VERSION,
+    name,
+    savedAt: new Date().toISOString(),
+    playhead,
+    zoomIdx,
+    ratio,
+    nextId,
+    tracks: serialiseTracks(),
+  };
+
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=name.replace(/[^a-zA-Z0-9_\-]/g,'_')+'.capcut';
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),2000);
+
+  closeSaveModal();
+  toast('💾 Đã lưu "'+name+'.capcut"');
+}
+
+/* Load project from .capcut file */
+function loadProjectFromFile(input){
+  const f=input.files&&input.files[0]; if(!f) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const payload=JSON.parse(e.target.result);
+      if(!payload.tracks||!Array.isArray(payload.tracks)){
+        toast('❌ File không hợp lệ'); return;
+      }
+
+      /* restore state */
+      audioPause();
+      Object.keys(audioPlayers).forEach(id=>disposeAudioPlayer(id));
+      Object.keys(wfCache).forEach(k=>delete wfCache[k]);
+
+      tracks=payload.tracks;
+      if(typeof payload.playhead==='number') playhead=payload.playhead;
+      if(typeof payload.zoomIdx==='number') zoomIdx=payload.zoomIdx;
+      if(payload.ratio) ratio=payload.ratio;
+      if(typeof payload.nextId==='number') nextId=payload.nextId;
+
+      /* update project name */
+      const titleEl=document.getElementById('proj-title');
+      if(titleEl && payload.name) titleEl.textContent=payload.name;
+
+      /* reset history */
+      historyStack=[];
+      historyIdx=-1;
+      selected.clear();
+
+      renderAll();
+      updateRightInfo();
+      updateHistDots();
+
+      /* warn about audio clips */
+      const audioCount=tracks.reduce((s,tr)=>s+tr.clips.filter(c=>c._hadAudio).length,0);
+      if(audioCount>0){
+        toast('📂 Đã mở "'+payload.name+'" — '+audioCount+' clip audio cần upload lại');
+      } else {
+        toast('📂 Đã mở dự án "'+payload.name+'"');
+      }
+    }catch(err){
+      toast('❌ Lỗi đọc file: '+err.message);
+    }
+  };
+  reader.readAsText(f);
+  input.value='';
+}
+
+/* Quick save shortcut: Ctrl+S */
+document.addEventListener('keydown',function(e){
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'&&!e.shiftKey){
+    e.preventDefault();
+    openSaveModal();
+  }
 });
 
 /* ---------- AI GENERATE ---------- */
