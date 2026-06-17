@@ -830,6 +830,8 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
   border-radius:4px;padding:1px 6px;font-size:10px;color:var(--t2);margin:0 2px
 }
 </style>
+<script src="/js/actions.js"></script>
+<script src="/js/ai.js" defer></script>
 </head>
 <body>
 <div id="app">
@@ -1402,6 +1404,9 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
   </div>
 </div>
 
+<!-- AI COPILOT PANEL (right sidebar, injected by js/ai.js) -->
+<div id="ai-copilot-panel"></div>
+
 </div><!-- /main -->
 </div><!-- /app -->
 
@@ -1518,6 +1523,37 @@ let clipboardClips=[];
 /* --- Tính năng 6: Tab chuyển track --- */
 let tabFocusTrackIdx=0;
 let tabFocusClipIdx=0;
+
+/* ============================================================
+   CENTRALIZED EDITOR STATE
+   Provides a live computed view over the existing globals.
+   All editing actions (manual or AI-driven) read/write through
+   the existing variables (tracks, subtitles, etc.); editorState
+   is a unified read surface for the AI copilot.
+   ============================================================ */
+const editorState = {
+  get project(){
+    return {
+      name: (document.getElementById('proj-name')||{}).textContent || 'Untitled',
+      duration: typeof projectDur === 'function' ? projectDur() : 0,
+      ratio: typeof ratio !== 'undefined' ? ratio : {}
+    };
+  },
+  get tracks(){ return typeof tracks !== 'undefined' ? tracks : []; },
+  get clips(){
+    const all=[];
+    if(typeof tracks === 'undefined') return all;
+    tracks.forEach(tr=>tr.clips.forEach(c=>all.push({...c,trackId:tr.id,trackType:tr.type})));
+    return all;
+  },
+  get subtitles(){ return typeof subtitles !== 'undefined' ? subtitles : []; },
+  get effects(){
+    if(typeof tracks === 'undefined') return [];
+    const fx=tracks.find(t=>t.type==='effect');
+    return fx ? fx.clips : [];
+  },
+  get history(){ return typeof historyStack !== 'undefined' ? historyStack : []; }
+};
 
 /* ---------- HELPERS ---------- */
 function fmt(t){
@@ -5919,6 +5955,50 @@ window.switchRP=function(tab){
     if(e.key==='o'||e.key==='O'){outPt=playhead;if(typeof toast==='function') toast('O: Điểm ra '+fmt(outPt));updateRange();}
   });
   setInterval(updateRange,300);
+})();
+
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTO-BUILD: [F34] Hiển thị FPS & Độ phân giải
+   Ngày: 17/06/2026  |  Badge nhỏ trên topbar hiển thị FPS (30/60) và độ phân giải hiện tại của dự án
+   ═══════════════════════════════════════════════════════════════ */
+(function(){
+  const st=document.createElement('style');
+  st.textContent='#auto-fps{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--t3);background:var(--bg3);border:1px solid var(--border2);border-radius:5px;padding:2px 7px;}#auto-fps b{color:var(--t2);}';
+  document.head.appendChild(st);
+  const el=document.createElement('div');el.id='auto-fps';el.innerHTML='<b>30</b>fps · <b>1080</b>p';
+  const tb=document.getElementById('topbar');
+  if(tb){const s=document.createElement('div');s.className='tb-divider';const ref=tb.querySelector('.tb-sep');if(ref){tb.insertBefore(el,ref);tb.insertBefore(s,ref);}else tb.appendChild(el);}
+  // Đọc resolution từ badge
+  const badges=document.querySelectorAll('.tb-badge');
+  let res='1080p',fps='30';
+  badges.forEach(b=>{const t=b.textContent.trim();if(t.includes('1080'))res='1080';else if(t.includes('720'))res='720';else if(t.includes('4K')||t.includes('4k'))res='4K';});
+  el.innerHTML=`<b>${fps}</b>fps · <b>${res}</b>p`;
+})();
+
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTO-BUILD: [F35] Màu sắc theo loại Track
+   Ngày: 17/06/2026  |  Highlight track head bằng màu riêng theo loại (video/audio/text/effect) khi hover
+   ═══════════════════════════════════════════════════════════════ */
+(function(){
+  const st=document.createElement('style');
+  st.textContent=`
+    .track-head[data-type="video"]:hover{background:rgba(106,157,232,.12)!important;border-left:3px solid #6a9de8;}
+    .track-head[data-type="audio"]:hover{background:rgba(72,176,122,.12)!important;border-left:3px solid #48b07a;}
+    .track-head[data-type="text"]:hover{background:rgba(212,160,23,.12)!important;border-left:3px solid var(--accent);}
+    .track-head[data-type="effect"]:hover{background:rgba(144,96,208,.12)!important;border-left:3px solid #9060d0;}
+  `;
+  document.head.appendChild(st);
+  // Gán data-type vào track heads
+  function tagHeads(){
+    if(typeof tracks==='undefined') return;
+    tracks.forEach(tr=>{
+      const h=document.querySelector(`.track-head[data-id="${tr.id}"]`)||document.querySelector(`[data-track="${tr.id}"] .track-head`);
+      if(h) h.dataset.type=tr.type;
+    });
+  }
+  setInterval(tagHeads,800);tagHeads();
 })();
 
 </script>

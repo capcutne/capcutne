@@ -17,9 +17,10 @@ from openai import OpenAI
 # do not change this unless explicitly requested by the user
 MODEL = "gpt-5-mini"
 
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+_api_key = os.environ.get("OPENAI_API_KEY")
+client = OpenAI(api_key=_api_key) if _api_key else None
 
-AI_PATHS = {"/ai/subtitle", "/ai/title", "/ai/describe", "/ai/translate"}
+AI_PATHS = {"/ai/subtitle", "/ai/title", "/ai/describe", "/ai/translate", "/ai/editor-command"}
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -67,6 +68,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 result = handle_describe(body)
             elif self.path == "/ai/translate":
                 result = handle_translate(body)
+            elif self.path == "/ai/editor-command":
+                result = handle_editor_command(body)
             self.send_json(result)
         except Exception as e:
             err = str(e)
@@ -77,7 +80,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.send_json({"error": err}, 500)
 
 
+def _require_client():
+    if client is None:
+        raise ValueError("OPENAI_API_KEY is not set. Add it in the Secrets tab to enable AI features.")
+
+
 def handle_subtitle(body):
+    _require_client()
     clips = body.get("clips", [])
     lang = body.get("lang", "vi")
     if not clips:
@@ -107,6 +116,7 @@ Mỗi phụ đề tối đa 10 từ. Chỉ trả JSON, không giải thích thê
 
 
 def handle_title(body):
+    _require_client()
     clips = body.get("clips", [])
     labels = ", ".join(c.get("label", "") for c in clips[:10])
     if not labels:
@@ -125,6 +135,7 @@ Chỉ trả JSON."""
 
 
 def handle_describe(body):
+    _require_client()
     label = body.get("label", "video")
     prompt = f"""Mô tả cảnh video ngắn gọn bằng tiếng Việt cho clip có tên: "{label}".
 Trả về JSON: {{"description": "mô tả 1-2 câu sinh động"}}
@@ -140,6 +151,7 @@ Chỉ trả JSON."""
 
 
 def handle_translate(body):
+    _require_client()
     lines = body.get("lines", [])
     src_lang = body.get("srcLang", "vi")
     dst_lang = body.get("dstLang", "en")
@@ -168,6 +180,83 @@ Chỉ trả JSON, không giải thích."""
     resp = client.chat.completions.create(
         model=MODEL,
         messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+        max_completion_tokens=1024,
+    )
+    return json.loads(resp.choices[0].message.content)
+
+
+def handle_editor_command(body):
+    _require_client()
+    prompt = body.get("prompt", "").strip()
+    state  = body.get("editorState", {})
+
+    if not prompt:
+        return {"actions": []}
+
+    # Build a compact summary of the current timeline for the AI
+    clips_summary = []
+    for tr in state.get("tracks", []):
+        for c in tr.get("clips", []):
+            clips_summary.append(
+                f"  [{tr.get('type','?')}] id={c.get('id','?')} "
+                f"label=\"{c.get('label','')}\" "
+                f"start={c.get('start',0)}s dur={c.get('dur',0)}s"
+            )
+
+    subs_summary = [
+        f"  id={s.get('id','?')} start={s.get('start',0)}s "
+        f"dur={s.get('dur',3)}s text=\"{s.get('text','')}\""
+        for s in state.get("subtitles", [])[:10]
+    ]
+
+    timeline_text = "\n".join(clips_summary) if clips_summary else "  (empty timeline)"
+    subs_text     = "\n".join(subs_summary)  if subs_summary  else "  (no subtitles)"
+    playhead      = state.get("playhead", 0)
+
+    system_prompt = """You are an AI video editing assistant.
+The user tells you what they want to do with their video project.
+You must respond with ONLY a JSON object containing an "actions" array.
+
+Each action has a "type" and a "params" object.
+Supported action types and their params:
+
+cut_clip      — { "clipId"?: str, "newStart"?: number, "newEnd"?: number }
+delete_clip   — { "clipId"?: str }
+split_clip    — { "time"?: number, "clipId"?: str }
+add_subtitle  — { "start": number, "dur": number, "text": str }
+remove_silence— { "threshold"?: number (0-1) }
+create_short  — { "duration"?: number (seconds, default 30) }
+apply_style   — { "style": str, "clipId"?: str }
+
+Rules:
+- Return ONLY a JSON object like: {"actions": [...]}
+- Do NOT modify the timeline directly — only return actions.
+- Omit params you don't need; the engine has sensible defaults.
+- For add_subtitle, generate realistic subtitle text based on clip labels.
+- For create_short without a specified duration, default to 30 seconds.
+- If the request is ambiguous, pick the most reasonable interpretation.
+- If the request cannot map to any action, return {"actions": []} with a brief
+  "message" field explaining why.
+"""
+
+    user_message = f"""Current editor state:
+Playhead: {playhead}s
+Timeline clips:
+{timeline_text}
+Current subtitles:
+{subs_text}
+
+User request: {prompt}
+
+Return the actions JSON now."""
+
+    resp = client.chat.completions.create(
+        model=MODEL,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user",   "content": user_message},
+        ],
         response_format={"type": "json_object"},
         max_completion_tokens=1024,
     )

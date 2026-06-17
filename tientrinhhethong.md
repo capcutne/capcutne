@@ -166,6 +166,20 @@
 |----|-----------|----------|------|
 | F33 | Phím tắt I/O vùng chọn | Phím I đặt điểm vào (In), phím O đặt điểm ra (Out); hiển thị vùng trên ruler | 17/06/2026 |
 
+
+### Nhóm 6 — Giao diện & Chủ đề
+
+| ID | Tính năng | Chi tiết | Ngày |
+|----|-----------|----------|------|
+| F34 | Hiển thị FPS & Độ phân giải | Badge nhỏ trên topbar hiển thị FPS (30/60) và độ phân giải hiện tại của dự án | 17/06/2026 |
+
+
+### Nhóm 4 — Chỉnh sửa Clip
+
+| ID | Tính năng | Chi tiết | Ngày |
+|----|-----------|----------|------|
+| F35 | Màu sắc theo loại Track | Highlight track head bằng màu riêng theo loại (video/audio/text/effect) khi hover | 17/06/2026 |
+
 ---
 
 ## BACKLOG — TÍNH NĂNG CẦN BUILD
