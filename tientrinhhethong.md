@@ -117,6 +117,13 @@
 |----|-----------|----------|------|
 | F26 | Bộ đếm Clip & Track | Badge góc dưới phải hiển thị số track và clip hiện có, cập nhật live | 17/06/2026 |
 
+
+### Nhóm 2 — Phím tắt & Điều hướng
+
+| ID | Tính năng | Chi tiết | Ngày |
+|----|-----------|----------|------|
+| F27 | Mute / Unmute clip audio | Phím M khi chọn clip audio để mute/unmute; icon 🔇 hiển thị trên clip | 17/06/2026 |
+
 ---
 
 ## BACKLOG — TÍNH NĂNG CẦN BUILD

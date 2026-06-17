@@ -981,6 +981,7 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
     </button>
 
     <div class="mp-section">Đã tải lên</div>
+    <div class="mp-grid" id="mp-uploaded-grid"></div>
     <div class="mp-grid">
       <div class="mp-card active" onclick="addVideoClipFromLib('sunset_beach.mp4',8,this)">
         <div class="mp-thumb" style="background:linear-gradient(180deg,#0d1f3a 0%,#1a3050 40%,#2a1e08 80%,#1a1208 100%)">🌅
@@ -2125,11 +2126,12 @@ document.getElementById('minimap').addEventListener('mousedown',function(e){
 });
 
 /* ---------- ADD MEDIA TO TIMELINE ---------- */
-function addVideoClipFromLib(label,dur,cardEl){
+function addVideoClipFromLib(label,dur,cardEl,objUrl){
   saveState();
   const tr=tracks.find(t=>t.type==='video');
   const end=tr.clips.reduce((m,c)=>Math.max(m,c.start+c.dur),0);
   const c={id:'c'+(nextId++),start:end,dur:dur,label:label,cls:'cv'};
+  if(objUrl) c.objUrl=objUrl;
   tr.clips.push(c);
   selected.clear(); selected.add(c.id);
   if(cardEl){
@@ -2147,9 +2149,81 @@ function addAudioClipFromLib(label,dur){
   renderAll();
   toast('Đã thêm "'+label+'" vào track âm thanh');
 }
+/* ── Danh sách file đã tải lên (để render lại khi cần) ── */
+const _uploadedFiles = [];
+
+function _renderUploadedGrid(){
+  const grid = document.getElementById('mp-uploaded-grid');
+  if(!grid) return;
+  grid.innerHTML = '';
+  _uploadedFiles.forEach(function(uf){
+    const card = document.createElement('div');
+    card.className = 'mp-card';
+    card.title = uf.name + ' · ' + fmt(uf.dur);
+    card.innerHTML =
+      '<div class="mp-thumb" style="background:linear-gradient(135deg,#1e2a3a 0%,#0d151e 100%)">' +
+        (uf.thumb
+          ? '<img src="'+uf.thumb+'" style="width:100%;height:100%;object-fit:cover;border-radius:5px;">'
+          : '🎬') +
+        '<span class="mp-thumb-tag">'+fmt(uf.dur)+'</span>' +
+      '</div>' +
+      '<div class="mp-card-name">'+uf.name+'</div>';
+    card.onclick = function(){
+      document.querySelectorAll('.mp-card').forEach(function(x){x.classList.remove('active');});
+      card.classList.add('active');
+      addVideoClipFromLib(uf.name, uf.dur, card, uf.objUrl);
+    };
+    grid.appendChild(card);
+  });
+}
+
 function handleVideoUpload(input){
-  const f=input.files && input.files[0]; if(!f) return;
-  addVideoClipFromLib(f.name,5);
+  const f = input.files && input.files[0]; if(!f) return;
+  const objUrl = URL.createObjectURL(f);
+  const isImage = f.type.startsWith('image/');
+
+  function finalize(dur, thumb){
+    const uf = {name: f.name, dur: dur, objUrl: objUrl, thumb: thumb||null};
+    _uploadedFiles.unshift(uf); /* mới nhất lên đầu */
+    _renderUploadedGrid();
+    /* Thêm ngay vào timeline */
+    addVideoClipFromLib(f.name, dur, null, objUrl);
+    toast('✅ Đã tải lên "'+f.name+'" ('+fmt(dur)+')');
+  }
+
+  if(isImage){
+    /* Ảnh: lấy thumbnail và dùng thời lượng mặc định 5s */
+    const img = new Image();
+    img.onload = function(){
+      const cv = document.createElement('canvas');
+      cv.width=80; cv.height=60;
+      cv.getContext('2d').drawImage(img,0,0,80,60);
+      finalize(5, cv.toDataURL());
+      URL.revokeObjectURL(objUrl); /* ảnh đã lưu trong thumb */
+    };
+    img.onerror = function(){ finalize(5, null); };
+    img.src = objUrl;
+  } else {
+    /* Video: đọc duration thực từ metadata */
+    const vid = document.createElement('video');
+    vid.preload = 'metadata';
+    vid.muted = true;
+    vid.onloadedmetadata = function(){
+      const dur = Math.round((vid.duration||5)*10)/10;
+      /* Chụp frame đầu làm thumbnail */
+      vid.currentTime = Math.min(0.5, dur/2);
+    };
+    vid.onseeked = function(){
+      try{
+        const cv = document.createElement('canvas');
+        cv.width=80; cv.height=60;
+        cv.getContext('2d').drawImage(vid,0,0,80,60);
+        finalize(Math.round((vid.duration||5)*10)/10, cv.toDataURL());
+      } catch(e){ finalize(Math.round((vid.duration||5)*10)/10, null); }
+    };
+    vid.onerror = function(){ finalize(5, null); };
+    vid.src = objUrl;
+  }
   input.value='';
 }
 function handleAudioUpload(input){
@@ -5281,6 +5355,32 @@ window.switchRP=function(tab){
   const el=document.createElement('div');el.id='auto-cnt';document.body.appendChild(el);
   function upd(){if(typeof tracks==='undefined') return;const nc=tracks.reduce((s,t)=>s+t.clips.length,0);el.innerHTML=`<span>🎞 <b>${tracks.length}</b> track</span><span>📎 <b>${nc}</b> clip</span>`;}
   setInterval(upd,400);upd();
+})();
+
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTO-BUILD: [F27] Mute / Unmute clip audio
+   Ngày: 17/06/2026  |  Phím M khi chọn clip audio để mute/unmute; icon 🔇 hiển thị trên clip
+   ═══════════════════════════════════════════════════════════════ */
+(function(){
+  const st=document.createElement('style');
+  st.textContent='.clip.auto-muted{opacity:0.4;}.clip.auto-muted::after{content:"🔇";position:absolute;top:2px;right:4px;font-size:10px;}';
+  document.head.appendChild(st);
+  const muted=new Set();
+  document.addEventListener('keydown',e=>{
+    if(e.key!=='m'&&e.key!=='M') return;
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+    if(typeof selected==='undefined'||typeof tracks==='undefined') return;
+    for(const id of selected){
+      let found=null;
+      for(const tr of tracks) for(const c of tr.clips) if(c.id===id&&(tr.type==='audio'||c.cls==='ca')){found=c;break;}
+      if(!found) continue;
+      muted.has(id)?muted.delete(id):muted.add(id);
+      document.querySelectorAll(`.clip[data-id="${id}"]`).forEach(el=>el.classList.toggle('auto-muted',muted.has(id)));
+      document.querySelectorAll('audio').forEach(a=>{if(a.dataset&&a.dataset.clipId===id) a.muted=muted.has(id);});
+      if(typeof toast==='function') toast(muted.has(id)?'🔇 Tắt tiếng: '+found.label:'🔊 Bật tiếng: '+found.label);
+    }
+  });
 })();
 
 </script>
