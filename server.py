@@ -20,7 +20,7 @@ MODEL = "gpt-5-mini"
 _api_key = os.environ.get("OPENAI_API_KEY")
 client = OpenAI(api_key=_api_key) if _api_key else None
 
-AI_PATHS = {"/ai/subtitle", "/ai/title", "/ai/describe", "/ai/translate", "/ai/editor-command"}
+AI_PATHS = {"/ai/subtitle", "/ai/title", "/ai/describe", "/ai/translate", "/ai/editor-command", "/ai/generate-shorts"}
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -70,6 +70,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 result = handle_translate(body)
             elif self.path == "/ai/editor-command":
                 result = handle_editor_command(body)
+            elif self.path == "/ai/generate-shorts":
+                result = handle_generate_shorts(body)
             self.send_json(result)
         except Exception as e:
             err = str(e)
@@ -261,6 +263,83 @@ Return the actions JSON now."""
         max_completion_tokens=1024,
     )
     return json.loads(resp.choices[0].message.content)
+
+
+def handle_generate_shorts(body):
+    _require_client()
+    state      = body.get("editorState", {})
+    total_dur  = float(state.get("totalDuration", 0))
+
+    clips_lines = []
+    for tr in state.get("tracks", []):
+        for c in tr.get("clips", []):
+            s   = float(c.get("start", 0))
+            dur = float(c.get("dur", 0))
+            clips_lines.append(
+                f'  [{tr.get("type","?")}] "{c.get("label","")}"  {s:.1f}s → {s+dur:.1f}s  ({dur:.1f}s)'
+            )
+
+    subs_lines = [
+        f'  {float(s.get("start",0)):.1f}s: "{s.get("text","")}"'
+        for s in state.get("subtitles", [])[:20]
+    ]
+
+    timeline_text = "\n".join(clips_lines)  if clips_lines  else "  (empty)"
+    subs_text     = "\n".join(subs_lines)   if subs_lines   else "  (none)"
+
+    prompt = f"""You are a viral content strategist and professional video editor.
+Analyze the following video timeline and return the TOP 10 most viral-worthy short segments.
+
+VIDEO TIMELINE  (total: {total_dur:.1f}s)
+{timeline_text}
+
+SUBTITLES
+{subs_text}
+
+Score each candidate 0.0–1.0 using these criteria:
+  • Hook strength — how engaging are the first 3 seconds?
+  • Emotional arc — does it tell a mini story?
+  • Content density — lots happening, no dead air
+  • Completeness — has a clear start + end
+  • Platform fit — strong for TikTok / Reels / YouTube Shorts
+
+Return ONLY valid JSON:
+{{
+  "shorts": [
+    {{
+      "title":  "Catchy viral title (max 8 words)",
+      "start":  <number — start time in seconds>,
+      "end":    <number — end time within {total_dur:.1f}s>,
+      "score":  <float 0.0–1.0>,
+      "hook":   "One sentence on why the first 3s grab attention",
+      "reason": "One sentence on overall viral potential"
+    }}
+  ]
+}}
+
+Rules:
+- Exactly up to 10 shorts, sorted score DESC
+- Each short: 15 – 60 seconds long
+- Shorts may overlap — pick the best windows
+- All start/end values must be between 0 and {total_dur:.1f}
+- If the entire video is ≤60s, include it as one of the candidates
+- If the timeline is empty return a few demo shorts within 30s total
+- Make titles punchy, platform-native (no quotes inside the title field)"""
+
+    resp = client.chat.completions.create(
+        model=MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+        max_completion_tokens=2048,
+    )
+    result = json.loads(resp.choices[0].message.content)
+    # Clamp scores
+    for s in result.get("shorts", []):
+        s["score"] = round(max(0.0, min(1.0, float(s.get("score", 0.5)))), 2)
+        s["start"] = round(max(0.0, float(s.get("start", 0))), 2)
+        s["end"]   = round(min(float(total_dur) if total_dur else 999,
+                               float(s.get("end", 30))), 2)
+    return result
 
 
 if __name__ == "__main__":

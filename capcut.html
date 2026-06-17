@@ -902,10 +902,97 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 .sub-kw-tag:hover{background:rgba(212,160,23,.25)}
 #sub-kw-tags{margin-top:4px;display:flex;flex-wrap:wrap}
 
+/* ═══════════════════════════════════════════════════════
+   AI SHORTS GENERATOR — CSS
+   ═══════════════════════════════════════════════════════ */
+
+#shorts-panel{
+  position:fixed;top:48px;right:0;width:380px;height:calc(100vh - 48px);
+  background:var(--bg1);border-left:1px solid var(--border2);
+  display:flex;flex-direction:column;z-index:300;
+  transform:translateX(100%);transition:transform .22s cubic-bezier(.4,0,.2,1);
+  box-shadow:-4px 0 24px rgba(0,0,0,.5);
+}
+#shorts-panel.open{transform:translateX(0)}
+
+.sg-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 14px;border-bottom:1px solid var(--border2);flex-shrink:0;
+  background:var(--bg2);
+}
+.sg-header-left{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--accent2)}
+.sg-close{background:none;border:none;color:var(--t3);cursor:pointer;font-size:14px;padding:2px 6px;border-radius:4px;line-height:1}
+.sg-close:hover{background:var(--bg4);color:var(--t1)}
+
+.sg-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+.sg-body::-webkit-scrollbar{width:4px}
+.sg-body::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px}
+
+.sg-intro{font-size:11px;color:var(--t3);line-height:1.6;padding:2px 0}
+
+.sg-generate-btn{
+  width:100%;padding:10px 14px;background:var(--accent);color:#000;
+  border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  transition:background .15s,transform .1s;flex-shrink:0;
+}
+.sg-generate-btn:hover{background:var(--accent2);transform:translateY(-1px)}
+.sg-generate-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+.sg-status{font-size:11px;padding:7px 10px;border-radius:6px;line-height:1.5}
+.sg-status-info{background:rgba(106,157,232,.12);color:#6a9de8;border:1px solid rgba(106,157,232,.2)}
+.sg-status-ok{background:rgba(39,174,96,.1);color:#48b07a;border:1px solid rgba(72,176,122,.2)}
+.sg-status-warn{background:rgba(192,57,43,.1);color:#e74c3c;border:1px solid rgba(231,76,60,.2)}
+
+.sg-results{display:flex;flex-direction:column;gap:10px}
+.sg-empty{font-size:11px;color:var(--t3);text-align:center;padding:20px 0}
+
+.sg-card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:10px;
+  padding:11px 12px;display:flex;flex-direction:column;gap:7px;
+  transition:border-color .12s;
+}
+.sg-card:hover{border-color:var(--border3)}
+
+.sg-card-top{display:flex;align-items:flex-start;gap:8px}
+.sg-card-rank{
+  flex-shrink:0;width:22px;height:22px;border-radius:50%;
+  background:var(--bg4);color:var(--t3);font-size:9px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;margin-top:1px;
+}
+.sg-card-title{flex:1;font-size:12px;font-weight:600;color:var(--t1);line-height:1.4}
+.sg-card-score{flex-shrink:0;font-size:12px;font-weight:700;color:var(--accent2)}
+
+.sg-card-meta{display:flex;flex-wrap:wrap;gap:5px}
+.sg-tag{
+  font-size:10px;padding:2px 7px;border-radius:10px;
+  background:var(--bg3);color:var(--t2);border:1px solid var(--border);
+}
+
+.sg-score-bar{height:4px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.sg-score-fill{height:100%;border-radius:2px;transition:width .4s}
+.sg-score-fill.high{background:linear-gradient(90deg,#27ae60,#2ecc71)}
+.sg-score-fill.mid{background:linear-gradient(90deg,#f39c12,#f1c40f)}
+.sg-score-fill.low{background:linear-gradient(90deg,#c0392b,#e74c3c)}
+
+.sg-hook{font-size:10.5px;color:var(--t2);font-style:italic;line-height:1.5;border-left:2px solid var(--accentdim);padding-left:8px}
+.sg-reason{font-size:10px;color:var(--t3);line-height:1.5}
+
+.sg-apply-btn{
+  width:100%;padding:7px;background:var(--bg3);border:1px solid var(--border2);
+  border-radius:7px;color:var(--t2);font-size:11px;cursor:pointer;font-family:inherit;
+  transition:background .12s,color .12s;margin-top:2px;
+}
+.sg-apply-btn:hover{background:var(--accentdim);color:var(--accent2);border-color:var(--accentdim)}
+
+/* Shorts toolbar button glow */
+#tb-shorts.on svg{color:var(--accent2);filter:drop-shadow(0 0 6px var(--accent))}
+
 </style>
 <script src="/js/actions.js"></script>
 <script src="/js/ai.js" defer></script>
 <script src="/js/subtitles.js" defer></script>
+<script src="/js/shorts.js" defer></script>
 </head>
 <body>
 <div id="app">
@@ -1034,6 +1121,11 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
   <button class="tb" onclick="setTool(this,'export')">
     <svg class="ic" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
     <span>Xuất</span>
+  </button>
+  <div class="lsb-sep"></div>
+  <button class="tb" id="tb-shorts" onclick="setTool(this,'shorts')" title="AI Shorts Generator — find viral segments">
+    <svg class="ic" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+    <span>Shorts</span>
   </button>
 </div>
 
@@ -6104,6 +6196,34 @@ window.switchRP=function(tab){
     });
   }
   setInterval(tagHeads,800);tagHeads();
+})();
+
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTO-BUILD: [F36] Hiển thị grid thời gian
+   Ngày: 17/06/2026  |  Đường kẻ dọc mờ theo mốc thời gian trên timeline để căn chỉnh dễ hơn
+   ═══════════════════════════════════════════════════════════════ */
+(function(){
+  const st=document.createElement('style');
+  st.textContent='#auto-grid-canvas{position:absolute;top:0;left:0;pointer-events:none;z-index:1;opacity:0.18;}';
+  document.head.appendChild(st);
+  const tlScroll=document.getElementById('tl-scroll')||document.querySelector('.tl-scroll');
+  if(!tlScroll) return;
+  const canvas=document.createElement('canvas');canvas.id='auto-grid-canvas';
+  tlScroll.style.position='relative';tlScroll.appendChild(canvas);
+  function draw(){
+    if(typeof pxPerSec==='undefined') return;
+    const W=tlScroll.scrollWidth,H=tlScroll.clientHeight;
+    canvas.width=W;canvas.height=H;
+    const ctx=canvas.getContext('2d');
+    ctx.clearRect(0,0,W,H);
+    ctx.strokeStyle='#ffffff';ctx.lineWidth=1;
+    const step=pxPerSec; // 1 giây
+    for(let x=0;x<W;x+=step){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    ctx.lineWidth=2;
+    for(let x=0;x<W;x+=step*5){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  }
+  setInterval(draw,500);draw();
 })();
 
 </script>

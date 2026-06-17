@@ -180,6 +180,13 @@
 |----|-----------|----------|------|
 | F35 | Màu sắc theo loại Track | Highlight track head bằng màu riêng theo loại (video/audio/text/effect) khi hover | 17/06/2026 |
 
+
+### Nhóm 3 — Timeline & Zoom
+
+| ID | Tính năng | Chi tiết | Ngày |
+|----|-----------|----------|------|
+| F36 | Hiển thị grid thời gian | Đường kẻ dọc mờ theo mốc thời gian trên timeline để căn chỉnh dễ hơn | 17/06/2026 |
+
 ---
 
 ## BACKLOG — TÍNH NĂNG CẦN BUILD
