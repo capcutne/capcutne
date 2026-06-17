@@ -1727,7 +1727,7 @@ let tracks=[
 
 let selected=new Set();
 let playhead=3;
-let playing=false, playTimer=null;
+let playing=false, playTimer=null, _rafId=null, _rafLastTs=0;
 let ratio={label:'9:16',w:216,h:384,res:'1080×1920'};
 let pvZoom=100;
 let activeTool='edit';
@@ -1980,9 +1980,12 @@ function updatePreviewMedia(){
       vidEl.style.display = 'block';
       imgEl.style.display = 'none';
       const relT = Math.max(0, playhead - activeClip.start);
-      if(Math.abs(vidEl.currentTime - relT) > 0.25) vidEl.currentTime = relT;
-      /* apply clip speed to real video element */
-      vidEl.playbackRate = activeClip.speed || 1;
+      /* apply speed first so tolerance is calculated correctly */
+      const clipSpd = activeClip.speed || 1;
+      vidEl.playbackRate = clipSpd;
+      /* allow more drift at higher speeds — video element is authoritative during playback */
+      const syncTol = playing ? Math.max(0.2, 0.15 * clipSpd) : 0.05;
+      if(Math.abs(vidEl.currentTime - relT) > syncTol) vidEl.currentTime = relT;
       /* apply clip volume */
       vidEl.volume = Math.min(1, Math.max(0, (activeClip.volume !== undefined ? activeClip.volume : 100) / 100));
       if(playing && vidEl.paused) vidEl.play().catch(()=>{});
@@ -2709,22 +2712,46 @@ function setPlayIcon(isPlaying){
     ? '<rect x="5" y="3" width="5" height="18" rx="1" style="fill:#000;stroke:none"/><rect x="14" y="3" width="5" height="18" rx="1" style="fill:#000;stroke:none"/>'
     : '<polygon points="5 3 19 12 5 21 5 3" style="fill:#000;stroke:none"/>';
 }
+function _getActiveSpeed(){
+  const vt=tracks.find(t=>t.type==='video');
+  if(!vt) return 1;
+  const c=vt.clips.find(c=>playhead>=c.start && playhead<c.start+c.dur);
+  return (c&&c.speed>0) ? c.speed : 1;
+}
+
+function _rafTick(ts){
+  if(!playing){ _rafId=null; return; }
+  if(_rafLastTs){
+    const dt=Math.min((ts-_rafLastTs)/1000, 0.1); // cap at 100ms to handle tab switching
+    const speed=_getActiveSpeed();
+    playhead+=dt*speed;
+    if(playhead>=projectDur()){
+      playhead=0;
+      playing=false;
+      setPlayIcon(false);
+      audioPause();
+      updatePlayhead();
+      _rafId=null;
+      return;
+    }
+    updatePlayhead();
+    audioTick();
+  }
+  _rafLastTs=ts;
+  _rafId=requestAnimationFrame(_rafTick);
+}
+
 function togglePlay(){
   playing=!playing;
   setPlayIcon(playing);
   if(playing){
     audioPlay();
-    playTimer=setInterval(()=>{
-      playhead+=0.1;
-      if(playhead>=projectDur()){
-        playhead=0;
-        audioPause();
-      }
-      updatePlayhead();
-      audioTick();
-    },100);
+    _rafLastTs=0;
+    if(_rafId) cancelAnimationFrame(_rafId);
+    _rafId=requestAnimationFrame(_rafTick);
   }else{
-    clearInterval(playTimer);
+    if(_rafId){ cancelAnimationFrame(_rafId); _rafId=null; }
+    clearInterval(playTimer); // keep for safety
     audioPause();
     updatePreviewMedia();
   }
