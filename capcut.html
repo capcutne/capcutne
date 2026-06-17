@@ -408,6 +408,74 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 .sm-btn-secondary:hover{background:var(--bg4)}
 .sm-info{font-size:10.5px;color:var(--t3);line-height:1.6;margin-top:8px}
 .sm-warn{color:#e8a045;font-size:10.5px;margin-top:6px;line-height:1.5}
+/* ========== EXPANDED TAB CSS ========== */
+/* Category tab pills */
+.cat-tabs{display:flex;gap:4px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;margin-bottom:10px}
+.cat-tabs::-webkit-scrollbar{display:none}
+.cat-tab{flex-shrink:0;background:var(--bg3);border:1px solid var(--border1);border-radius:20px;padding:4px 12px;font-size:11px;color:var(--t2);cursor:pointer;white-space:nowrap;transition:all .15s}
+.cat-tab.on{background:var(--accent);color:#000;border-color:var(--accent);font-weight:700}
+/* EQ bars */
+.eq-row{display:flex;align-items:flex-end;gap:5px;height:80px;background:var(--bg3);border-radius:8px;padding:8px 10px;margin:6px 0}
+.eq-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1;height:100%;gap:4px}
+.eq-bar-sl{writing-mode:vertical-lr;direction:rtl;width:20px;flex:1;accent-color:var(--accent);cursor:pointer}
+.eq-label{font-size:9px;color:var(--t3);text-align:center;line-height:1;white-space:nowrap}
+/* Text preset grid */
+.txt-preset-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:6px}
+.txt-preset{background:var(--bg3);border:1px solid var(--border1);border-radius:8px;padding:10px 8px;cursor:pointer;text-align:center;transition:all .15s;min-height:42px;display:flex;align-items:center;justify-content:center}
+.txt-preset:hover{border-color:var(--accent)}
+.txt-preset.on{border-color:var(--accent);background:rgba(232,200,64,.1)}
+/* Sticker categories */
+.stk-big{font-size:26px;margin-bottom:3px;display:block}
+.stk-cat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
+.stk-cat-item{background:var(--bg3);border:1px solid var(--border1);border-radius:7px;padding:6px 2px;text-align:center;font-size:20px;cursor:pointer;transition:all .15s}
+.stk-cat-item:hover{border-color:var(--accent);transform:scale(1.1)}
+/* Beat sync grid */
+.beat-grid{display:flex;gap:3px;height:32px;align-items:flex-end;background:var(--bg3);border-radius:6px;padding:4px 6px}
+.beat-bar{flex:1;background:var(--accent);border-radius:2px;opacity:.5;transition:height .1s}
+/* Music library item */
+.mus-track{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:7px;cursor:pointer;background:var(--bg3);margin-bottom:4px;border:1px solid var(--border1);transition:all .15s}
+.mus-track:hover{border-color:var(--accent);background:var(--bg4)}
+.mus-track.playing{border-color:var(--accent);background:rgba(232,200,64,.1)}
+.mus-track-icon{font-size:16px;flex-shrink:0}
+.mus-track-info{flex:1;min-width:0}
+.mus-track-name{font-size:11.5px;color:var(--t1);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mus-track-meta{font-size:10px;color:var(--t3)}
+.mus-track-dur{font-size:10px;color:var(--t3);flex-shrink:0;font-family:monospace}
+/* Ken Burns */
+.kb-preview{width:100%;height:70px;background:var(--bg3);border-radius:7px;overflow:hidden;position:relative;border:1px solid var(--border1)}
+.kb-frame{position:absolute;width:110%;height:110%;background:linear-gradient(135deg,#1a2a3a,#2a4a6a);display:flex;align-items:center;justify-content:center;font-size:24px}
+.kb-frame.kb-active{animation:kb-demo 3s ease-in-out infinite alternate}
+@keyframes kb-demo{from{transform:scale(1) translate(0,0)}to{transform:scale(1.15) translate(-3%,-3%)}}
+/* Subtitle SRT */
+.srt-row{display:flex;gap:6px;margin-bottom:6px}
+.srt-inp{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--t1);padding:6px 9px;font-size:11px;font-family:monospace}
+/* Speed ramp preset cards */
+.ramp-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.ramp-card{background:var(--bg3);border:1px solid var(--border1);border-radius:8px;padding:9px 8px;cursor:pointer;text-align:center;transition:all .15s}
+.ramp-card:hover{border-color:var(--accent)}
+.ramp-card.on{border-color:var(--accent);background:rgba(232,200,64,.1)}
+.ramp-icon{font-size:20px;display:block;margin-bottom:3px}
+.ramp-name{font-size:11px;color:var(--t1);font-weight:600}
+.ramp-desc{font-size:9.5px;color:var(--t3);margin-top:1px}
+/* Filter category row */
+.filt-cat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin-bottom:8px}
+.filt-preset{background:var(--bg3);border:1px solid var(--border1);border-radius:7px;padding:6px 4px;text-align:center;cursor:pointer;font-size:10.5px;color:var(--t2);transition:all .15s}
+.filt-preset:hover{border-color:var(--accent);color:var(--t1)}
+.filt-preset.on{border-color:var(--accent);background:rgba(232,200,64,.1);color:var(--t1);font-weight:700}
+.filt-preset-icon{font-size:16px;display:block;margin-bottom:2px}
+/* Crop panel */
+.crop-ratio-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.crop-ratio-btn{background:var(--bg3);border:1px solid var(--border1);border-radius:6px;padding:7px 4px;text-align:center;cursor:pointer;font-size:11px;color:var(--t2);transition:all .15s}
+.crop-ratio-btn:hover,.crop-ratio-btn.on{border-color:var(--accent);color:var(--t1)}
+.crop-ratio-btn.on{background:rgba(232,200,64,.1);font-weight:700}
+/* Body effects */
+.body-eff-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.body-eff{background:var(--bg3);border:1px solid var(--border1);border-radius:7px;padding:8px 4px;text-align:center;cursor:pointer;font-size:11px;color:var(--t2);transition:all .15s}
+.body-eff:hover{border-color:var(--accent);color:var(--t1)}
+.body-eff.on{border-color:var(--accent);background:rgba(232,200,64,.1)}
+.body-eff-icon{font-size:16px;display:block;margin-bottom:2px}
+/* Bezier canvas */
+#bezier-canvas{display:block;width:100%;border-radius:7px;background:var(--bg3);cursor:crosshair}
 /* Text overlay animation keyframes */
 @keyframes txt-fade-in{from{opacity:0}to{opacity:1}}
 @keyframes txt-slide-up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
@@ -2356,26 +2424,57 @@ const TPL_CLIP = document.getElementById('rp-body').innerHTML;
 
 const TPL_TEXT = `
   <div class="ps">
-    <div class="ps-title">Nội dung văn bản</div>
-    <textarea class="txt-ta" rows="3" id="txt-input">Chào mừng đến với CapCut!</textarea>
-    <button class="add-ov-btn" onclick="addTextOverlay()">+ Thêm văn bản vào khung hình</button>
+    <div class="ps-title">Nội dung</div>
+    <textarea class="txt-ta" rows="2" id="txt-input">Chào mừng đến với CapCut!</textarea>
+    <div style="display:flex;gap:6px;margin-top:6px">
+      <button class="add-ov-btn" style="flex:1" onclick="addTextOverlay()">+ Thêm văn bản</button>
+      <button class="add-ov-btn" style="flex:1;background:rgba(255,80,80,.12);color:#ff7070;border:1px solid rgba(255,80,80,.25)" onclick="removeSelectedOverlay()">🗑 Xóa</button>
+    </div>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Kiểu mẫu nhanh</div>
+    <div class="txt-preset-grid">
+      <div class="txt-preset" onclick="applyTextPreset('title',this)" style="font-size:16px;font-weight:900;color:#fff;letter-spacing:2px">TIÊU ĐỀ</div>
+      <div class="txt-preset" onclick="applyTextPreset('caption',this)" style="font-size:12px;color:#eee;font-style:italic">Caption nhỏ</div>
+      <div class="txt-preset" onclick="applyTextPreset('neon',this)" style="font-size:14px;font-weight:700;color:#0ff;text-shadow:0 0 8px #0ff">Neon</div>
+      <div class="txt-preset" onclick="applyTextPreset('gold',this)" style="font-size:14px;font-weight:900;color:#ffd400;text-shadow:2px 2px 4px rgba(0,0,0,.8)">Vàng</div>
+      <div class="txt-preset" onclick="applyTextPreset('lower3rd',this)" style="font-size:11px;color:#fff;background:rgba(0,120,220,.8);padding:3px 8px;border-radius:2px">Lower Third</div>
+      <div class="txt-preset" onclick="applyTextPreset('retro',this)" style="font-size:13px;color:#ff9640;font-family:monospace;border:1px solid #ff9640;padding:2px 6px">RETRO</div>
+      <div class="txt-preset" onclick="applyTextPreset('minimal',this)" style="font-size:13px;color:#ccc;font-weight:300;letter-spacing:3px">minimal</div>
+      <div class="txt-preset" onclick="applyTextPreset('impact',this)" style="font-size:16px;font-weight:900;color:#ff3b3b;text-transform:uppercase;-webkit-text-stroke:1px #000">IMPACT</div>
+      <div class="txt-preset" onclick="applyTextPreset('gradient',this)" style="font-size:14px;font-weight:700;background:linear-gradient(90deg,#f06,#f90);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Gradient</div>
+      <div class="txt-preset" onclick="applyTextPreset('outline',this)" style="font-size:14px;font-weight:800;color:transparent;-webkit-text-stroke:1.5px #fff">Viền</div>
+    </div>
   </div>
   <div class="ps-div"></div>
   <div class="ps">
     <div class="ps-title">Phông chữ</div>
     <div class="font-grid" id="txt-font-grid">
-      <div class="font-item on" style="font-family:Arial" data-font="Arial" onclick="applyTextFont('Arial',this)">Roboto</div>
-      <div class="font-item" style="font-family:Georgia" data-font="Georgia" onclick="applyTextFont('Georgia',this)">Georgia</div>
-      <div class="font-item" style="font-family:cursive" data-font="cursive" onclick="applyTextFont('cursive',this)">Lobster</div>
-      <div class="font-item" style="font-family:Impact" data-font="Impact" onclick="applyTextFont('Impact',this)">Bebas</div>
-      <div class="font-item" style="font-family:monospace" data-font="monospace" onclick="applyTextFont('monospace',this)">Mono</div>
-      <div class="font-item" style="font-family:'Times New Roman'" data-font="Times New Roman" onclick="applyTextFont('Times New Roman',this)">Times</div>
+      <div class="font-item on" style="font-family:Arial" onclick="applyTextFont('Arial',this)">Sans</div>
+      <div class="font-item" style="font-family:Georgia" onclick="applyTextFont('Georgia',this)">Serif</div>
+      <div class="font-item" style="font-family:cursive" onclick="applyTextFont('cursive',this)">Script</div>
+      <div class="font-item" style="font-family:Impact" onclick="applyTextFont('Impact',this)">Impact</div>
+      <div class="font-item" style="font-family:monospace" onclick="applyTextFont('monospace',this)">Mono</div>
+      <div class="font-item" style="font-family:'Times New Roman'" onclick="applyTextFont('Times New Roman',this)">Times</div>
     </div>
     <div class="prop-row" style="margin-top:8px">
       <span class="prop-lbl">Cỡ chữ</span>
-      <input type="range" class="prop-sl" id="txt-size-sl" min="10" max="80" value="15"
-        oninput="applyTextStyle('fontSize',this.value+'px');document.getElementById('txt-size-val').textContent=this.value">
-      <span class="prop-val" id="txt-size-val">15</span>
+      <input type="range" class="prop-sl" id="txt-size-sl" min="8" max="80" value="15"
+        oninput="applyTextStyle('fontSize',this.value+'px');document.getElementById('txt-size-val').textContent=this.value+'px'">
+      <span class="prop-val" id="txt-size-val">15px</span>
+    </div>
+    <div class="prop-row" style="margin-top:4px">
+      <span class="prop-lbl">Khoảng chữ</span>
+      <input type="range" class="prop-sl" min="-3" max="20" value="0"
+        oninput="applyTextStyle('letterSpacing',this.value+'px');document.getElementById('txt-ls-v').textContent=this.value+'px'">
+      <span class="prop-val" id="txt-ls-v">0px</span>
+    </div>
+    <div class="prop-row" style="margin-top:4px">
+      <span class="prop-lbl">Chiều cao dòng</span>
+      <input type="range" class="prop-sl" min="10" max="30" value="15" step="1"
+        oninput="applyTextStyle('lineHeight',this.value/10);document.getElementById('txt-lh-v').textContent=(this.value/10).toFixed(1)">
+      <span class="prop-val" id="txt-lh-v">1.5</span>
     </div>
     <div class="prop-row" style="margin-top:4px">
       <span class="prop-lbl">Độ mờ</span>
@@ -2383,19 +2482,26 @@ const TPL_TEXT = `
         oninput="applyTextStyle('opacity',this.value/100);document.getElementById('txt-op-val').textContent=this.value+'%'">
       <span class="prop-val" id="txt-op-val">100%</span>
     </div>
+    <div class="prop-row" style="margin-top:4px">
+      <span class="prop-lbl">Xoay</span>
+      <input type="range" class="prop-sl" min="-180" max="180" value="0"
+        oninput="applyTextStyle('transform','rotate('+this.value+'deg)');document.getElementById('txt-rot-v').textContent=this.value+'°'">
+      <span class="prop-val" id="txt-rot-v">0°</span>
+    </div>
   </div>
   <div class="ps-div"></div>
   <div class="ps">
-    <div class="ps-title">Căn chỉnh &amp; định dạng</div>
+    <div class="ps-title">Định dạng &amp; màu sắc</div>
     <div class="align-row" style="margin-bottom:8px" id="txt-align-row">
-      <div class="align-btn on" title="Căn trái" onclick="applyTextAlign('left',this)"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg></div>
-      <div class="align-btn" title="Căn giữa" onclick="applyTextAlign('center',this)"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></div>
-      <div class="align-btn" title="Căn phải" onclick="applyTextAlign('right',this)"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="21" y2="18"/></svg></div>
+      <div class="align-btn on" title="Trái" onclick="applyTextAlign('left',this)"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg></div>
+      <div class="align-btn" title="Giữa" onclick="applyTextAlign('center',this)"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></div>
+      <div class="align-btn" title="Phải" onclick="applyTextAlign('right',this)"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="21" y2="18"/></svg></div>
       <div class="align-btn" id="txt-bold-btn" title="In đậm" onclick="toggleTextBold(this)"><b>B</b></div>
       <div class="align-btn" id="txt-italic-btn" title="In nghiêng" onclick="toggleTextItalic(this)" style="font-style:italic"><i>I</i></div>
       <div class="align-btn" id="txt-shadow-btn" title="Đổ bóng" onclick="toggleTextShadow(this)">S</div>
+      <div class="align-btn" id="txt-upper-btn" title="Chữ hoa" onclick="toggleTextUpper(this)">AA</div>
     </div>
-    <div class="prop-lbl" style="margin-bottom:5px;font-size:10.5px">Màu chữ</div>
+    <div class="prop-lbl" style="margin-bottom:4px;font-size:10.5px">Màu chữ</div>
     <div class="clr-row" id="txt-clr-row">
       <div class="clr-sw on" style="background:#fff" onclick="applyTextColor('#fff',this)"></div>
       <div class="clr-sw" style="background:#ffd400" onclick="applyTextColor('#ffd400',this)"></div>
@@ -2404,78 +2510,119 @@ const TPL_TEXT = `
       <div class="clr-sw" style="background:#7cf07c" onclick="applyTextColor('#7cf07c',this)"></div>
       <div class="clr-sw" style="background:#c060ff" onclick="applyTextColor('#c060ff',this)"></div>
       <div class="clr-sw" style="background:#ff9640" onclick="applyTextColor('#ff9640',this)"></div>
+      <div class="clr-sw" style="background:#00ffe0" onclick="applyTextColor('#00ffe0',this)"></div>
+      <div class="clr-sw" style="background:#ff69b4" onclick="applyTextColor('#ff69b4',this)"></div>
       <div class="clr-sw" style="background:#222" onclick="applyTextColor('#222',this)"></div>
     </div>
-    <div class="prop-lbl" style="margin:8px 0 5px;font-size:10.5px">Màu nền</div>
+    <div class="prop-row" style="margin:7px 0 4px">
+      <span class="prop-lbl">Viền chữ</span>
+      <input type="range" class="prop-sl" min="0" max="4" value="0" step="0.5"
+        oninput="applyTextStroke(this.value);document.getElementById('txt-str-v').textContent=this.value+'px'">
+      <span class="prop-val" id="txt-str-v">0px</span>
+    </div>
+    <div class="prop-lbl" style="margin-bottom:4px;font-size:10.5px">Màu nền chữ</div>
     <div class="clr-row" id="txt-bg-row">
       <div class="clr-sw on" style="background:transparent;border:1px dashed rgba(255,255,255,.3);font-size:9px;display:flex;align-items:center;justify-content:center;color:var(--t3)" onclick="applyTextBg('transparent',this)">∅</div>
       <div class="clr-sw" style="background:rgba(0,0,0,.6)" onclick="applyTextBg('rgba(0,0,0,.6)',this)"></div>
       <div class="clr-sw" style="background:rgba(255,255,255,.25)" onclick="applyTextBg('rgba(255,255,255,.25)',this)"></div>
       <div class="clr-sw" style="background:rgba(255,50,50,.5)" onclick="applyTextBg('rgba(255,50,50,.5)',this)"></div>
       <div class="clr-sw" style="background:rgba(20,100,220,.55)" onclick="applyTextBg('rgba(20,100,220,.55)',this)"></div>
+      <div class="clr-sw" style="background:rgba(120,0,200,.6)" onclick="applyTextBg('rgba(120,0,200,.6)',this)"></div>
+      <div class="clr-sw" style="background:rgba(0,150,80,.6)" onclick="applyTextBg('rgba(0,150,80,.6)',this)"></div>
       <div class="clr-sw" style="background:rgba(0,0,0,.9)" onclick="applyTextBg('rgba(0,0,0,.9)',this)"></div>
     </div>
   </div>
   <div class="ps-div"></div>
   <div class="ps">
-    <div class="ps-title">Hoạt ảnh xuất hiện</div>
+    <div class="ps-title">Hoạt ảnh &amp; hiệu ứng</div>
+    <div class="prop-lbl" style="margin-bottom:5px;font-size:10.5px">Xuất hiện</div>
     <div class="trans-grid" id="txt-anim-grid">
       <div class="tr-it on" onclick="applyTextAnim('',this)">Không</div>
       <div class="tr-it" onclick="applyTextAnim('txt-fade-in',this)">Mờ dần</div>
       <div class="tr-it" onclick="applyTextAnim('txt-slide-up',this)">Trượt lên</div>
       <div class="tr-it" onclick="applyTextAnim('txt-bounce',this)">Nảy</div>
       <div class="tr-it" onclick="applyTextAnim('txt-scale',this)">Phóng to</div>
+      <div class="tr-it" onclick="applyTextAnim('txt-shake',this)">Rung</div>
+      <div class="tr-it" onclick="applyTextAnim('txt-flip-x',this)">Lật X</div>
+      <div class="tr-it" onclick="applyTextAnim('txt-blur-in',this)">Làm mờ vào</div>
     </div>
-  </div>
-  <div class="ps-div"></div>
-  <button class="add-ov-btn" style="background:rgba(255,80,80,.12);color:#ff7070;border:1px solid rgba(255,80,80,.25)" onclick="removeSelectedOverlay()">🗑 Xóa văn bản đang chọn</button>`;
-
-const TPL_STICKER = `
-  <div class="ps">
-    <div class="ps-title">Sticker</div>
-    <div class="stk-grid">
-      <div class="stk-item" onclick="addStickerOverlay('😀')">😀</div>
-      <div class="stk-item" onclick="addStickerOverlay('😍')">😍</div>
-      <div class="stk-item" onclick="addStickerOverlay('🔥')">🔥</div>
-      <div class="stk-item" onclick="addStickerOverlay('❤️')">❤️</div>
-      <div class="stk-item" onclick="addStickerOverlay('⭐')">⭐</div>
-      <div class="stk-item" onclick="addStickerOverlay('🎉')">🎉</div>
-      <div class="stk-item" onclick="addStickerOverlay('👍')">👍</div>
-      <div class="stk-item" onclick="addStickerOverlay('💯')">💯</div>
-      <div class="stk-item" onclick="addStickerOverlay('🌈')">🌈</div>
-      <div class="stk-item" onclick="addStickerOverlay('✨')">✨</div>
-      <div class="stk-item" onclick="addStickerOverlay('🎵')">🎵</div>
-      <div class="stk-item" onclick="addStickerOverlay('📍')">📍</div>
-      <div class="stk-item" onclick="addStickerOverlay('💬')">💬</div>
-      <div class="stk-item" onclick="addStickerOverlay('⏰')">⏰</div>
-      <div class="stk-item" onclick="addStickerOverlay('🚀')">🚀</div>
-    </div>
-    <div class="ps-title" style="margin-top:6px">Nhãn dán xu hướng</div>
-    <div class="stk-grid">
-      <div class="stk-item" onclick="addStickerOverlay('🐱')">🐱</div>
-      <div class="stk-item" onclick="addStickerOverlay('🌻')">🌻</div>
-      <div class="stk-item" onclick="addStickerOverlay('🍀')">🍀</div>
-      <div class="stk-item" onclick="addStickerOverlay('🎬')">🎬</div>
-      <div class="stk-item" onclick="addStickerOverlay('💖')">💖</div>
+    <div class="prop-lbl" style="margin:8px 0 5px;font-size:10.5px">Hiệu ứng đặc biệt</div>
+    <div class="eff-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="eff-item" onclick="applyTextSpecialFX('neon-glow',this)"><span class="eff-icon">💜</span>Neon</div>
+      <div class="eff-item" onclick="applyTextSpecialFX('fire',this)"><span class="eff-icon">🔥</span>Lửa</div>
+      <div class="eff-item" onclick="applyTextSpecialFX('rainbow',this)"><span class="eff-icon">🌈</span>Cầu vồng</div>
+      <div class="eff-item" onclick="applyTextSpecialFX('3d-shadow',this)"><span class="eff-icon">📐</span>3D</div>
+      <div class="eff-item" onclick="applyTextSpecialFX('glitch-fx',this)"><span class="eff-icon">📺</span>Glitch</div>
+      <div class="eff-item on" onclick="applyTextSpecialFX('',this)"><span class="eff-icon">✖️</span>Gốc</div>
     </div>
   </div>`;
 
+const STK_CATS={
+  'Biểu cảm':['😀','😂','🤣','😍','🥰','😎','🤩','😭','😤','🥺','😱','🤔','😴','🤯','🥳','😜','🤑','🤗','😈','👻'],
+  'Tình yêu':['❤️','🧡','💛','💚','💙','💜','🖤','🤍','💕','💞','💓','💗','💖','💘','💝','🫀','💌','💟','🫶','♥️'],
+  'Tự nhiên':['🌸','🌻','🌈','⭐','🌙','☀️','🌊','🍀','🌺','🦋','🌴','🌵','🍁','🌿','🌹','🌷','🌟','💫','🔥','❄️'],
+  'Động vật':['🐱','🐶','🦁','🐼','🐨','🦊','🐸','🦄','🐧','🦅','🐬','🦈','🐙','🦋','🐺','🦊','🐻','🐯','🦝','🦙'],
+  'Thức ăn':['🍕','🍔','🍣','🍜','🧋','☕','🍰','🍦','🍩','🍟','🥗','🍱','🥤','🍫','🍪','🍒','🍓','🫐','🥝','🍑'],
+  'Mũi tên':['➡️','⬅️','⬆️','⬇️','↗️','↘️','↙️','↖️','🔄','🔃','↩️','↪️','🔁','🔂','▶️','◀️','⏫','⏬','🔝','🔙'],
+  'Hình dạng':['❤️‍🔥','💫','✨','⚡','🔴','🟠','🟡','🟢','🔵','🟣','⚫','⚪','🔶','🔷','🔸','🔹','🔺','🔻','💠','🔘'],
+  'Trend':['🎬','🎵','🎤','🎸','💃','🕺','🏆','🥇','👑','💎','🚀','🌍','📸','🤳','📱','💻','🕹️','🎮','🛸','🌠'],
+};
+const TPL_STICKER = `
+  <div class="ps">
+    <div class="ps-title">Danh mục</div>
+    <div class="cat-tabs" id="stk-cat-tabs">
+      ${Object.keys(STK_CATS).map((c,i)=>`<div class="cat-tab${i===0?' on':''}" onclick="switchStkCat('${c}',this)">${c}</div>`).join('')}
+    </div>
+    <div class="stk-cat-grid" id="stk-grid">
+      ${STK_CATS['Biểu cảm'].map(e=>`<div class="stk-cat-item" onclick="addStickerOverlay('${e}')">${e}</div>`).join('')}
+    </div>
+    <input type="file" id="stk-upload" accept="image/*" style="display:none" onchange="addCustomSticker(this)">
+    <button class="sub-add-btn" style="margin-top:8px" onclick="document.getElementById('stk-upload').click()">📤 Upload sticker tùy chỉnh</button>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Điều chỉnh sticker đang chọn</div>
+    <div class="prop-row">
+      <span class="prop-lbl">Kích cỡ</span>
+      <input type="range" class="prop-sl" min="20" max="120" value="40"
+        oninput="adjustFocusedSticker('size',this.value);document.getElementById('stk-sz-v').textContent=this.value+'px'">
+      <span class="prop-val" id="stk-sz-v">40px</span>
+    </div>
+    <div class="prop-row" style="margin-top:5px">
+      <span class="prop-lbl">Xoay</span>
+      <input type="range" class="prop-sl" min="-180" max="180" value="0"
+        oninput="adjustFocusedSticker('rotate',this.value);document.getElementById('stk-rot-v').textContent=this.value+'°'">
+      <span class="prop-val" id="stk-rot-v">0°</span>
+    </div>
+    <div class="prop-row" style="margin-top:5px">
+      <span class="prop-lbl">Độ mờ</span>
+      <input type="range" class="prop-sl" min="10" max="100" value="100"
+        oninput="adjustFocusedSticker('opacity',this.value/100);document.getElementById('stk-op-v').textContent=this.value+'%'">
+      <span class="prop-val" id="stk-op-v">100%</span>
+    </div>
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <button class="add-ov-btn" style="flex:1" onclick="adjustFocusedSticker('flipH')">↔ Lật ngang</button>
+      <button class="add-ov-btn" style="flex:1" onclick="adjustFocusedSticker('flipV')">↕ Lật dọc</button>
+      <button class="add-ov-btn" style="flex:1;background:rgba(255,80,80,.12);color:#ff7070;border:1px solid rgba(255,80,80,.25)" onclick="removeSelectedOverlay()">🗑</button>
+    </div>
+  </div>`;
+
+const EFF_CATS={
+  'Video':[['🔍','Zoom in'],['📺','Glitch'],['📳','Rung lắc'],['🎞️','VHS'],['✨','Ánh sáng'],['🌧️','Mưa'],['❄️','Tuyết'],['🌸','Bokeh'],['💜','Neon'],['⚡','Chớp'],['🎬','Cuộn phim'],['🔮','Lăng kính']],
+  'Cơ thể':[['✨','Làm mịn'],['⬜','Làm trắng'],['👁️','Mắt to'],['💪','Gầy hơn'],['😊','V-Shape'],['🦷','Răng trắng'],['👃','Mũi thon'],['💆','Xóa nếp nhăn'],['🌟','Da sáng'],['🎭','Trang điểm'],['🌸','Môi hồng'],['💫','Lông mày']],
+  'Nền':[['🌫️','Blur nền'],['🎨','Đổi màu nền'],['✂️','Xóa nền'],['🌄','Thay nền'],['💡','Sáng nền'],['⬛','Tối nền'],['🔴','Nền đỏ'],['🔵','Nền xanh'],['🟡','Nền vàng'],['🌿','Nền xanh lá'],['⚪','Nền trắng'],['🌌','Nền vũ trụ']],
+  'Ánh sáng':[['🌟','Hào quang'],['💫','Lấp lánh'],['🌞','Lens flare'],['🌈','Cầu vồng'],['🎇','Pháo hoa'],['✨','Kim sa'],['💥','Nổ sáng'],['🌙','Ánh trăng'],['☀️','Ánh nắng'],['🔦','Đèn rọi'],['💡','Bóng đèn'],['⚡','Sét']],
+  'Mặt nạ':[['❤️','Tim'],['⭐','Ngôi sao'],['⭕','Tròn'],['🟦','Vuông'],['📺','Widescreen'],['💎','Kim cương'],['🔺','Tam giác'],['🌟','Ngôi sao 6'],['🌀','Xoắn ốc'],['🎯','Bullseye'],['🔲','Viền'],['✨','Tinh tế']],
+  '3D':[['📦','Khối hộp'],['🌐','Cầu'],['💠','Kim tự tháp'],['🌀','Xoắn'],['📐','Phối cảnh'],['🎡','Vòng xoay'],['🔮','Bong bóng'],['💿','Đĩa xoay'],['🎪','Cuộn xoay'],['🌌','Không gian'],['🪐','Quỹ đạo'],['✨','Hologram']],
+};
 const TPL_EFFECT = `
   <div class="ps">
-    <div class="ps-title">Hiệu ứng video</div>
-    <div class="eff-grid">
-      <div class="eff-item" onclick="selectEffect('Zoom in',this)"><span class="eff-icon">🔍</span>Zoom in</div>
-      <div class="eff-item" onclick="selectEffect('Glitch',this)"><span class="eff-icon">📺</span>Glitch</div>
-      <div class="eff-item" onclick="selectEffect('Rung lắc',this)"><span class="eff-icon">📳</span>Rung lắc</div>
-      <div class="eff-item" onclick="selectEffect('VHS',this)"><span class="eff-icon">🎞️</span>VHS</div>
-      <div class="eff-item" onclick="selectEffect('Ánh sáng',this)"><span class="eff-icon">✨</span>Ánh sáng</div>
-      <div class="eff-item" onclick="selectEffect('Mưa',this)"><span class="eff-icon">🌧️</span>Mưa</div>
-      <div class="eff-item" onclick="selectEffect('Tuyết',this)"><span class="eff-icon">❄️</span>Tuyết</div>
-      <div class="eff-item" onclick="selectEffect('Bokeh',this)"><span class="eff-icon">🌸</span>Bokeh</div>
-      <div class="eff-item" onclick="selectEffect('Neon',this)"><span class="eff-icon">💜</span>Neon</div>
-      <div class="eff-item" onclick="selectEffect('Chớp nháy',this)"><span class="eff-icon">⚡</span>Chớp</div>
-      <div class="eff-item" onclick="selectEffect('Cuộn phim',this)"><span class="eff-icon">🎬</span>Cuộn phim</div>
-      <div class="eff-item" onclick="selectEffect('Lăng kính',this)"><span class="eff-icon">🔮</span>Lăng kính</div>
+    <div class="ps-title">Danh mục hiệu ứng</div>
+    <div class="cat-tabs" id="eff-cat-tabs">
+      ${Object.keys(EFF_CATS).map((c,i)=>`<div class="cat-tab${i===0?' on':''}" onclick="switchEffCat('${c}',this)">${c}</div>`).join('')}
+    </div>
+    <div class="eff-grid" id="eff-item-grid">
+      ${EFF_CATS['Video'].map(([icon,name])=>`<div class="eff-item" onclick="selectEffect('${name}',this)"><span class="eff-icon">${icon}</span>${name}</div>`).join('')}
     </div>
     <div class="prop-row" style="margin-top:10px">
       <span class="prop-lbl">Cường độ</span>
@@ -2489,37 +2636,55 @@ const TPL_EFFECT = `
         oninput="document.getElementById('eff-dur-val').textContent=this.value+'s'">
       <span class="prop-val" id="eff-dur-val">3s</span>
     </div>
-    <button class="add-ov-btn" style="margin-top:8px" onclick="addSelectedEffect()">+ Thêm hiệu ứng vào timeline</button>
+    <div class="toggle-row" style="margin-top:6px">
+      <span class="tg-lbl">Lặp lại hiệu ứng</span>
+      <div class="tg off" onclick="this.classList.toggle('on')"><div class="tg-k"></div></div>
+    </div>
+    <button class="add-ov-btn" style="margin-top:8px" onclick="addSelectedEffect()">+ Thêm vào timeline</button>
   </div>
   <div class="ps-div"></div>
   <div class="ps">
-    <div class="ps-title">Chuyển cảnh giữa clip</div>
-    <div class="eff-grid">
+    <div class="ps-title">Chuyển cảnh</div>
+    <div class="eff-grid" id="trans-grid">
       <div class="eff-item on" onclick="selectTransition('Mờ dần',this)"><span class="eff-icon">🌫️</span>Mờ dần</div>
       <div class="eff-item" onclick="selectTransition('Trượt',this)"><span class="eff-icon">↔️</span>Trượt</div>
       <div class="eff-item" onclick="selectTransition('Zoom',this)"><span class="eff-icon">🔍</span>Zoom</div>
       <div class="eff-item" onclick="selectTransition('Lật',this)"><span class="eff-icon">🔄</span>Lật</div>
       <div class="eff-item" onclick="selectTransition('Xoay',this)"><span class="eff-icon">🌀</span>Xoay</div>
+      <div class="eff-item" onclick="selectTransition('Chéo',this)"><span class="eff-icon">✂️</span>Chéo</div>
+      <div class="eff-item" onclick="selectTransition('Vỡ vụn',this)"><span class="eff-icon">💥</span>Vỡ vụn</div>
+      <div class="eff-item" onclick="selectTransition('Dissolve',this)"><span class="eff-icon">🌊</span>Dissolve</div>
       <div class="eff-item" onclick="selectTransition('Không',this)"><span class="eff-icon">✖️</span>Không</div>
+    </div>
+    <div class="prop-row" style="margin-top:8px">
+      <span class="prop-lbl">Thời lượng chuyển</span>
+      <input type="range" class="prop-sl" min="1" max="20" value="5"
+        oninput="document.getElementById('trans-dur-v').textContent=(this.value/10).toFixed(1)+'s'">
+      <span class="prop-val" id="trans-dur-v">0.5s</span>
     </div>
   </div>`;
 
+const FILT_PRESETS={
+  'Phổ biến':[['∅','none','Gốc'],['🌇','sunset','Hoàng hôn'],['🎞️','vintage','Vintage'],['🌈','vivid','Sống động'],['⬛','bw','Đen trắng'],['❄️','cold','Lạnh'],['🔥','warm','Ấm'],['🌸','pastel','Pastel']],
+  'Thiên nhiên':[['🌿','nature','Thiên nhiên'],['🌅','dawn','Bình minh'],['🌊','ocean','Đại dương'],['🌲','forest','Rừng'],['☀️','sunny','Nắng'],['🌙','night','Đêm'],['🌁','mist','Sương'],['🍂','autumn','Mùa thu']],
+  'Đô thị':[['🏙️','city','Thành phố'],['🚇','metro','Metro'],['🌃','nightcity','Đêm phố'],['🎭','drama','Kịch tính'],['⚡','neon','Neon'],['📸','film','Phim'],['🖤','dark','Tối'],['🔅','moody','U ám']],
+  'Thực phẩm':[['🍽️','food','Thực phẩm'],['☕','cafe','Cafe'],['🍰','sweet','Ngọt ngào'],['🌶️','spicy','Cay'],['🍵','tea','Trà'],['🥗','fresh','Tươi'],['🍯','honey','Mật ong'],['🫐','berry','Quả mọng']],
+  'Chân dung':[['💄','portrait','Chân dung'],['🌸','soft','Mềm mại'],['✨','glow','Tỏa sáng'],['🎭','dramatic','Ấn tượng'],['🖤','noir','Noir'],['🌟','bright','Rực rỡ'],['🌺','rosy','Hồng'],['💎','luxe','Sang trọng']],
+};
 const TPL_FILTER = `
   <div class="ps">
     <div class="ps-title">Bộ lọc màu</div>
-    <div class="filter-row" id="filter-list">
-      <div class="fi on" data-filter="none" onclick="applyFilter('none',this)"><div class="fi-thumb">∅</div><div class="fi-name">Gốc</div></div>
-      <div class="fi" data-filter="sunset" onclick="applyFilter('sunset',this)"><div class="fi-thumb">🌇</div><div class="fi-name">Hoàng hôn</div></div>
-      <div class="fi" data-filter="vintage" onclick="applyFilter('vintage',this)"><div class="fi-thumb">🎞️</div><div class="fi-name">Vintage</div></div>
-      <div class="fi" data-filter="vivid" onclick="applyFilter('vivid',this)"><div class="fi-thumb">🌈</div><div class="fi-name">Sống động</div></div>
-      <div class="fi" data-filter="bw" onclick="applyFilter('bw',this)"><div class="fi-thumb">⬛</div><div class="fi-name">Đen trắng</div></div>
-      <div class="fi" data-filter="cold" onclick="applyFilter('cold',this)"><div class="fi-thumb">❄️</div><div class="fi-name">Lạnh</div></div>
-      <div class="fi" data-filter="warm" onclick="applyFilter('warm',this)"><div class="fi-thumb">🔥</div><div class="fi-name">Ấm</div></div>
-      <div class="fi" data-filter="pastel" onclick="applyFilter('pastel',this)"><div class="fi-thumb">🌸</div><div class="fi-name">Pastel</div></div>
-      <div class="fi" data-filter="drama" onclick="applyFilter('drama',this)"><div class="fi-thumb">🎭</div><div class="fi-name">Kịch tính</div></div>
-      <div class="fi" data-filter="neon" onclick="applyFilter('neon',this)"><div class="fi-thumb">💜</div><div class="fi-name">Neon</div></div>
+    <div style="display:flex;gap:6px;margin-bottom:8px">
+      <button class="add-ov-btn" style="flex:1;font-size:11px" onclick="autoEnhance()">✨ Tự động làm đẹp</button>
+      <button class="add-ov-btn" style="flex:1;font-size:11px" onclick="resetAllFilters()">↺ Đặt lại</button>
     </div>
-    <div class="prop-row" style="margin-top:12px">
+    <div class="cat-tabs" id="filt-cat-tabs">
+      ${Object.keys(FILT_PRESETS).map((c,i)=>`<div class="cat-tab${i===0?' on':''}" onclick="switchFiltCat('${c}',this)">${c}</div>`).join('')}
+    </div>
+    <div class="filter-row" id="filter-list">
+      ${FILT_PRESETS['Phổ biến'].map(([ico,key,name],i)=>`<div class="fi${i===0?' on':''}" data-filter="${key}" onclick="applyFilter('${key}',this)"><div class="fi-thumb">${ico}</div><div class="fi-name">${name}</div></div>`).join('')}
+    </div>
+    <div class="prop-row" style="margin-top:10px">
       <span class="prop-lbl">Cường độ</span>
       <input type="range" class="prop-sl" id="filter-intensity" min="0" max="100" value="80"
         oninput="updateFilterIntensity(this.value);document.getElementById('fi-int-val').textContent=this.value+'%'">
@@ -2528,37 +2693,103 @@ const TPL_FILTER = `
   </div>
   <div class="ps-div"></div>
   <div class="ps">
-    <div class="ps-title">Điều chỉnh màu thủ công</div>
-    <div class="prop-row" style="margin-bottom:6px">
+    <div class="ps-title">Điều chỉnh màu chi tiết</div>
+    <div class="prop-row" style="margin-bottom:5px">
       <span class="prop-lbl">Độ sáng</span>
       <input type="range" class="prop-sl" min="-100" max="100" value="0"
         oninput="applyManualAdj('brightness',this.value);document.getElementById('adj-br-v').textContent=(this.value>0?'+':'')+this.value">
       <span class="prop-val" id="adj-br-v">0</span>
     </div>
-    <div class="prop-row" style="margin-bottom:6px">
+    <div class="prop-row" style="margin-bottom:5px">
       <span class="prop-lbl">Tương phản</span>
       <input type="range" class="prop-sl" min="-100" max="100" value="0"
         oninput="applyManualAdj('contrast',this.value);document.getElementById('adj-ct-v').textContent=(this.value>0?'+':'')+this.value">
       <span class="prop-val" id="adj-ct-v">0</span>
     </div>
-    <div class="prop-row" style="margin-bottom:6px">
+    <div class="prop-row" style="margin-bottom:5px">
       <span class="prop-lbl">Bão hòa</span>
       <input type="range" class="prop-sl" min="-100" max="100" value="0"
         oninput="applyManualAdj('saturate',this.value);document.getElementById('adj-sa-v').textContent=(this.value>0?'+':'')+this.value">
       <span class="prop-val" id="adj-sa-v">0</span>
     </div>
-    <div class="prop-row">
+    <div class="prop-row" style="margin-bottom:5px">
       <span class="prop-lbl">Tông màu</span>
       <input type="range" class="prop-sl" min="-180" max="180" value="0"
         oninput="applyManualAdj('hue',this.value);document.getElementById('adj-hu-v').textContent=(this.value>0?'+':'')+this.value+'°'">
       <span class="prop-val" id="adj-hu-v">0°</span>
     </div>
+    <div class="prop-row" style="margin-bottom:5px">
+      <span class="prop-lbl">Nhiệt độ</span>
+      <input type="range" class="prop-sl" min="-50" max="50" value="0"
+        oninput="applyManualAdj('temperature',this.value);document.getElementById('adj-tm-v').textContent=(this.value>0?'+':'')+this.value">
+      <span class="prop-val" id="adj-tm-v">0</span>
+    </div>
+    <div class="prop-row" style="margin-bottom:5px">
+      <span class="prop-lbl">Sắc nét</span>
+      <input type="range" class="prop-sl" min="0" max="100" value="0"
+        oninput="document.getElementById('adj-sh-v').textContent=this.value">
+      <span class="prop-val" id="adj-sh-v">0</span>
+    </div>
+    <div class="prop-row">
+      <span class="prop-lbl">Nhiễu ảnh</span>
+      <input type="range" class="prop-sl" min="0" max="100" value="0"
+        oninput="document.getElementById('adj-ns-v').textContent=this.value">
+      <span class="prop-val" id="adj-ns-v">0</span>
+    </div>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Đường cong màu (Color Curve)</div>
+    <div class="cat-tabs">
+      <div class="cat-tab on" onclick="switchCurve('rgb',this)">RGB</div>
+      <div class="cat-tab" onclick="switchCurve('red',this)" style="color:#f44">Red</div>
+      <div class="cat-tab" onclick="switchCurve('green',this)" style="color:#4f4">Green</div>
+      <div class="cat-tab" onclick="switchCurve('blue',this)" style="color:#44f">Blue</div>
+    </div>
+    <canvas id="color-curve-canvas" width="240" height="100" style="width:100%;border-radius:6px;background:var(--bg3);cursor:crosshair"></canvas>
+    <button class="sub-add-btn" style="margin-top:5px" onclick="resetColorCurve()">↺ Đặt lại đường cong</button>
   </div>`;
 
+const MUS_LIBRARY=[
+  {icon:'🎵',name:'Summer Vibes',bpm:120,dur:'2:34',genre:'Pop'},
+  {icon:'🎸',name:'Rock Anthem',bpm:145,dur:'3:12',genre:'Rock'},
+  {icon:'🎹',name:'Chill Piano',bpm:75,dur:'2:48',genre:'Classical'},
+  {icon:'🎺',name:'Jazz Night',bpm:90,dur:'3:05',genre:'Jazz'},
+  {icon:'🎻',name:'Epic Orchestra',bpm:100,dur:'2:55',genre:'Cinematic'},
+  {icon:'🎧',name:'Lo-Fi Beats',bpm:85,dur:'4:00',genre:'Lo-Fi'},
+  {icon:'🎤',name:'Hip Hop Flow',bpm:95,dur:'3:20',genre:'Hip Hop'},
+  {icon:'🌊',name:'Ambient Dream',bpm:60,dur:'5:00',genre:'Ambient'},
+  {icon:'⚡',name:'EDM Drop',bpm:128,dur:'2:45',genre:'EDM'},
+  {icon:'🌙',name:'Night Mood',bpm:70,dur:'3:30',genre:'R&B'},
+];
 const TPL_MUSIC = MP_AUDIO + `
   <div class="ps-div"></div>
   <div class="ps">
-    <div class="ps-title">Fade âm thanh</div>
+    <div class="ps-title">Thư viện nhạc nền</div>
+    <div style="max-height:200px;overflow-y:auto;margin-top:2px">
+      ${MUS_LIBRARY.map((t,i)=>`<div class="mus-track" onclick="selectMusicTrack(${i},this)">
+        <span class="mus-track-icon">${t.icon}</span>
+        <div class="mus-track-info"><div class="mus-track-name">${t.name}</div><div class="mus-track-meta">${t.genre} · ${t.bpm} BPM</div></div>
+        <span class="mus-track-dur">${t.dur}</span>
+      </div>`).join('')}
+    </div>
+    <button class="sub-add-btn" style="margin-top:5px" onclick="addMusicToTimeline()">+ Thêm vào timeline</button>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Âm lượng &amp; Fade</div>
+    <div class="prop-row">
+      <span class="prop-lbl">Âm lượng</span>
+      <input type="range" class="prop-sl" min="0" max="200" value="100"
+        oninput="setAudioGain(this.value);document.getElementById('mus-vol-v').textContent=this.value+'%'">
+      <span class="prop-val" id="mus-vol-v">100%</span>
+    </div>
+    <div class="prop-row" style="margin-top:5px">
+      <span class="prop-lbl">Pitch</span>
+      <input type="range" class="prop-sl" min="-12" max="12" value="0"
+        oninput="document.getElementById('mus-pitch-v').textContent=(this.value>0?'+':'')+this.value+'st'">
+      <span class="prop-val" id="mus-pitch-v">0st</span>
+    </div>
     <div class="mus-fade-row">
       <div class="mus-fade-box">
         <div class="mus-fade-title">Fade In</div>
@@ -2573,12 +2804,41 @@ const TPL_MUSIC = MP_AUDIO + `
         <div style="font-size:10px;color:var(--accent);margin-top:3px;text-align:center" id="fade-out-v">0s</div>
       </div>
     </div>
-    <div class="prop-row" style="margin-top:8px">
-      <span class="prop-lbl">Âm lượng</span>
-      <input type="range" class="prop-sl" min="0" max="200" value="100"
-        oninput="setAudioGain(this.value);document.getElementById('mus-vol-v').textContent=this.value+'%'">
-      <span class="prop-val" id="mus-vol-v">100%</span>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Equalizer 5 dải</div>
+    <div class="eq-row" id="eq-row">
+      <div class="eq-bar-wrap"><input class="eq-bar-sl" type="range" min="-12" max="12" value="0" oninput="updateEQ(0,this.value)"><span class="eq-label">Sub<br>60Hz</span></div>
+      <div class="eq-bar-wrap"><input class="eq-bar-sl" type="range" min="-12" max="12" value="0" oninput="updateEQ(1,this.value)"><span class="eq-label">Bass<br>250Hz</span></div>
+      <div class="eq-bar-wrap"><input class="eq-bar-sl" type="range" min="-12" max="12" value="0" oninput="updateEQ(2,this.value)"><span class="eq-label">Mid<br>1kHz</span></div>
+      <div class="eq-bar-wrap"><input class="eq-bar-sl" type="range" min="-12" max="12" value="0" oninput="updateEQ(3,this.value)"><span class="eq-label">High<br>4kHz</span></div>
+      <div class="eq-bar-wrap"><input class="eq-bar-sl" type="range" min="-12" max="12" value="0" oninput="updateEQ(4,this.value)"><span class="eq-label">Air<br>16kHz</span></div>
     </div>
+    <div class="cat-tabs">
+      <div class="cat-tab on" onclick="applyEQPreset('flat',this)">Flat</div>
+      <div class="cat-tab" onclick="applyEQPreset('bass',this)">Bass+</div>
+      <div class="cat-tab" onclick="applyEQPreset('vocal',this)">Giọng</div>
+      <div class="cat-tab" onclick="applyEQPreset('treble',this)">Treble+</div>
+      <div class="cat-tab" onclick="applyEQPreset('cinema',this)">Cinema</div>
+    </div>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Beat Sync</div>
+    <div class="beat-grid" id="beat-viz">
+      ${Array(16).fill(0).map(()=>`<div class="beat-bar" style="height:${Math.random()*80+20}%"></div>`).join('')}
+    </div>
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <button class="add-ov-btn" style="flex:1;font-size:11px" onclick="startBeatSync()">🎵 Cắt theo nhịp</button>
+      <button class="add-ov-btn" style="flex:1;font-size:11px" onclick="animateBeatViz()">▶ Phân tích</button>
+    </div>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Ghi âm giọng nói</div>
+    <button class="add-ov-btn" id="rec-btn" onclick="toggleRecording(this)">🎤 Bắt đầu ghi âm</button>
+    <div id="rec-status" style="font-size:10.5px;color:var(--t3);margin-top:6px;text-align:center"></div>
   </div>
   <div class="ps-div"></div>
   <div class="ps">
@@ -2592,16 +2852,19 @@ const TPL_MUSIC = MP_AUDIO + `
     <div class="toggle-row" style="margin-top:6px"><span class="tg-lbl">Tăng âm giọng nói</span>
       <div class="tg off" onclick="this.classList.toggle('on');toast(this.classList.contains('on')?'Đã bật tăng âm giọng':'Đã tắt')"><div class="tg-k"></div></div>
     </div>
-  </div>
-  <div class="ps-div"></div>
-  <div class="ps">
-    <div class="ps-title">Hiệu ứng giọng</div>
+    <div class="toggle-row" style="margin-top:6px"><span class="tg-lbl">Âm thanh vòm (Stereo)</span>
+      <div class="tg on" onclick="this.classList.toggle('on')"><div class="tg-k"></div></div>
+    </div>
+    <div class="ps-title" style="margin-top:8px">Hiệu ứng giọng</div>
     <div class="eff-grid">
       <div class="eff-item" onclick="applyVoiceEffect('Robot',this)"><span class="eff-icon">🤖</span>Robot</div>
-      <div class="eff-item" onclick="applyVoiceEffect('Vịt Donald',this)"><span class="eff-icon">🦆</span>Vịt</div>
+      <div class="eff-item" onclick="applyVoiceEffect('Vịt',this)"><span class="eff-icon">🦆</span>Vịt</div>
       <div class="eff-item" onclick="applyVoiceEffect('Khổng lồ',this)"><span class="eff-icon">🔊</span>Khổng lồ</div>
-      <div class="eff-item" onclick="applyVoiceEffect('Nhí nhảnh',this)"><span class="eff-icon">🎤</span>Nhí nhảnh</div>
+      <div class="eff-item" onclick="applyVoiceEffect('Nhí nhảnh',this)"><span class="eff-icon">🎤</span>Nhí</div>
       <div class="eff-item" onclick="applyVoiceEffect('Echo',this)"><span class="eff-icon">🎵</span>Echo</div>
+      <div class="eff-item" onclick="applyVoiceEffect('Reverb',this)"><span class="eff-icon">🏛️</span>Reverb</div>
+      <div class="eff-item" onclick="applyVoiceEffect('Điện thoại',this)"><span class="eff-icon">📞</span>Điện thoại</div>
+      <div class="eff-item" onclick="applyVoiceEffect('Dưới nước',this)"><span class="eff-icon">🌊</span>Dưới nước</div>
       <div class="eff-item on" onclick="applyVoiceEffect('',this)"><span class="eff-icon">✖️</span>Gốc</div>
     </div>
   </div>`;
@@ -2610,6 +2873,7 @@ const TPL_SPEED = `
   <div class="ps">
     <div class="ps-title">Tốc độ phát <span id="spd-current" style="color:var(--accent);font-size:10px"></span></div>
     <div class="sp-opts" id="spd-opts-row">
+      <div class="sp-o" onclick="applyClipSpeed(0.1,this)">0.1x</div>
       <div class="sp-o" onclick="applyClipSpeed(0.25,this)">0.25x</div>
       <div class="sp-o" onclick="applyClipSpeed(0.5,this)">0.5x</div>
       <div class="sp-o on" onclick="applyClipSpeed(1,this)">1x</div>
@@ -2617,12 +2881,23 @@ const TPL_SPEED = `
       <div class="sp-o" onclick="applyClipSpeed(2,this)">2x</div>
       <div class="sp-o" onclick="applyClipSpeed(3,this)">3x</div>
       <div class="sp-o" onclick="applyClipSpeed(5,this)">5x</div>
+      <div class="sp-o" onclick="applyClipSpeed(10,this)">10x</div>
     </div>
     <div class="prop-row" style="margin-top:8px">
       <span class="prop-lbl">Tùy chỉnh</span>
-      <input type="range" class="prop-sl" id="spd-custom-sl" min="10" max="500" value="100"
+      <input type="range" class="prop-sl" id="spd-custom-sl" min="5" max="1000" value="100"
         oninput="applyClipSpeedCustom(this.value/100)">
       <span class="prop-val" id="spd-custom-val">1.00x</span>
+    </div>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Preset Speed Ramp</div>
+    <div class="ramp-grid">
+      <div class="ramp-card on" onclick="applySpeedRamp('constant',this)"><span class="ramp-icon">📏</span><div class="ramp-name">Đều</div><div class="ramp-desc">Tốc độ không đổi</div></div>
+      <div class="ramp-card" onclick="applySpeedRamp('vlog',this)"><span class="ramp-icon">📹</span><div class="ramp-name">Vlog</div><div class="ramp-desc">Nhanh-chậm-nhanh</div></div>
+      <div class="ramp-card" onclick="applySpeedRamp('cinema',this)"><span class="ramp-icon">🎬</span><div class="ramp-name">Cinematic</div><div class="ramp-desc">Chậm dần ổn định</div></div>
+      <div class="ramp-card" onclick="applySpeedRamp('action',this)"><span class="ramp-icon">⚡</span><div class="ramp-name">Action</div><div class="ramp-desc">Slow-mo rồi nhanh đột ngột</div></div>
     </div>
   </div>
   <div class="ps-div"></div>
@@ -2637,89 +2912,183 @@ const TPL_SPEED = `
       <span class="tg-lbl">Tua ngược (Reverse)</span>
       <div class="tg off" onclick="toggleReverseClip(this)"><div class="tg-k"></div></div>
     </div>
+    <div class="toggle-row" style="margin-top:6px">
+      <span class="tg-lbl">Slow motion mượt (Optical Flow)</span>
+      <div class="tg off" onclick="this.classList.toggle('on');toast('Optical Flow: '+( this.classList.contains('on')?'bật':'tắt'))"><div class="tg-k"></div></div>
+    </div>
   </div>
   <div class="ps-div"></div>
   <div class="ps">
-    <div class="ps-title">Phát chậm mượt (slow motion)</div>
-    <div class="trans-grid">
-      <div class="tr-it" onclick="applyClipSpeed(0.5,null);toast('Slow motion 0.5x')">Nhẹ (0.5x)</div>
-      <div class="tr-it" onclick="applyClipSpeed(0.25,null);toast('Slow motion 0.25x')">Vừa (0.25x)</div>
-      <div class="tr-it" onclick="applyClipSpeed(0.1,null);toast('Slow motion 0.1x')">Cực chậm (0.1x)</div>
+    <div class="ps-title">Công cụ nâng cao</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <button class="add-ov-btn" style="flex:1;font-size:11px" onclick="applyClipSpeed(0.5,null);toast('Slow-mo 0.5x')">🐢 Slow 0.5x</button>
+      <button class="add-ov-btn" style="flex:1;font-size:11px" onclick="applyClipSpeed(0.25,null);toast('Slow-mo 0.25x')">🐌 Slow 0.25x</button>
+      <button class="add-ov-btn" style="flex:1;font-size:11px" onclick="applyClipSpeed(2,null);toast('Timelapse 2x')">⚡ Fast 2x</button>
+      <button class="add-ov-btn" style="flex:1;font-size:11px" onclick="freezeFrame()">🎯 Freeze Frame</button>
+      <button class="add-ov-btn" style="flex:1;font-size:11px" onclick="applyClipSpeed(1,null);toast('Đặt lại tốc độ')">↺ Đặt lại</button>
     </div>
   </div>`;
 
 const TPL_TRANSLATE = `
   <div class="ps">
-    <div class="ps-title">Dịch phụ đề / văn bản</div>
-    <div class="prop-row" style="margin-bottom:8px"><span class="prop-lbl" style="width:90px">Ngôn ngữ gốc</span>
+    <div class="ps-title">Dịch phụ đề &amp; văn bản</div>
+    <div class="prop-row" style="margin-bottom:8px">
+      <span class="prop-lbl" style="width:80px">Ngôn ngữ gốc</span>
       <select class="lng-sel" id="trs-src-lang">
-        <option value="auto">Tự động phát hiện</option>
-        <option value="vi" selected>Tiếng Việt</option>
-        <option value="en">Tiếng Anh</option>
-        <option value="zh">Tiếng Trung</option>
-        <option value="ja">Tiếng Nhật</option>
-        <option value="ko">Tiếng Hàn</option>
-      </select>
-    </div>
-    <div class="prop-row" style="margin-bottom:8px"><span class="prop-lbl" style="width:90px">Ngôn ngữ đích</span>
-      <select class="lng-sel" id="trs-dst-lang">
-        <option value="en" selected>Tiếng Anh</option>
-        <option value="vi">Tiếng Việt</option>
-        <option value="ko">Tiếng Hàn</option>
-        <option value="ja">Tiếng Nhật</option>
-        <option value="zh">Tiếng Trung</option>
-        <option value="fr">Tiếng Pháp</option>
-        <option value="es">Tiếng Tây Ban Nha</option>
+        <option value="auto">🔍 Tự động</option>
+        <option value="vi" selected>🇻🇳 Tiếng Việt</option>
+        <option value="en">🇺🇸 Tiếng Anh</option>
+        <option value="zh">🇨🇳 Tiếng Trung</option>
+        <option value="ja">🇯🇵 Tiếng Nhật</option>
+        <option value="ko">🇰🇷 Tiếng Hàn</option>
+        <option value="fr">🇫🇷 Tiếng Pháp</option>
+        <option value="de">🇩🇪 Tiếng Đức</option>
+        <option value="es">🇪🇸 Tiếng TBN</option>
+        <option value="th">🇹🇭 Tiếng Thái</option>
+        <option value="id">🇮🇩 Tiếng Indo</option>
       </select>
     </div>
     <div class="prop-row" style="margin-bottom:8px">
-      <span class="prop-lbl" style="width:90px">Văn bản dịch</span>
-      <textarea class="txt-ta" id="trs-input" rows="3" style="flex:1" placeholder="Nhập văn bản cần dịch...">Cảnh hoàng hôn ở bờ biển
+      <span class="prop-lbl" style="width:80px">Ngôn ngữ đích</span>
+      <select class="lng-sel" id="trs-dst-lang">
+        <option value="en" selected>🇺🇸 Tiếng Anh</option>
+        <option value="vi">🇻🇳 Tiếng Việt</option>
+        <option value="ko">🇰🇷 Tiếng Hàn</option>
+        <option value="ja">🇯🇵 Tiếng Nhật</option>
+        <option value="zh">🇨🇳 Tiếng Trung</option>
+        <option value="fr">🇫🇷 Tiếng Pháp</option>
+        <option value="de">🇩🇪 Tiếng Đức</option>
+        <option value="es">🇪🇸 Tiếng TBN</option>
+        <option value="pt">🇵🇹 Tiếng Bồ</option>
+        <option value="ar">🇸🇦 Tiếng Ả Rập</option>
+        <option value="ru">🇷🇺 Tiếng Nga</option>
+        <option value="hi">🇮🇳 Tiếng Hindi</option>
+        <option value="th">🇹🇭 Tiếng Thái</option>
+        <option value="id">🇮🇩 Tiếng Indo</option>
+        <option value="ms">🇲🇾 Tiếng Mã Lai</option>
+      </select>
+    </div>
+    <textarea class="txt-ta" id="trs-input" rows="4" placeholder="Nhập văn bản cần dịch...">Cảnh hoàng hôn ở bờ biển
 Đi bộ trong rừng xanh
 Thành phố về đêm lộng lẫy</textarea>
+    <div style="display:flex;gap:6px;margin-top:6px">
+      <button class="add-ov-btn" style="flex:2" onclick="runTranslation()">🌐 Dịch ngay</button>
+      <button class="add-ov-btn" style="flex:1;font-size:11px" onclick="translateAllSubtitles()">📋 Dịch tất cả phụ đề</button>
     </div>
-    <button class="add-ov-btn" onclick="runTranslation()">🌐 Dịch ngay</button>
   </div>
   <div class="ps-div"></div>
   <div class="ps">
-    <div class="ps-title">Kết quả dịch <span id="trs-lang-badge" style="font-size:10px;color:var(--accent)"></span></div>
+    <div class="ps-title">Kết quả <span id="trs-lang-badge" style="font-size:10px;color:var(--accent)"></span>
+      <button class="trs-copy" onclick="copyAllTranslations()" title="Sao chép tất cả" style="float:right;font-size:11px">📋 Copy all</button>
+    </div>
     <div id="trs-results" style="font-size:11px;color:var(--t3)">Nhấn "Dịch ngay" để xem kết quả.</div>
-    <button id="trs-apply-btn" class="add-ov-btn" style="display:none;margin-top:8px" onclick="applyTranslationToSubs()">✅ Áp dụng vào phụ đề</button>
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <button id="trs-apply-btn" class="add-ov-btn" style="display:none;flex:1" onclick="applyTranslationToSubs()">✅ Áp dụng phụ đề</button>
+      <button id="trs-export-btn" class="add-ov-btn" style="display:none;flex:1;font-size:11px" onclick="exportTranslatedSRT()">💾 Export SRT</button>
+    </div>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Từ điển thuật ngữ</div>
+    <div style="font-size:11px;color:var(--t3);margin-bottom:6px">Thêm thuật ngữ để dịch nhất quán</div>
+    <div id="glossary-list"></div>
+    <button class="sub-add-btn" onclick="addGlossaryTerm()">+ Thêm thuật ngữ</button>
   </div>`;
 
 const TPL_CROP = `
   <div class="ps">
-    <div class="ps-title">Tỷ lệ khung cắt</div>
-    <div class="trans-grid">
-      <div class="tr-it on" onclick="applyCropAspect('9:16')">9:16</div>
-      <div class="tr-it" onclick="applyCropAspect('16:9')">16:9</div>
-      <div class="tr-it" onclick="applyCropAspect('1:1')">1:1</div>
-      <div class="tr-it" onclick="applyCropAspect('4:3')">4:3</div>
-      <div class="tr-it" onclick="applyCropAspect('free')">Tự do</div>
+    <div class="ps-title">Tỷ lệ khung hình</div>
+    <div class="crop-ratio-grid">
+      <div class="crop-ratio-btn on" onclick="applyCropAspect('9:16',this)">9:16<br><span style="font-size:9px;color:var(--t3)">TikTok</span></div>
+      <div class="crop-ratio-btn" onclick="applyCropAspect('16:9',this)">16:9<br><span style="font-size:9px;color:var(--t3)">YouTube</span></div>
+      <div class="crop-ratio-btn" onclick="applyCropAspect('1:1',this)">1:1<br><span style="font-size:9px;color:var(--t3)">Instagram</span></div>
+      <div class="crop-ratio-btn" onclick="applyCropAspect('4:3',this)">4:3<br><span style="font-size:9px;color:var(--t3)">Chuẩn</span></div>
+      <div class="crop-ratio-btn" onclick="applyCropAspect('4:5',this)">4:5<br><span style="font-size:9px;color:var(--t3)">Portrait</span></div>
+      <div class="crop-ratio-btn" onclick="applyCropAspect('3:4',this)">3:4<br><span style="font-size:9px;color:var(--t3)">Photo</span></div>
+      <div class="crop-ratio-btn" onclick="applyCropAspect('21:9',this)">21:9<br><span style="font-size:9px;color:var(--t3)">Cinema</span></div>
+      <div class="crop-ratio-btn" onclick="applyCropAspect('free',this)">✂️<br><span style="font-size:9px;color:var(--t3)">Tự do</span></div>
     </div>
   </div>
   <div class="ps-div"></div>
   <div class="ps">
-    <div class="ps-title">Lật / Xoay</div>
-    <div class="align-row">
-      <div class="align-btn" title="Lật ngang" onclick="toast('Đã lật ngang')"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><path d="M8 3v18M16 3v18M3 8l5-5M3 16l5 5M21 8l-5-5M21 16l-5 5"/></svg></div>
-      <div class="align-btn" title="Lật dọc" onclick="toast('Đã lật dọc')"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><path d="M3 8h18M3 16h18M8 3l-5 5M16 3l5 5M8 21l-5-5M16 21l5-5"/></svg></div>
-      <div class="align-btn" title="Xoay 90°" onclick="toast('Đã xoay 90°')"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg></div>
+    <div class="ps-title">Lật &amp; Xoay</div>
+    <div class="align-row" style="margin-bottom:8px">
+      <div class="align-btn" title="Lật ngang" onclick="applyFlip('H')">↔ Ngang</div>
+      <div class="align-btn" title="Lật dọc" onclick="applyFlip('V')">↕ Dọc</div>
+      <div class="align-btn" title="Xoay 90° phải" onclick="applyRotate(90)">↻ 90°</div>
+      <div class="align-btn" title="Xoay 90° trái" onclick="applyRotate(-90)">↺ -90°</div>
+    </div>
+    <div class="prop-row">
+      <span class="prop-lbl">Xoay tự do</span>
+      <input type="range" class="prop-sl" min="-180" max="180" value="0"
+        oninput="applyPreviewRotate(this.value);document.getElementById('crop-rot-v').textContent=this.value+'°'">
+      <span class="prop-val" id="crop-rot-v">0°</span>
+    </div>
+    <div class="prop-row" style="margin-top:5px">
+      <span class="prop-lbl">Nắn thẳng</span>
+      <input type="range" class="prop-sl" min="-45" max="45" value="0" step="0.5"
+        oninput="applyPreviewRotate(this.value);document.getElementById('crop-str-v').textContent=this.value+'°'">
+      <span class="prop-val" id="crop-str-v">0°</span>
     </div>
   </div>
-  <button class="exp-btn" onclick="confirmCrop()">Áp dụng</button>`;
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Ken Burns (Pan &amp; Zoom)</div>
+    <div class="kb-preview">
+      <div class="kb-frame" id="kb-frame">🎬</div>
+    </div>
+    <div style="display:flex;gap:6px;margin-top:8px">
+      <button class="add-ov-btn" style="flex:1;font-size:11px" onclick="toggleKenBurns(true,this)">▶ Bật Ken Burns</button>
+      <button class="add-ov-btn" style="flex:1;font-size:11px" onclick="toggleKenBurns(false,this)">■ Tắt</button>
+    </div>
+    <div class="prop-row" style="margin-top:8px">
+      <span class="prop-lbl">Hướng Pan</span>
+      <div class="align-row" style="flex:1">
+        <div class="align-btn" onclick="setKBDir('left-right',this)" title="Trái→Phải">→</div>
+        <div class="align-btn on" onclick="setKBDir('zoom-in',this)" title="Zoom vào">+</div>
+        <div class="align-btn" onclick="setKBDir('zoom-out',this)" title="Zoom ra">-</div>
+        <div class="align-btn" onclick="setKBDir('top-bottom',this)" title="Trên→Dưới">↓</div>
+      </div>
+    </div>
+    <div class="prop-row" style="margin-top:5px">
+      <span class="prop-lbl">Tốc độ zoom</span>
+      <input type="range" class="prop-sl" min="5" max="30" value="15"
+        oninput="document.getElementById('kb-speed-v').textContent=this.value+'%'">
+      <span class="prop-val" id="kb-speed-v">15%</span>
+    </div>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Crop thông minh</div>
+    <div class="eff-grid">
+      <div class="eff-item" onclick="smartCrop('face',this)"><span class="eff-icon">😊</span>Gương mặt</div>
+      <div class="eff-item" onclick="smartCrop('center',this)"><span class="eff-icon">🎯</span>Trung tâm</div>
+      <div class="eff-item" onclick="smartCrop('rule3',this)"><span class="eff-icon">📐</span>Quy tắc 1/3</div>
+    </div>
+  </div>
+  <button class="exp-btn" style="margin:8px 12px" onclick="confirmCrop()">✅ Áp dụng Crop</button>`;
 
 const TPL_SUBTITLE = `
   <div class="ps">
-    <div class="ps-title">Phụ đề tự động</div>
-    <div class="toggle-row"><span class="tg-lbl">Tạo phụ đề tự động (ASR)</span>
+    <div class="ps-title">Tạo phụ đề</div>
+    <div class="toggle-row"><span class="tg-lbl">Nhận diện giọng nói (ASR)</span>
       <div class="tg off" onclick="this.classList.toggle('on')"><div class="tg-k"></div></div>
     </div>
     <div class="prop-row" style="margin:8px 0"><span class="prop-lbl" style="width:70px">Ngôn ngữ</span>
-      <select class="lng-sel" id="sub-lang"><option>Tiếng Việt</option><option>Tiếng Anh</option><option>Tiếng Hàn</option></select>
+      <select class="lng-sel" id="sub-lang">
+        <option>Tiếng Việt</option><option>Tiếng Anh</option>
+        <option>Tiếng Hàn</option><option>Tiếng Nhật</option><option>Tiếng Trung</option>
+      </select>
     </div>
-    <button class="add-ov-btn" onclick="generateSubtitles()">✨ Tạo phụ đề từ video</button>
-    <button class="sub-add-btn" onclick="addSubtitleAtPlayhead()">+ Thêm phụ đề tại vị trí playhead</button>
+    <div style="display:flex;gap:6px">
+      <button class="add-ov-btn" style="flex:1" onclick="generateSubtitles()">✨ Tạo từ video</button>
+      <button class="add-ov-btn" style="flex:1" onclick="addSubtitleAtPlayhead()">+ Thêm tại playhead</button>
+    </div>
+    <div style="display:flex;gap:6px;margin-top:6px">
+      <button class="add-ov-btn" style="flex:1;font-size:11px" onclick="importSRT()">📂 Import SRT</button>
+      <button class="add-ov-btn" style="flex:1;font-size:11px" onclick="exportSRT()">💾 Export SRT</button>
+    </div>
+    <input type="file" id="srt-file-input" accept=".srt,.vtt,.txt" style="display:none" onchange="parseSRTFile(this)">
   </div>
   <div class="ps-div"></div>
   <div class="ps">
@@ -2732,13 +3101,17 @@ const TPL_SUBTITLE = `
       <div class="eff-item" onclick="setSubStyle('neon',this)"><span class="eff-icon">💜</span>Neon</div>
       <div class="eff-item" onclick="setSubStyle('minimal',this)"><span class="eff-icon">✏️</span>Tối giản</div>
     </div>
-    <div class="prop-row" style="margin-top:8px">
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Tùy chỉnh kiểu chữ</div>
+    <div class="prop-row" style="margin-bottom:5px">
       <span class="prop-lbl">Cỡ chữ</span>
       <input type="range" class="prop-sl" min="10" max="32" value="16"
         oninput="setSubFontSize(this.value);document.getElementById('sub-fs-v').textContent=this.value+'px'">
       <span class="prop-val" id="sub-fs-v">16px</span>
     </div>
-    <div class="prop-row" style="margin-top:4px">
+    <div class="prop-row" style="margin-bottom:5px">
       <span class="prop-lbl">Vị trí</span>
       <div class="align-row" style="flex:1">
         <div class="align-btn on" onclick="setSubPosition('bottom',this)" title="Dưới">▼</div>
@@ -2746,11 +3119,33 @@ const TPL_SUBTITLE = `
         <div class="align-btn" onclick="setSubPosition('top',this)" title="Trên">▲</div>
       </div>
     </div>
+    <div class="prop-lbl" style="margin-bottom:4px;font-size:10.5px">Màu chữ phụ đề</div>
+    <div class="clr-row">
+      <div class="clr-sw on" style="background:#fff" onclick="setSubColor('#fff',this)"></div>
+      <div class="clr-sw" style="background:#ffd400" onclick="setSubColor('#ffd400',this)"></div>
+      <div class="clr-sw" style="background:#ff5b5b" onclick="setSubColor('#ff5b5b',this)"></div>
+      <div class="clr-sw" style="background:#0ff" onclick="setSubColor('#0ff',this)"></div>
+      <div class="clr-sw" style="background:#7cf07c" onclick="setSubColor('#7cf07c',this)"></div>
+    </div>
+    <div class="toggle-row" style="margin-top:8px">
+      <span class="tg-lbl">In đậm phụ đề</span>
+      <div class="tg off" onclick="this.classList.toggle('on');setSubBold(this.classList.contains('on'))"><div class="tg-k"></div></div>
+    </div>
+    <div class="toggle-row" style="margin-top:6px">
+      <span class="tg-lbl">Hiện từng từ (Word by Word)</span>
+      <div class="tg off" id="sub-wbw-tg" onclick="this.classList.toggle('on');toast(this.classList.contains('on')?'Bật Word-by-Word':'Tắt Word-by-Word')"><div class="tg-k"></div></div>
+    </div>
+    <div class="toggle-row" style="margin-top:6px">
+      <span class="tg-lbl">Hiệu ứng xuất hiện</span>
+      <div class="tg on" onclick="this.classList.toggle('on')"><div class="tg-k"></div></div>
+    </div>
   </div>
   <div class="ps-div"></div>
   <div class="ps">
-    <div class="ps-title">Danh sách phụ đề</div>
-    <div id="sub-list"><div style="font-size:11px;color:var(--t3);text-align:center;padding:8px 0">Chưa có phụ đề. Nhấn "Tạo phụ đề" để bắt đầu.</div></div>
+    <div class="ps-title">Danh sách phụ đề
+      <button class="trs-copy" onclick="clearAllSubtitles()" title="Xóa tất cả" style="float:right;font-size:11px;color:#ff6b6b">Xóa tất cả</button>
+    </div>
+    <div id="sub-list"><div style="font-size:11px;color:var(--t3);text-align:center;padding:8px 0">Chưa có phụ đề.</div></div>
   </div>`;
 
 const TPL_EXPORT = `
@@ -4154,6 +4549,485 @@ renderAll();
   </div>
 </div>
 
+
+<script>
+/* ====================================================
+   NEW FEATURE FUNCTIONS — All Tabs Expansion
+   ==================================================== */
+
+/* ---- STICKER TAB ---- */
+function switchStkCat(cat, el){
+  el.closest('.cat-tabs').querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  const grid=document.getElementById('stk-grid');
+  if(!grid||!STK_CATS[cat]) return;
+  grid.innerHTML=STK_CATS[cat].map(e=>`<div class="stk-cat-item" onclick="addStickerOverlay('${e}')">${e}</div>`).join('');
+}
+function adjustFocusedSticker(prop, val){
+  const el=document.querySelector('.ov-sticker.focused,.ov-text.focused');
+  if(!el){toast('Chọn một sticker trên khung hình trước');return;}
+  if(prop==='size') el.style.fontSize=val+'px';
+  else if(prop==='rotate') el.style.transform=`rotate(${val}deg)`;
+  else if(prop==='opacity') el.style.opacity=val;
+  else if(prop==='flipH'){
+    const cur=el.style.transform||'';
+    el.style.transform=cur.includes('scaleX(-1)')?cur.replace('scaleX(-1)','').trim():cur+' scaleX(-1)';
+    toast('Đã lật ngang');
+  }
+  else if(prop==='flipV'){
+    const cur=el.style.transform||'';
+    el.style.transform=cur.includes('scaleY(-1)')?cur.replace('scaleY(-1)','').trim():cur+' scaleY(-1)';
+    toast('Đã lật dọc');
+  }
+}
+function addCustomSticker(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const pv=document.getElementById('phone-el');
+    const img=document.createElement('img');
+    img.src=e.target.result;
+    img.style.cssText='position:absolute;top:40%;left:40%;width:50px;cursor:move;z-index:10;border-radius:4px';
+    img.classList.add('ov-sticker');
+    img.onclick=()=>{document.querySelectorAll('.ov-sticker,.ov-text').forEach(x=>x.classList.remove('focused'));img.classList.add('focused');};
+    _makeDraggable(img,pv);
+    pv.appendChild(img);
+    toast('Đã thêm sticker tùy chỉnh');
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ---- EFFECT TAB ---- */
+function switchEffCat(cat, el){
+  el.closest('.cat-tabs').querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  const grid=document.getElementById('eff-item-grid');
+  if(!grid||!EFF_CATS[cat]) return;
+  grid.innerHTML=EFF_CATS[cat].map(([icon,name])=>`<div class="eff-item" onclick="selectEffect('${name}',this)"><span class="eff-icon">${icon}</span>${name}</div>`).join('');
+}
+
+/* ---- FILTER TAB ---- */
+function switchFiltCat(cat, el){
+  el.closest('.cat-tabs').querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  const list=document.getElementById('filter-list');
+  if(!list||!FILT_PRESETS[cat]) return;
+  list.innerHTML=FILT_PRESETS[cat].map(([ico,key,name],i)=>`<div class="fi${i===0?' on':''}" data-filter="${key}" onclick="applyFilter('${key}',this)"><div class="fi-thumb">${ico}</div><div class="fi-name">${name}</div></div>`).join('');
+}
+function autoEnhance(){
+  const pv=document.getElementById('phone-el');
+  if(!pv) return;
+  pv.style.filter='brightness(1.1) contrast(1.1) saturate(1.2)';
+  toast('✨ Đã áp dụng tự động làm đẹp');
+}
+function resetAllFilters(){
+  const pv=document.getElementById('phone-el');
+  if(!pv) return;
+  pv.style.filter='';
+  _activeFilter='none';
+  _filterIntensity=80;
+  _manualAdj={brightness:0,contrast:0,saturate:0,hue:0};
+  toast('Đã đặt lại tất cả bộ lọc');
+}
+function resetColorCurve(){ toast('Đã đặt lại đường cong màu'); initColorCurveCanvas(); }
+function switchCurve(type, el){
+  el.closest('.cat-tabs').querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  toast('Đường cong: '+type.toUpperCase());
+}
+function initColorCurveCanvas(){
+  const c=document.getElementById('color-curve-canvas');
+  if(!c) return;
+  const ctx=c.getContext('2d');
+  ctx.clearRect(0,0,c.width,c.height);
+  ctx.strokeStyle='rgba(255,255,255,.15)';
+  ctx.lineWidth=1;
+  for(let i=1;i<4;i++){ctx.beginPath();ctx.moveTo(c.width*i/4,0);ctx.lineTo(c.width*i/4,c.height);ctx.stroke();}
+  for(let i=1;i<4;i++){ctx.beginPath();ctx.moveTo(0,c.height*i/4);ctx.lineTo(c.width,c.height*i/4);ctx.stroke();}
+  ctx.strokeStyle='rgba(255,255,255,.3)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(0,c.height);ctx.lineTo(c.width,0);ctx.stroke();
+  ctx.strokeStyle='#e8c840';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(0,c.height);ctx.lineTo(c.width,0);ctx.stroke();
+}
+
+/* ---- TEXT TAB ---- */
+function applyTextPreset(preset, el){
+  el.closest('.txt-preset-grid').querySelectorAll('.txt-preset').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');
+  const t=document.querySelector('.ov-text.focused');
+  const presets={
+    title:{fontSize:'24px',fontWeight:'900',color:'#fff',letterSpacing:'2px',textShadow:'none',fontFamily:'Impact',textTransform:'uppercase'},
+    caption:{fontSize:'12px',fontWeight:'400',color:'#eee',fontStyle:'italic',fontFamily:'Georgia'},
+    neon:{fontSize:'18px',fontWeight:'700',color:'#0ff',textShadow:'0 0 8px #0ff,0 0 20px #0ff'},
+    gold:{fontSize:'20px',fontWeight:'900',color:'#ffd400',textShadow:'2px 2px 4px rgba(0,0,0,.8)'},
+    lower3rd:{fontSize:'13px',fontWeight:'600',color:'#fff',background:'rgba(0,120,220,.85)',padding:'4px 12px',borderRadius:'2px'},
+    retro:{fontSize:'16px',fontWeight:'700',color:'#ff9640',fontFamily:'monospace',border:'1.5px solid #ff9640',padding:'3px 8px',borderRadius:'2px'},
+    minimal:{fontSize:'14px',fontWeight:'300',color:'#ccc',letterSpacing:'4px',fontFamily:'Arial'},
+    impact:{fontSize:'22px',fontWeight:'900',color:'#ff3b3b',textTransform:'uppercase',WebkitTextStroke:'1px #000'},
+    gradient:{fontSize:'18px',fontWeight:'700',background:'linear-gradient(90deg,#f06,#f90)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'},
+    outline:{fontSize:'18px',fontWeight:'800',color:'transparent',WebkitTextStroke:'1.5px #fff'},
+  };
+  const p=presets[preset];
+  if(!p) return;
+  if(t) Object.assign(t.style,p);
+  toast('Đã áp dụng preset: '+preset);
+}
+function applyTextStroke(val){
+  const t=document.querySelector('.ov-text.focused');
+  if(!t){toast('Chọn văn bản trước');return;}
+  t.style.webkitTextStroke=val>0?val+'px #000':'';
+  t.style.textStroke=val>0?val+'px #000':'';
+}
+function toggleTextUpper(el){
+  el.classList.toggle('on');
+  const t=document.querySelector('.ov-text.focused');
+  if(!t){toast('Chọn văn bản trước');return;}
+  t.style.textTransform=el.classList.contains('on')?'uppercase':'none';
+  toast(el.classList.contains('on')?'Chữ hoa':'Chữ thường');
+}
+function applyTextSpecialFX(fx, el){
+  el.closest('.eff-grid').querySelectorAll('.eff-item').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');
+  const t=document.querySelector('.ov-text.focused');
+  if(!t){toast('Chọn văn bản trước');return;}
+  t.classList.remove('txt-neon-glow','txt-fire','txt-rainbow','txt-3d-shadow','txt-glitch-fx');
+  if(fx) t.classList.add('txt-'+fx);
+  toast(fx?('Hiệu ứng đặc biệt: '+fx):'Đã gỡ hiệu ứng');
+}
+
+/* ---- MUSIC TAB ---- */
+let _selectedMusicTrack=-1;
+function selectMusicTrack(idx, el){
+  document.querySelectorAll('.mus-track').forEach(x=>x.classList.remove('playing'));
+  el.classList.add('playing');
+  _selectedMusicTrack=idx;
+  toast('Đã chọn: '+MUS_LIBRARY[idx].name);
+}
+function addMusicToTimeline(){
+  if(_selectedMusicTrack<0){toast('Chọn bản nhạc trước');return;}
+  const t=MUS_LIBRARY[_selectedMusicTrack];
+  toast('Đã thêm "'+t.name+'" vào timeline');
+}
+function updateEQ(band, val){
+  const labels=['Sub 60Hz','Bass 250Hz','Mid 1kHz','High 4kHz','Air 16kHz'];
+  toast(`EQ ${labels[band]}: ${val>0?'+':''}${val} dB`);
+}
+const EQ_PRESETS={
+  flat:[0,0,0,0,0],
+  bass:[8,6,0,-2,-2],
+  vocal:[-3,0,4,6,3],
+  treble:[-2,-2,0,5,8],
+  cinema:[6,4,2,4,6],
+};
+function applyEQPreset(preset, el){
+  el.closest('.cat-tabs').querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  const vals=EQ_PRESETS[preset]||[0,0,0,0,0];
+  const sliders=document.querySelectorAll('.eq-bar-sl');
+  sliders.forEach((sl,i)=>{ if(vals[i]!==undefined) sl.value=vals[i]; });
+  toast('EQ Preset: '+preset);
+}
+let _beatAnimTimer=null;
+function animateBeatViz(){
+  const bars=document.querySelectorAll('.beat-bar');
+  if(!bars.length) return;
+  clearInterval(_beatAnimTimer);
+  _beatAnimTimer=setInterval(()=>{
+    bars.forEach(b=>{ b.style.height=(Math.random()*80+10)+'%'; b.style.opacity=Math.random()*0.5+0.3; });
+  },120);
+  setTimeout(()=>clearInterval(_beatAnimTimer),5000);
+  toast('Đang phân tích nhịp...');
+}
+function startBeatSync(){ toast('🎵 Beat Sync: sẽ cắt clip tự động theo nhịp nhạc'); }
+let _isRecording=false;
+function toggleRecording(btn){
+  _isRecording=!_isRecording;
+  const status=document.getElementById('rec-status');
+  if(_isRecording){
+    btn.textContent='⏹ Dừng ghi âm';
+    btn.style.background='rgba(255,50,50,.2)';
+    btn.style.borderColor='rgba(255,50,50,.4)';
+    btn.style.color='#ff6060';
+    if(status) status.innerHTML='🔴 <span style="color:#ff6060">Đang ghi âm...</span>';
+    toast('🎤 Bắt đầu ghi âm giọng nói');
+  } else {
+    btn.textContent='🎤 Bắt đầu ghi âm';
+    btn.style.background='';btn.style.borderColor='';btn.style.color='';
+    if(status) status.textContent='✅ Đã lưu bản ghi âm';
+    toast('Đã dừng ghi âm');
+  }
+}
+
+/* ---- SUBTITLE TAB ---- */
+function importSRT(){
+  const inp=document.getElementById('srt-file-input');
+  if(inp) inp.click();
+}
+function exportSRT(){
+  if(!subtitles.length){toast('Chưa có phụ đề để xuất');return;}
+  function toSRTTime(s){
+    const h=Math.floor(s/3600).toString().padStart(2,'0');
+    const m=Math.floor((s%3600)/60).toString().padStart(2,'0');
+    const sec=Math.floor(s%60).toString().padStart(2,'0');
+    const ms=Math.round((s%1)*1000).toString().padStart(3,'0');
+    return `${h}:${m}:${sec},${ms}`;
+  }
+  let srt='';
+  subtitles.forEach((s,i)=>{
+    srt+=`${i+1}\n${toSRTTime(s.start)} --> ${toSRTTime(s.start+s.dur)}\n${s.text}\n\n`;
+  });
+  const blob=new Blob([srt],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='subtitles.srt';
+  a.click();
+  toast('💾 Đã xuất file SRT');
+}
+function parseSRTFile(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const text=e.target.result;
+    const blocks=text.trim().split(/\n\n+/);
+    let count=0;
+    blocks.forEach(block=>{
+      const lines=block.trim().split('\n');
+      if(lines.length<3) return;
+      const timeLine=lines[1];
+      const match=timeLine.match(/(\d+):(\d+):(\d+)[,.](\d+)\s*-->\s*(\d+):(\d+):(\d+)[,.](\d+)/);
+      if(!match) return;
+      const start=parseInt(match[1])*3600+parseInt(match[2])*60+parseInt(match[3])+parseInt(match[4])/1000;
+      const end=parseInt(match[5])*3600+parseInt(match[6])*60+parseInt(match[7])+parseInt(match[8])/1000;
+      const subText=lines.slice(2).join(' ');
+      subtitles.push({id:'sub'+Date.now()+count,start,dur:end-start,text:subText});
+      count++;
+    });
+    _renderSubList();
+    toast(`📂 Đã import ${count} phụ đề từ SRT`);
+  };
+  reader.readAsText(file);
+}
+function clearAllSubtitles(){
+  if(!subtitles.length){toast('Không có phụ đề');return;}
+  if(confirm('Xóa tất cả '+subtitles.length+' phụ đề?')){
+    subtitles.length=0;
+    _renderSubList();
+    _applySubToPreview();
+    toast('Đã xóa tất cả phụ đề');
+  }
+}
+function setSubColor(color, el){
+  el.closest('.clr-row').querySelectorAll('.clr-sw').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');
+  const ph=document.getElementById('ph-sub');
+  if(ph) ph.style.color=color;
+  toast('Màu phụ đề: '+color);
+}
+function setSubBold(bold){
+  const ph=document.getElementById('ph-sub');
+  if(ph) ph.style.fontWeight=bold?'700':'400';
+}
+
+/* ---- SPEED TAB ---- */
+function applySpeedRamp(type, el){
+  el.closest('.ramp-grid').querySelectorAll('.ramp-card').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');
+  const msgs={constant:'Tốc độ đều',vlog:'Speed ramp Vlog: nhanh→chậm→nhanh',cinema:'Speed ramp Cinematic: chậm dần',action:'Speed ramp Action: slow-mo→bùng nổ'};
+  toast('🎬 '+msgs[type]);
+  if(type==='vlog') _drawSpeedRamp([1,2,0.3,2,1]);
+  else if(type==='cinema') _drawSpeedRamp([1,0.8,0.5,0.3,0.1]);
+  else if(type==='action') _drawSpeedRamp([0.2,0.2,0.3,1,3]);
+  else _drawSpeedRamp([1,1,1,1,1]);
+}
+function _drawSpeedRamp(vals){
+  const c=document.getElementById('spd-curve-canvas');
+  if(!c) return;
+  const ctx=c.getContext('2d'),W=c.width,H=c.height;
+  const max=Math.max(...vals,1);
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='rgba(255,255,255,.04)';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(255,255,255,.1)';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
+  ctx.strokeStyle='#e8c840';ctx.lineWidth=2;
+  ctx.beginPath();
+  vals.forEach((v,i)=>{
+    const x=i/(vals.length-1)*W;
+    const y=H-(v/max)*(H-10)-5;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+}
+function freezeFrame(){
+  const c=selectedClip();
+  if(!c){toast('Chọn clip trước');return;}
+  toast('🎯 Freeze frame tại '+fmtTime(playhead)+' — đã thêm frame tĩnh 1s');
+}
+
+/* ---- TRANSLATE TAB ---- */
+let _lastTranslations=[];
+function translateAllSubtitles(){
+  if(!subtitles.length){toast('Chưa có phụ đề để dịch');return;}
+  const dst=document.getElementById('trs-dst-lang');
+  const dstLang=dst?dst.value:'en';
+  toast('Đang dịch '+subtitles.length+' phụ đề sang '+dstLang+'...');
+  setTimeout(()=>toast('✅ Đã dịch xong '+subtitles.length+' phụ đề'),1200);
+}
+function copyAllTranslations(){
+  if(!_lastTranslations.length){toast('Chưa có kết quả dịch');return;}
+  const text=_lastTranslations.map(t=>t.dst).join('\n');
+  navigator.clipboard.writeText(text).then(()=>toast('📋 Đã sao chép tất cả bản dịch'));
+}
+function exportTranslatedSRT(){
+  if(!_lastTranslations.length){toast('Chưa có kết quả dịch để xuất');return;}
+  function toSRTTime(s){
+    const h=Math.floor(s/3600).toString().padStart(2,'0');
+    const m=Math.floor((s%3600)/60).toString().padStart(2,'0');
+    const sec=Math.floor(s%60).toString().padStart(2,'0');
+    return `${h}:${m}:${sec},000`;
+  }
+  let srt='';
+  _lastTranslations.forEach((t,i)=>{
+    const start=i*3;
+    srt+=`${i+1}\n${toSRTTime(start)} --> ${toSRTTime(start+3)}\n${t.dst}\n\n`;
+  });
+  const blob=new Blob([srt],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='translated.srt';
+  a.click();
+  toast('💾 Đã xuất SRT bản dịch');
+}
+let _glossaryTerms=[];
+function addGlossaryTerm(){
+  const src=prompt('Thuật ngữ gốc (ví dụ: CapCut):');
+  if(!src) return;
+  const dst=prompt('Dịch thành:');
+  if(!dst) return;
+  _glossaryTerms.push({src,dst});
+  const list=document.getElementById('glossary-list');
+  if(list) list.innerHTML=_glossaryTerms.map((t,i)=>`<div class="trs-pair"><div class="trs-src">${t.src}</div><div class="trs-dst">${t.dst} <button class="trs-copy" onclick="_glossaryTerms.splice(${i},1);this.closest('.trs-pair').remove()">✕</button></div></div>`).join('');
+  toast('Đã thêm thuật ngữ: '+src+' → '+dst);
+}
+
+/* ---- CROP TAB ---- */
+function applyCropAspect(ratio, el){
+  if(el){
+    el.closest('.crop-ratio-grid').querySelectorAll('.crop-ratio-btn').forEach(x=>x.classList.remove('on'));
+    el.classList.add('on');
+  }
+  toast('Tỷ lệ khung: '+ratio);
+}
+function applyFlip(dir){
+  const pv=document.getElementById('phone-el');
+  if(!pv) return;
+  const cur=pv.style.transform||'';
+  if(dir==='H') pv.style.transform=cur.includes('scaleX(-1)')?cur.replace('scaleX(-1)','').trim():cur+' scaleX(-1)';
+  else pv.style.transform=cur.includes('scaleY(-1)')?cur.replace('scaleY(-1)','').trim():cur+' scaleY(-1)';
+  toast('Đã lật '+(dir==='H'?'ngang':'dọc'));
+}
+function applyRotate(deg){
+  const pv=document.getElementById('phone-el');
+  if(!pv) return;
+  const cur=parseFloat((pv.style.transform||'').match(/rotate\((-?\d+(?:\.\d+)?)deg\)/)?.[1]||0);
+  pv.style.transform=(pv.style.transform||'').replace(/rotate\([^)]+\)/,'').trim()+` rotate(${cur+deg}deg)`;
+  toast('Đã xoay '+(deg>0?'+':'')+deg+'°');
+}
+function applyPreviewRotate(deg){
+  const pv=document.getElementById('phone-el');
+  if(!pv) return;
+  const cur=pv.style.transform||'';
+  pv.style.transform=cur.replace(/rotate\([^)]+\)/,'').trim()+` rotate(${deg}deg)`;
+}
+let _kbActive=false;
+function toggleKenBurns(on, el){
+  _kbActive=on;
+  const frame=document.getElementById('kb-frame');
+  if(frame){ if(on) frame.classList.add('kb-active'); else frame.classList.remove('kb-active'); }
+  toast(on?'▶ Ken Burns đã bật':'■ Ken Burns đã tắt');
+}
+function setKBDir(dir, el){
+  if(el){
+    el.closest('.align-row').querySelectorAll('.align-btn').forEach(x=>x.classList.remove('on'));
+    el.classList.add('on');
+  }
+  toast('Ken Burns hướng: '+dir);
+}
+function smartCrop(type, el){
+  if(el){
+    el.closest('.eff-grid').querySelectorAll('.eff-item').forEach(x=>x.classList.remove('on'));
+    el.classList.add('on');
+  }
+  const msgs={face:'Đang nhận diện gương mặt...', center:'Crop trung tâm khung hình', rule3:'Áp dụng quy tắc 1/3'};
+  toast('🎯 Smart Crop: '+msgs[type]);
+}
+
+/* ---- TEXT SPECIAL EFFECTS CSS ---- */
+const _fxStyle=document.createElement('style');
+_fxStyle.textContent=`
+.txt-neon-glow{text-shadow:0 0 6px currentColor,0 0 12px currentColor,0 0 24px currentColor!important}
+.txt-fire{animation:txt-fire-anim 0.8s ease-in-out infinite alternate}
+@keyframes txt-fire-anim{from{text-shadow:0 0 4px #ff0,0 0 10px #f80,0 0 20px #f00}to{text-shadow:0 0 8px #ff0,0 0 18px #f80,0 0 32px #f00;transform:scale(1.03)}}
+.txt-rainbow{animation:txt-rainbow-anim 2s linear infinite}
+@keyframes txt-rainbow-anim{0%{color:#f00}14%{color:#f80}28%{color:#ff0}42%{color:#0f0}57%{color:#0ff}71%{color:#00f}85%{color:#f0f}100%{color:#f00}}
+.txt-3d-shadow{text-shadow:2px 2px 0 rgba(0,0,0,.4),4px 4px 0 rgba(0,0,0,.3),6px 6px 0 rgba(0,0,0,.2)}
+.txt-glitch-fx{animation:txt-glitch 0.3s infinite}
+@keyframes txt-glitch{0%,100%{transform:none;opacity:1}25%{transform:translate(-2px,1px) skewX(1deg);opacity:.9}50%{transform:translate(2px,-1px) skewX(-1deg);opacity:.95}75%{transform:translate(-1px,2px);opacity:.9}}
+.txt-shake{animation:txt-shake-anim 0.5s ease-in-out infinite alternate}
+@keyframes txt-shake-anim{from{transform:translateX(-3px)}to{transform:translateX(3px)}}
+.txt-flip-x{animation:txt-flip-x-anim 1s ease-in-out infinite alternate}
+@keyframes txt-flip-x-anim{from{transform:rotateX(0deg)}to{transform:rotateX(15deg)}}
+.txt-blur-in{animation:txt-blur-in-anim 1s ease forwards}
+@keyframes txt-blur-in-anim{from{filter:blur(10px);opacity:0}to{filter:blur(0);opacity:1}}
+`;
+document.head.appendChild(_fxStyle);
+
+/* Override runTranslation to store results */
+const _origRunTranslation=window.runTranslation;
+window.runTranslation=function(){
+  const srcEl=document.getElementById('trs-input');
+  const dstLangEl=document.getElementById('trs-dst-lang');
+  const langBadge=document.getElementById('trs-lang-badge');
+  const resultsEl=document.getElementById('trs-results');
+  const applyBtn=document.getElementById('trs-apply-btn');
+  const exportBtn=document.getElementById('trs-export-btn');
+  if(!srcEl) return;
+  const lines=srcEl.value.trim().split('\n').filter(l=>l.trim());
+  if(!lines.length) return;
+  const dstLang=dstLangEl?dstLangEl.value:'en';
+  const DEMO={
+    en:{
+      'Cảnh hoàng hôn ở bờ biển':'Sunset scene at the beach',
+      'Đi bộ trong rừng xanh':'Walking through the green forest',
+      'Thành phố về đêm lộng lẫy':'The magnificent city at night',
+    },
+    ko:{
+      'Cảnh hoàng hôn ở bờ biển':'해변의 석양 풍경',
+      'Đi bộ trong rừng xanh':'초록 숲속을 걷다',
+      'Thành phố về đêm lộng lẫy':'화려한 밤의 도시',
+    },
+    ja:{
+      'Cảnh hoàng hôn ở bờ biển':'ビーチの夕日の風景',
+      'Đi bộ trong rừng xanh':'緑の森を歩く',
+      'Thành phố về đêm lộng lẫy':'夜の輝く都市',
+    },
+  };
+  const langMap=DEMO[dstLang]||DEMO['en'];
+  _lastTranslations=lines.map(l=>({src:l,dst:langMap[l]||l+' [translated to '+dstLang+']'}));
+  if(langBadge) langBadge.textContent='→ '+dstLang.toUpperCase();
+  if(resultsEl) resultsEl.innerHTML=_lastTranslations.map(t=>`<div class="trs-pair"><div class="trs-src">${t.src}</div><div class="trs-dst">${t.dst}<button class="trs-copy" onclick="navigator.clipboard.writeText('${t.dst.replace(/'/g,"\\'")}').then(()=>toast('Đã sao chép'))">📋</button></div></div>`).join('');
+  if(applyBtn) applyBtn.style.display='block';
+  if(exportBtn) exportBtn.style.display='block';
+  toast('✅ Đã dịch '+lines.length+' dòng sang '+dstLang.toUpperCase());
+};
+
+/* Init color curve canvas when filter tab opens */
+const _origSwitchRP=window.switchRP;
+window.switchRP=function(tab){
+  _origSwitchRP&&_origSwitchRP(tab);
+  if(tab==='filter') setTimeout(initColorCurveCanvas,50);
+  if(tab==='speed') setTimeout(()=>{ const c=document.getElementById('spd-curve-canvas'); if(c&&window._drawSpeedCurve) _drawSpeedCurve(1); },50);
+};
+</script>
 </body>
 </html>
 
