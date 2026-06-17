@@ -1113,6 +1113,8 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 <script src="/js/shorts.js" defer></script>
 <script src="/js/project.js" defer></script>
 <script src="/js/media.js" defer></script>
+<script src="/js/export.js" defer></script>
+<script src="/js/viral.js" defer></script>
 </head>
 <body>
 <div id="app">
@@ -1169,9 +1171,9 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
     <svg class="ic" width="14" height="14" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>
     Chia sẻ
   </button>
-  <button class="tb-export" onclick="switchTab('export')">
+  <button class="tb-export" onclick="typeof ExportEngine!=='undefined'?ExportEngine.open():switchTab('export')">
     <svg class="ic" width="14" height="14" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-    Xuất video
+    Xu&#x1EE5;t&nbsp;video
   </button>
 </div>
 
@@ -3594,32 +3596,26 @@ const TPL_SUBTITLE = `
 
 const TPL_EXPORT = `
   <div class="ps">
-    <div class="ps-title">Độ phân giải</div>
+    <div class="ps-title">Chất lượng xuất</div>
+    <label class="q-opt"><input type="radio" name="qres"><div><div class="q-name">720p · HD</div><div class="q-desc">Dung lượng nhỏ</div></div><span class="q-size">~12 MB</span></label>
     <label class="q-opt on"><input type="radio" name="qres" checked><div><div class="q-name">1080p · Full HD</div><div class="q-desc">Khuyên dùng cho mạng xã hội</div></div><span class="q-size">~24 MB</span></label>
-    <label class="q-opt"><input type="radio" name="qres"><div><div class="q-name">720p · HD</div><div class="q-desc">Dung lượng nhỏ hơn</div></div><span class="q-size">~12 MB</span></label>
-    <label class="q-opt"><input type="radio" name="qres"><div><div class="q-name">4K · Ultra HD</div><div class="q-desc">Yêu cầu CapCut Pro</div></div><span class="q-size">~80 MB</span></label>
+    <label class="q-opt"><input type="radio" name="qres"><div><div class="q-name">1440p · 2K</div><div class="q-desc">Chất lượng cao</div></div><span class="q-size">~60 MB</span></label>
+    <label class="q-opt"><input type="radio" name="qres"><div><div class="q-name">4K · Ultra HD</div><div class="q-desc">Chất lượng tối đa</div></div><span class="q-size">~120 MB</span></label>
   </div>
   <div class="ps-div"></div>
   <div class="ps">
-    <div class="ps-title">Định dạng &amp; tốc độ khung hình</div>
+    <div class="ps-title">Định dạng &amp; FPS</div>
     <div class="prop-row" style="margin-bottom:8px"><span class="prop-lbl" style="width:60px">Định dạng</span>
-      <select class="lng-sel"><option>MP4</option><option>MOV</option></select>
+      <select class="lng-sel"><option value="mp4">MP4</option><option value="webm">WebM</option><option value="gif">GIF (ngắn)</option></select>
     </div>
     <div class="prop-row"><span class="prop-lbl" style="width:60px">FPS</span>
-      <select class="lng-sel"><option>30</option><option>60</option><option>24</option></select>
+      <select class="lng-sel"><option value="24">24</option><option value="30" selected>30</option><option value="60">60</option></select>
     </div>
   </div>
-  <button class="exp-btn" onclick="startExport()">
+  <button class="exp-btn" onclick="typeof ExportEngine!=='undefined'?ExportEngine.open():startExport()">
     <svg class="ic" width="14" height="14" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-    Xuất video
+    🎬 Open Export Panel
   </button>
-  <div id="exp-progress" style="display:none;margin-top:12px">
-    <div style="height:6px;background:var(--bg4);border-radius:3px;overflow:hidden">
-      <div id="exp-bar" style="height:100%;width:0%;background:var(--accent);transition:width .3s"></div>
-    </div>
-    <div style="font-size:11px;color:var(--t3);margin-top:6px;text-align:center" id="exp-pct">0%</div>
-    <div style="font-size:10px;color:var(--t3);margin-top:4px;text-align:center" id="exp-status">Đang chuẩn bị...</div>
-  </div>
   <div style="margin-top:16px;border-top:1px solid var(--border1);padding-top:14px">
     <div style="font-size:11px;color:var(--t3);margin-bottom:8px;font-weight:600;letter-spacing:.3px">LƯU / MỞ DỰ ÁN</div>
     <div style="display:flex;gap:8px">
