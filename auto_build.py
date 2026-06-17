@@ -11,12 +11,8 @@ Quy trình:
   6. Cập nhật tientrinhhethong.md: chuyển tính năng sang Đã hoàn thành
 """
 
-import os
-import re
-import sys
-import json
+import os, re, sys, json
 from datetime import datetime
-from openai import OpenAI
 
 MD_FILE   = "tientrinhhethong.md"
 HTML_FILE = "capcut.html"
@@ -24,30 +20,52 @@ MODEL     = "gpt-4.1"
 TODAY     = datetime.now().strftime("%d/%m/%Y")
 
 
-def log(msg: str):
+def log(msg):
     print(f"[auto_build] {msg}", flush=True)
 
 
-def read_file(path: str) -> str:
+def read_file(path):
     with open(path, "r", encoding="utf-8") as f:
         return f.read()
 
 
-def write_file(path: str, content: str):
+def write_file(path, content):
     with open(path, "w", encoding="utf-8") as f:
         f.write(content)
 
 
-def get_client():
-    api_key = os.environ.get("OPENAI_API_KEY", "").strip()
-    if not api_key:
-        log("⚠️  OPENAI_API_KEY chưa được thiết lập — bỏ qua auto-build.")
-        return None
-    if not api_key.startswith("sk-"):
-        log(f"⚠️  OPENAI_API_KEY không hợp lệ (bắt đầu bằng '{api_key[:10]}...') — bỏ qua auto-build.")
-        log("    OpenAI API key phải bắt đầu bằng 'sk-'. Cập nhật tại Replit Secrets.")
-        return None
-    return OpenAI(api_key=api_key)
+def get_api_key():
+    """Đọc OpenAI API key theo thứ tự ưu tiên:
+    1. PostgreSQL database (lưu bởi setup_api_key.py)
+    2. Env var OPENAI_API_KEY (nếu hợp lệ)
+    """
+    db_url = os.environ.get('DATABASE_URL', '')
+
+    # Thử đọc từ PostgreSQL trước
+    if db_url:
+        try:
+            import psycopg2
+            conn = psycopg2.connect(db_url)
+            cur = conn.cursor()
+            cur.execute("SELECT value FROM app_config WHERE key = 'OPENAI_API_KEY'")
+            row = cur.fetchone()
+            cur.close()
+            conn.close()
+            if row and row[0].startswith('sk-'):
+                log(f"✅ Đọc API key từ database (prefix: {row[0][:15]}...)")
+                return row[0]
+            elif row:
+                log(f"⚠️  Key trong database không hợp lệ (prefix: {row[0][:10]}...)")
+        except Exception as e:
+            log(f"⚠️  Không đọc được database: {e}")
+
+    # Fallback: env var
+    env_key = os.environ.get('OPENAI_API_KEY', '').strip()
+    if env_key.startswith('sk-'):
+        log(f"✅ Dùng OPENAI_API_KEY từ environment (prefix: {env_key[:15]}...)")
+        return env_key
+
+    return None
 
 
 SYSTEM_ANALYST = """Bạn là senior developer chuyên về trình chỉnh sửa video web (HTML/CSS/JS thuần).
@@ -56,197 +74,175 @@ Nhiệm vụ: Phân tích dự án CapCut Clone và quyết định tính năng 
 Nguyên tắc:
 - Ưu tiên tính năng trong Backlog (nếu có)
 - Nếu Backlog trống, đề xuất 1 tính năng mới phù hợp với dự án
-- Tính năng phải: thực tế, có thể implement bằng JS/CSS/HTML thuần, phù hợp phong cách CapCut
-- Tính năng KHÔNG được trùng với bất kỳ tính năng nào đã có trong danh sách Đã hoàn thành
-- Tính năng nên tập trung vào UX/UI hoặc chức năng chỉnh sửa video
+- Tính năng phải thực tế, implement được bằng JS/CSS/HTML thuần, phù hợp phong cách CapCut
+- KHÔNG trùng với bất kỳ tính năng nào đã có trong danh sách Đã hoàn thành
+- Tập trung vào UX/UI hoặc chức năng chỉnh sửa video
 
-Trả về JSON với format:
+Trả về JSON:
 {
   "feature_id": "F21",
-  "feature_name": "Tên tính năng ngắn gọn",
-  "feature_detail": "Mô tả chi tiết kỹ thuật để implement",
+  "feature_name": "Tên tính năng",
+  "feature_detail": "Mô tả chi tiết kỹ thuật",
   "from_backlog": true,
-  "reasoning": "Lý do chọn tính năng này"
+  "reasoning": "Lý do chọn"
 }"""
 
 
-def analyze_and_choose_feature(client: OpenAI, md_content: str) -> dict:
+def analyze_and_choose_feature(client, md_content):
     log("Đang phân tích tientrinhhethong.md và chọn tính năng...")
     resp = client.chat.completions.create(
         model=MODEL,
         messages=[
             {"role": "system", "content": SYSTEM_ANALYST},
-            {"role": "user", "content": f"Đây là file tiến trình dự án:\n\n{md_content}"}
+            {"role": "user",   "content": f"File tiến trình dự án:\n\n{md_content}"}
         ],
         response_format={"type": "json_object"},
         temperature=0.7,
     )
     result = json.loads(resp.choices[0].message.content)
-    log(f"Tính năng được chọn: [{result['feature_id']}] {result['feature_name']}")
+    log(f"Tính năng chọn: [{result['feature_id']}] {result['feature_name']}")
     log(f"Lý do: {result['reasoning']}")
     return result
 
 
 SYSTEM_CODER = """Bạn là senior frontend developer chuyên HTML/CSS/JS thuần (không dùng framework).
-Nhiệm vụ: Viết code để thêm tính năng mới vào CapCut Video Editor Clone.
+Nhiệm vụ: Viết code thêm tính năng mới vào CapCut Video Editor Clone.
 
-Quy tắc kỹ thuật QUAN TRỌNG:
-- Code chạy trong môi trường browser, single-file SPA
-- Sử dụng CSS variables: --bg0..--bg5, --accent (#D4A017), --t1..--t4, --border
-- Tất cả hàm mới đặt tên có prefix `auto_` để tránh xung đột
-- Gọi `renderAll()` sau khi thay đổi state
-- Gọi `saveState()` trước khi thay đổi tracks[] để Undo hoạt động
-- `toast(msg)` để hiển thị thông báo nhỏ
-- `selected` (Set) chứa id clip đang chọn; `tracks[]` là mảng track
-- Mỗi clip có: id, start, dur, label, cls (cs/cx/cv/ca)
-- Code phải HOÀN CHỈNH, tự đứng được, không cần sửa phần còn lại
-- Nếu cần HTML: dùng JS inject vào DOM (insertAdjacentHTML hoặc tương tự)
-- Nếu cần CSS: tạo <style> tag và append vào document.head
-- KHÔNG dùng import/require, KHÔNG dùng async ở top-level
+Quy tắc QUAN TRỌNG:
+- Code chạy trong browser, single-file SPA
+- CSS variables: --bg0..--bg5, --accent (#D4A017), --t1..--t4, --border
+- Prefix hàm mới bằng `auto_` để tránh xung đột
+- Gọi renderAll() sau khi thay đổi state
+- Gọi saveState() trước khi thay đổi tracks[]
+- toast(msg) để hiển thị thông báo
+- selected (Set) = clip đang chọn; tracks[] = mảng track
+- Clip: {id, start, dur, label, cls (cs/cx/cv/ca)}
+- Code HOÀN CHỈNH, không cần sửa phần còn lại
+- HTML mới: inject bằng JS vào DOM
+- CSS mới: tạo <style> tag append vào document.head
+- KHÔNG dùng import/require/async top-level
 
 Trả về JSON:
 {
-  "js_code": "// code JavaScript hoàn chỉnh...",
-  "description": "Mô tả ngắn gọn code đã làm gì",
-  "usage": "Hướng dẫn sử dụng tính năng (1-2 câu)"
+  "js_code": "// code hoàn chỉnh...",
+  "description": "Mô tả ngắn",
+  "usage": "Hướng dẫn dùng (1-2 câu)"
 }"""
 
 
-def generate_feature_code(client: OpenAI, feature: dict, html_summary: str) -> dict:
+def generate_feature_code(client, feature, html_summary):
     log(f"Đang sinh code cho: {feature['feature_name']}...")
-    user_prompt = f"""Tính năng cần build:
+    prompt = f"""Tính năng:
 ID: {feature['feature_id']}
 Tên: {feature['feature_name']}
-Mô tả kỹ thuật: {feature['feature_detail']}
+Kỹ thuật: {feature['feature_detail']}
 
-Tóm tắt cấu trúc capcut.html hiện tại:
+Tóm tắt capcut.html:
 {html_summary}
 
-Hãy viết code JS/CSS để implement tính năng này.
-Code sẽ được chèn ngay trước thẻ </script> cuối cùng trong file."""
+Code sẽ được chèn ngay trước </script> cuối cùng."""
 
     resp = client.chat.completions.create(
         model=MODEL,
         messages=[
             {"role": "system", "content": SYSTEM_CODER},
-            {"role": "user", "content": user_prompt}
+            {"role": "user",   "content": prompt}
         ],
         response_format={"type": "json_object"},
         temperature=0.3,
         max_tokens=3000,
     )
     result = json.loads(resp.choices[0].message.content)
-    log(f"Code sinh xong: {result['description']}")
+    log(f"Code xong: {result['description']}")
     return result
 
 
-def summarize_html(html_content: str) -> str:
+def summarize_html(html_content):
     lines = html_content.split('\n')
     total = len(lines)
     head = '\n'.join(lines[:80])
-    mid_start = total // 2 - 30
-    mid = '\n'.join(lines[mid_start:mid_start + 60])
+    mid  = '\n'.join(lines[total//2-30 : total//2+30])
     tail = '\n'.join(lines[-60:])
-    return f"""=== PHẦN ĐẦU (CSS vars, layout) ===
+    return f"""=== ĐẦU (CSS vars, layout) ===
 {head}
 
-=== PHẦN GIỮA (state, tracks[]) ===
+=== GIỮA (state, tracks[]) ===
 {mid}
 
-=== PHẦN CUỐI (script kết thúc) ===
+=== CUỐI (script end) ===
 {tail}
 
 === TỔNG QUAN ===
-- Tổng dòng: {total}
-- State chính: tracks[], selected (Set), zoomIdx, nextId
-- Hàm quan trọng: renderAll(), saveState(), toast(), renderMinimap(), renderKFEditor()
-- Phím tắt: Space(play), S(split), Delete(xóa), Ctrl+Z(undo), Ctrl+Y(redo)
-- Tracks: text(cs), effect(cx), video(cv), audio(ca)
-- CSS accent: --accent (#D4A017), --bg0..bg5, --t1..t4"""
+Tổng dòng: {total}
+State: tracks[], selected(Set), zoomIdx, nextId
+Hàm: renderAll(), saveState(), toast(), renderMinimap(), renderKFEditor()
+Phím tắt: Space(play), S(split), Del(xóa), Ctrl+Z/Y(undo/redo)
+Tracks: text(cs), effect(cx), video(cv), audio(ca)
+CSS: --accent(#D4A017), --bg0..bg5, --t1..t4"""
 
 
-def inject_code_into_html(html_content: str, feature: dict, code_result: dict) -> str:
-    js_code = code_result["js_code"].strip()
-    injection = f"""
+def inject_code(html_content, feature, code_result):
+    js = code_result["js_code"].strip()
+    block = f"""
 /* ═══════════════════════════════════════════════════════════════
    AUTO-BUILD: [{feature['feature_id']}] {feature['feature_name']}
    Ngày: {TODAY} | {code_result['description']}
-   Cách dùng: {code_result['usage']}
+   Dùng: {code_result['usage']}
    ═══════════════════════════════════════════════════════════════ */
-{js_code}
+{js}
 """
-    last_script_close = html_content.rfind('</script>')
-    if last_script_close == -1:
-        log("LỖI: Không tìm thấy </script> trong capcut.html")
+    pos = html_content.rfind('</script>')
+    if pos == -1:
+        log("LỖI: Không tìm thấy </script>")
         sys.exit(1)
-    return (
-        html_content[:last_script_close]
-        + injection
-        + '\n</script>'
-        + html_content[last_script_close + len('</script>'):]
-    )
+    return html_content[:pos] + block + '\n</script>' + html_content[pos+len('</script>'):]
 
 
-def update_markdown(md_content: str, feature: dict, code_result: dict) -> str:
+def update_markdown(md_content, feature, code_result):
+    # Ngày
     md_content = re.sub(
         r'\*\*Cập nhật lần cuối:\*\*.*',
         f'**Cập nhật lần cuối:** {TODAY}',
         md_content
     )
-
+    # Xóa khỏi backlog
     if feature.get("from_backlog"):
-        pattern = rf'\|[^|]*\|[^|]*{re.escape(feature["feature_name"])}[^|]*\|[^|]*\|\n?'
-        md_content = re.sub(pattern, '', md_content)
-
-    backlog_section = re.search(r'## BACKLOG.*?(?=##|\Z)', md_content, re.DOTALL)
-    if backlog_section:
-        backlog_text = backlog_section.group(0)
-        rows = [
-            l for l in backlog_text.split('\n')
-            if l.strip().startswith('|')
-            and '---' not in l
-            and 'Ưu tiên' not in l
-            and '*(trống)*' not in l
-            and l.strip() != '|'
-        ]
+        md_content = re.sub(
+            rf'\|[^|]*\|[^|]*{re.escape(feature["feature_name"])}[^|]*\|[^|]*\|\n?',
+            '', md_content
+        )
+    # Reset backlog nếu trống
+    bl = re.search(r'## BACKLOG.*?(?=##|\Z)', md_content, re.DOTALL)
+    if bl:
+        rows = [l for l in bl.group(0).split('\n')
+                if l.strip().startswith('|') and '---' not in l
+                and 'Ưu tiên' not in l and '*(trống)*' not in l and l.strip() != '|']
         if not rows:
             md_content = re.sub(
                 r'(\| Ưu tiên \| Tính năng \| Mô tả yêu cầu \|\n\|[-| ]+\|\n).*?(\n---)',
                 r'\1| — | *(trống)* | Chưa có yêu cầu mới |\2',
-                md_content,
-                flags=re.DOTALL
+                md_content, flags=re.DOTALL
             )
-
+    # Thêm vào nhóm cuối
     groups = re.findall(r'### Nhóm (\d+)', md_content)
-    last_group_num = int(groups[-1]) if groups else 0
-    feature_id = feature['feature_id']
-    new_row = (
-        f'\n| {feature_id} | {feature["feature_name"]} '
-        f'| {code_result["description"]} · {code_result["usage"]} | {TODAY} |'
-    )
-
-    last_group_pattern = (
-        rf'(### Nhóm {last_group_num}.*?\n\| ID \| Tính năng \| Chi tiết \| Ngày \|\n'
-        rf'\|[-| ]+\|)(.*?)(\n\n---|\n\n###|\Z)'
-    )
-    match = re.search(last_group_pattern, md_content, re.DOTALL)
-    if match:
-        md_content = (
-            md_content[:match.start(2)]
-            + match.group(2) + new_row
-            + md_content[match.start(3):]
-        )
+    last_g = int(groups[-1]) if groups else 0
+    new_row = (f'\n| {feature["feature_id"]} | {feature["feature_name"]} '
+               f'| {code_result["description"]} · {code_result["usage"]} | {TODAY} |')
+    pat = (rf'(### Nhóm {last_g}.*?\n\| ID \| Tính năng \| Chi tiết \| Ngày \|\n'
+           rf'\|[-| ]+\|)(.*?)(\n\n---|\n\n###|\Z)')
+    m = re.search(pat, md_content, re.DOTALL)
+    if m:
+        md_content = md_content[:m.start(2)] + m.group(2) + new_row + md_content[m.start(3):]
     else:
         new_group = f"""
-### Nhóm {last_group_num + 1} — Tính năng Auto-Build
+### Nhóm {last_g + 1} — Tính năng Auto-Build
 
 | ID | Tính năng | Chi tiết | Ngày |
 |----|-----------|----------|------|
-| {feature_id} | {feature["feature_name"]} | {code_result["description"]} · {code_result["usage"]} | {TODAY} |
+| {feature["feature_id"]} | {feature["feature_name"]} | {code_result["description"]} · {code_result["usage"]} | {TODAY} |
 
 """
         md_content = re.sub(r'(---\n\n## BACKLOG)', new_group + r'\1', md_content)
-
     return md_content
 
 
@@ -258,49 +254,43 @@ def main():
 
     for f in [MD_FILE, HTML_FILE]:
         if not os.path.exists(f):
-            log(f"LỖI: Không tìm thấy file '{f}'")
+            log(f"LỖI: Không tìm thấy '{f}'")
             sys.exit(1)
 
-    log(f"Đọc {MD_FILE}...")
-    md_content = read_file(MD_FILE)
-
-    log(f"Đọc {HTML_FILE}...")
+    md_content   = read_file(MD_FILE)
     html_content = read_file(HTML_FILE)
 
-    client = get_client()
-    if client is None:
-        log("⏭️  Bỏ qua auto-build (không có API key hợp lệ). Server sẽ khởi động bình thường.")
-        log("    Để kích hoạt auto-build: thêm OPENAI_API_KEY (bắt đầu bằng 'sk-') vào Replit Secrets.")
+    api_key = get_api_key()
+    if not api_key:
+        log("⚠️  Không tìm thấy OpenAI API key hợp lệ — bỏ qua auto-build.")
+        log("   Chạy: python3 setup_api_key.py sk-YOUR_KEY để cấu hình.")
         sys.exit(0)
 
-    feature = analyze_and_choose_feature(client, md_content)
-    html_summary = summarize_html(html_content)
-    code_result = generate_feature_code(client, feature, html_summary)
+    from openai import OpenAI
+    client = OpenAI(api_key=api_key)
 
-    backup_html = html_content
-    backup_md = md_content
+    feature     = analyze_and_choose_feature(client, md_content)
+    code_result = generate_feature_code(client, feature, summarize_html(html_content))
 
+    bk_html, bk_md = html_content, md_content
     try:
         log("Chèn code vào capcut.html...")
-        new_html = inject_code_into_html(html_content, feature, code_result)
-        write_file(HTML_FILE, new_html)
-        log(f"✅ Đã cập nhật {HTML_FILE}")
+        write_file(HTML_FILE, inject_code(html_content, feature, code_result))
+        log(f"✅ capcut.html cập nhật")
 
         log("Cập nhật tientrinhhethong.md...")
-        new_md = update_markdown(md_content, feature, code_result)
-        write_file(MD_FILE, new_md)
-        log(f"✅ Đã cập nhật {MD_FILE}")
+        write_file(MD_FILE, update_markdown(md_content, feature, code_result))
+        log(f"✅ tientrinhhethong.md cập nhật")
 
     except Exception as e:
-        log(f"LỖI khi ghi file: {e}")
-        log("Khôi phục file gốc...")
-        write_file(HTML_FILE, backup_html)
-        write_file(MD_FILE, backup_md)
+        log(f"LỖI: {e} — Khôi phục file gốc...")
+        write_file(HTML_FILE, bk_html)
+        write_file(MD_FILE,   bk_md)
         sys.exit(1)
 
     log("=" * 60)
-    log(f"✅ HOÀN THÀNH! [{feature['feature_id']}] {feature['feature_name']}")
-    log(f"   Cách dùng: {code_result['usage']}")
+    log(f"✅ XONG! [{feature['feature_id']}] {feature['feature_name']}")
+    log(f"   {code_result['usage']}")
     log("=" * 60)
 
 
