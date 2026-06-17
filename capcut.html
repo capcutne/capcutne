@@ -4469,7 +4469,133 @@ function applyVoiceEffect(name, el){
 }
 
 /* ---- AI GENERATE ---------- */
-function openAIGen(){ toast('✨ AI Tạo: tính năng demo — sẽ tạo nội dung bằng AI'); }
+(function(){
+  const st=document.createElement('style');
+  st.textContent=`
+#ai-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;align-items:center;justify-content:center;}
+#ai-modal.show{display:flex;}
+#ai-box{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:28px 28px 22px;width:420px;max-width:95vw;}
+#ai-box h3{color:var(--t1);font-size:15px;margin:0 0 4px;display:flex;align-items:center;gap:7px;}
+#ai-box .ai-sub{color:var(--t3);font-size:11px;margin-bottom:18px;}
+.ai-mode-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.ai-mode-btn{flex:1;min-width:100px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--t2);padding:8px 6px;font-size:12px;cursor:pointer;transition:.15s;}
+.ai-mode-btn:hover,.ai-mode-btn.on{background:var(--accentdim);border-color:var(--accent);color:var(--accent2);}
+#ai-result{background:var(--bg1);border:1px solid var(--border2);border-radius:8px;padding:12px;min-height:80px;font-size:12px;color:var(--t1);white-space:pre-wrap;word-break:break-word;display:none;margin-bottom:12px;}
+#ai-result.loading{color:var(--t3);font-style:italic;}
+.ai-action-row{display:flex;gap:8px;justify-content:flex-end;}
+.ai-btn{background:var(--accent);color:#000;border:none;border-radius:8px;padding:7px 18px;font-weight:700;font-size:12px;cursor:pointer;}
+.ai-btn.sec{background:var(--bg3);color:var(--t2);border:1px solid var(--border2);font-weight:400;}
+.ai-btn:disabled{opacity:.5;cursor:not-allowed;}
+#ai-apply{display:none;}
+`;
+  document.head.appendChild(st);
+
+  const md=document.createElement('div');md.id='ai-modal';
+  md.innerHTML=`<div id="ai-box">
+  <h3>✨ AI Tạo nội dung</h3>
+  <div class="ai-sub">Dùng AI để tự động tạo phụ đề, gợi ý tên dự án, mô tả cảnh</div>
+  <div class="ai-mode-row">
+    <button class="ai-mode-btn on" data-mode="subtitle">📝 Tạo phụ đề</button>
+    <button class="ai-mode-btn" data-mode="title">🎬 Gợi ý tên</button>
+    <button class="ai-mode-btn" data-mode="describe">🔍 Mô tả cảnh</button>
+  </div>
+  <div id="ai-result"></div>
+  <div class="ai-action-row">
+    <button class="ai-btn sec" onclick="document.getElementById('ai-modal').classList.remove('show')">Đóng</button>
+    <button class="ai-btn" id="ai-run-btn" onclick="aiRun()">⚡ Tạo ngay</button>
+    <button class="ai-btn" id="ai-apply" onclick="aiApply()">✅ Áp dụng</button>
+  </div>
+</div>`;
+  document.body.appendChild(md);
+
+  let _aiMode='subtitle';
+  let _aiData=null;
+
+  md.querySelectorAll('.ai-mode-btn').forEach(b=>{
+    b.onclick=()=>{
+      md.querySelectorAll('.ai-mode-btn').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      _aiMode=b.dataset.mode;
+      document.getElementById('ai-result').style.display='none';
+      document.getElementById('ai-apply').style.display='none';
+      _aiData=null;
+    };
+  });
+
+  window.openAIGen=function(){
+    md.classList.add('show');
+    document.getElementById('ai-result').style.display='none';
+    document.getElementById('ai-apply').style.display='none';
+    _aiData=null;
+  };
+
+  window.aiRun=async function(){
+    const resEl=document.getElementById('ai-result');
+    const runBtn=document.getElementById('ai-run-btn');
+    const applyBtn=document.getElementById('ai-apply');
+    runBtn.disabled=true;
+    resEl.className='loading';resEl.style.display='block';
+    resEl.textContent='⏳ Đang xử lý bằng AI...';
+    applyBtn.style.display='none';
+    _aiData=null;
+
+    const videoTr=tracks.find(t=>t.type==='video');
+    const clips=(videoTr&&videoTr.clips)||[];
+    const payload={clips:clips.map(c=>({label:c.label,start:c.start,dur:c.dur}))};
+
+    try{
+      const endpoint={subtitle:'/ai/subtitle',title:'/ai/title',describe:'/ai/describe'}[_aiMode];
+      if(_aiMode==='describe' && clips.length){
+        payload.label=clips[0].label;
+      }
+      const resp=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+      const data=await resp.json();
+      if(data.error){ resEl.className='';resEl.textContent='❌ Lỗi: '+data.error; runBtn.disabled=false; return; }
+
+      _aiData=data;
+      resEl.className='';
+      if(_aiMode==='subtitle'){
+        const subs=data.subtitles||[];
+        resEl.textContent=subs.map((s,i)=>`${i+1}. ${clips[i]?fmt(clips[i].start):'?'} — ${s.text}`).join('\n')||'Không có kết quả.';
+        if(subs.length) applyBtn.style.display='inline-block';
+      } else if(_aiMode==='title'){
+        const titles=data.titles||[];
+        resEl.textContent=titles.map((t,i)=>`${i+1}. ${t}`).join('\n')||'Không có kết quả.';
+        if(titles.length) applyBtn.style.display='inline-block';
+      } else {
+        resEl.textContent=data.description||'Không có kết quả.';
+      }
+    }catch(e){
+      resEl.className='';resEl.textContent='❌ Không thể kết nối AI server. Vui lòng thử lại.';
+    }
+    runBtn.disabled=false;
+  };
+
+  window.aiApply=function(){
+    if(!_aiData) return;
+    const videoTr=tracks.find(t=>t.type==='video');
+    const clips=(videoTr&&videoTr.clips)||[];
+    if(_aiMode==='subtitle'){
+      saveState();
+      subtitles=[];
+      (_aiData.subtitles||[]).forEach((s,i)=>{
+        const c=clips[i];
+        if(c) subtitles.push({id:'sub_'+(nextSubId++),start:c.start,dur:c.dur,text:s.text});
+      });
+      _renderSubList&&_renderSubList();
+      renderAll();
+      toast('✅ Đã áp dụng '+subtitles.length+' phụ đề AI');
+    } else if(_aiMode==='title'){
+      const first=(_aiData.titles||[])[0];
+      if(first){
+        const el=document.getElementById('proj-name')||document.querySelector('.tb-proj-name');
+        if(el) el.textContent=first;
+        toast('✅ Tên dự án: '+first);
+      }
+    }
+    document.getElementById('ai-modal').classList.remove('show');
+  };
+})();
 
 /* ---------- Tính năng 8: Xuất phím tắt PDF ---------- */
 function exportShortcutsPDF(){
@@ -5455,6 +5581,74 @@ window.switchRP=function(tab){
     },180);
   }
   document.addEventListener('click',e=>{const b=e.target.closest('button');if(b&&b.textContent.includes('Xuất video')){e.stopImmediatePropagation();run();}},true);
+})();
+
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTO-BUILD: [F29] Đặt tên Clip nhanh
+   Ngày: 17/06/2026  |  Double-click vào clip trên timeline mở inline input để đổi tên clip
+   ═══════════════════════════════════════════════════════════════ */
+(function(){
+  const st=document.createElement('style');
+  st.textContent='.auto-rename-inp{position:absolute;inset:0;background:rgba(0,0,0,.7);border:none;outline:2px solid var(--accent);color:#fff;font-size:11px;padding:2px 6px;border-radius:4px;z-index:50;width:100%;box-sizing:border-box;}';
+  document.head.appendChild(st);
+  document.addEventListener('dblclick',e=>{
+    const cl=e.target.closest('.clip');if(!cl) return;
+    const id=cl.dataset.id;if(!id||typeof tracks==='undefined') return;
+    let found=null;for(const tr of tracks) for(const c of tr.clips) if(c.id===id){found=c;break;}
+    if(!found) return;
+    e.stopPropagation();
+    const inp=document.createElement('input');
+    inp.className='auto-rename-inp';inp.type='text';inp.value=found.label||'';
+    cl.style.position='relative';cl.appendChild(inp);inp.focus();inp.select();
+    function commit(){
+      const val=inp.value.trim();
+      if(val){if(typeof saveState==='function') saveState();found.label=val;if(typeof renderAll==='function') renderAll();}
+      inp.remove();
+    }
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter') commit();if(e.key==='Escape') inp.remove();e.stopPropagation();});
+    inp.addEventListener('blur',commit);
+  });
+})();
+
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTO-BUILD: [F30] Cuộn Timeline bằng chuột giữa
+   Ngày: 17/06/2026  |  Scroll chuột trên timeline cuộn ngang; Shift+Scroll cuộn nhanh hơn 5x
+   ═══════════════════════════════════════════════════════════════ */
+(function(){
+  const tlScroll=document.getElementById('tl-scroll')||document.querySelector('.tl-scroll');
+  if(!tlScroll) return;
+  tlScroll.addEventListener('wheel',e=>{
+    if(e.ctrlKey) return; // để Ctrl+Scroll zoom
+    e.preventDefault();
+    const delta=e.deltaY*(e.shiftKey?5:1);
+    tlScroll.scrollLeft+=delta;
+  },{passive:false});
+  if(typeof toast==='function') toast('💡 Scroll để cuộn timeline · Shift+Scroll nhanh hơn');
+  setTimeout(()=>{if(typeof toast==='function') toast('');},2500);
+})();
+
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTO-BUILD: [F31] Nhóm chọn clip bằng Ctrl+A
+   Ngày: 17/06/2026  |  Ctrl+A chọn tất cả clip; Ctrl+Shift+A bỏ chọn tất cả
+   ═══════════════════════════════════════════════════════════════ */
+(function(){
+  document.addEventListener('keydown',e=>{
+    if(!e.ctrlKey||e.key!=='a') return;
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+    e.preventDefault();
+    if(typeof tracks==='undefined'||typeof selected==='undefined') return;
+    if(e.shiftKey){
+      selected.clear();
+      if(typeof toast==='function') toast('☐ Bỏ chọn tất cả');
+    } else {
+      for(const tr of tracks) for(const c of tr.clips) selected.add(c.id);
+      if(typeof toast==='function') toast('☑ Đã chọn '+selected.size+' clip');
+    }
+    if(typeof renderAll==='function') renderAll();
+  });
 })();
 
 </script>

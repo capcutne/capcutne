@@ -28,7 +28,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python3 auto_build.py && python3 -m http.server 5000 --bind 0.0.0.0"
+args = "python3 auto_build.py && python3 server.py"
 waitForPort = 5000
 
 [[ports]]

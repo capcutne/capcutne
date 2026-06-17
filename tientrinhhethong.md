@@ -131,6 +131,27 @@
 |----|-----------|----------|------|
 | F28 | Thanh tiến trình Xuất video | Modal giả lập xuất với progress bar, phần trăm, bước xử lý khi nhấn 'Xuất video' | 17/06/2026 |
 
+
+### Nhóm 4 — Chỉnh sửa Clip
+
+| ID | Tính năng | Chi tiết | Ngày |
+|----|-----------|----------|------|
+| F29 | Đặt tên Clip nhanh | Double-click vào clip trên timeline mở inline input để đổi tên clip | 17/06/2026 |
+
+
+### Nhóm 3 — Timeline & Zoom
+
+| ID | Tính năng | Chi tiết | Ngày |
+|----|-----------|----------|------|
+| F30 | Cuộn Timeline bằng chuột giữa | Scroll chuột trên timeline cuộn ngang; Shift+Scroll cuộn nhanh hơn 5x | 17/06/2026 |
+
+
+### Nhóm 4 — Chỉnh sửa Clip
+
+| ID | Tính năng | Chi tiết | Ngày |
+|----|-----------|----------|------|
+| F31 | Nhóm chọn clip bằng Ctrl+A | Ctrl+A chọn tất cả clip; Ctrl+Shift+A bỏ chọn tất cả | 17/06/2026 |
+
 ---
 
 ## BACKLOG — TÍNH NĂNG CẦN BUILD
