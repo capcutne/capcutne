@@ -75,6 +75,27 @@
 |----|-----------|----------|------|
 | F21 | Đổi màu nền Timeline | Nút chuyển đổi màu nền timeline giữa 3 chủ đề: Tối (mặc định), Xanh đậm, Tím | 17/06/2026 |
 
+
+### Nhóm 3 — Timeline & Zoom
+
+| ID | Tính năng | Chi tiết | Ngày |
+|----|-----------|----------|------|
+| F23 | Đếm ngược thời gian còn lại | Hiển thị thời gian còn lại (tổng − playhead) bên cạnh timecode trên preview | 17/06/2026 |
+
+
+### Nhóm 2 — Phím tắt & Điều hướng
+
+| ID | Tính năng | Chi tiết | Ngày |
+|----|-----------|----------|------|
+| F40 | Tìm kiếm clip theo tên | Gõ tên để lọc clip trên timeline | 17/06/2026 |
+
+
+### Nhóm 6 — Giao diện & Chủ đề
+
+| ID | Tính năng | Chi tiết | Ngày |
+|----|-----------|----------|------|
+| F38 | Chế độ toàn màn hình Preview | Phóng to vùng xem trước | 17/06/2026 |
+
 ---
 
 ## BACKLOG — TÍNH NĂNG CẦN BUILD
@@ -84,7 +105,6 @@
 | Ưu tiên | Tính năng | Mô tả yêu cầu |
 |---------|-----------|---------------|
 | — | *(trống)* | Chưa có yêu cầu mới |
-
 ---
 
 ## QUY TRÌNH LÀM VIỆC

@@ -5129,6 +5129,88 @@ window.switchRP=function(tab){
   });
 })();
 
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTO-BUILD: [F23] Đếm ngược thời gian còn lại
+   Ngày: 17/06/2026  |  Hiển thị thời gian còn lại (tổng − playhead) bên cạnh timecode trên preview
+   ═══════════════════════════════════════════════════════════════ */
+(function(){
+  const st=document.createElement('style');
+  st.textContent='#auto-cd{font-size:11px;color:var(--t3);padding:0 8px;border-left:1px solid var(--border2);margin-left:4px;display:flex;align-items:center;gap:3px;}#auto-cd span{color:var(--accent);font-variant-numeric:tabular-nums;}';
+  document.head.appendChild(st);
+  const el=document.createElement('div');el.id='auto-cd';el.innerHTML='⏳ <span id="auto-cd-v">--</span>';
+  const tc=document.getElementById('tc')||document.querySelector('.preview-tc');
+  if(tc&&tc.parentNode) tc.parentNode.insertBefore(el,tc.nextSibling);
+  function fmt(s){if(s<=0)return'0s';if(s<60)return s.toFixed(1)+'s';return Math.floor(s/60)+':'+(s%60).toFixed(0).padStart(2,'0');}
+  setInterval(()=>{
+    if(typeof playhead==='undefined'||typeof tracks==='undefined') return;
+    let tot=0;for(const tr of tracks)for(const c of tr.clips)tot=Math.max(tot,c.start+c.dur);
+    const v=document.getElementById('auto-cd-v');if(v) v.textContent=fmt(Math.max(0,tot-playhead));
+  },200);
+})();
+
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTO-BUILD: [F40] Tìm kiếm clip theo tên
+   Ngày: 17/06/2026  |  Gõ tên để lọc clip trên timeline
+   ═══════════════════════════════════════════════════════════════ */
+(function(){
+  const st=document.createElement('style');
+  st.textContent='#auto-search{position:fixed;top:60px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;display:none;z-index:9990;box-shadow:0 8px 24px rgba(0,0,0,.5);align-items:center;gap:8px;min-width:280px;}#auto-search.show{display:flex;}#auto-search-inp{background:var(--bg4);border:1px solid var(--border2);border-radius:6px;color:var(--t1);padding:5px 10px;font-size:13px;outline:none;flex:1;}#auto-search-inp:focus{border-color:var(--accent);}#auto-search-cnt{font-size:11px;color:var(--t3);white-space:nowrap;}.clip.auto-hl{outline:2px solid var(--accent)!important;outline-offset:2px;}';
+  document.head.appendChild(st);
+  const box=document.createElement('div');box.id='auto-search';
+  box.innerHTML='<span style="color:var(--accent);font-size:13px;">🔍</span><input id="auto-search-inp" type="text" placeholder="Tìm tên clip..."><span id="auto-search-cnt"></span>';
+  document.body.appendChild(box);
+  const inp=document.getElementById('auto-search-inp');
+  function doSearch(q){
+    document.querySelectorAll('.clip.auto-hl').forEach(el=>el.classList.remove('auto-hl'));
+    if(!q.trim()){document.getElementById('auto-search-cnt').textContent='';return;}
+    let found=0;
+    if(typeof tracks!=='undefined') for(const tr of tracks) for(const c of tr.clips){
+      if((c.label||'').toLowerCase().includes(q.toLowerCase())){
+        found++;
+        document.querySelectorAll(`.clip[data-id="${c.id}"]`).forEach(el=>{el.classList.add('auto-hl');el.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});});
+      }
+    }
+    document.getElementById('auto-search-cnt').textContent=found?`${found} clip`:'Không có';
+  }
+  inp.addEventListener('input',e=>doSearch(e.target.value));
+  document.addEventListener('keydown',e=>{
+    if(e.ctrlKey&&(e.key==='f'||e.key==='F')){e.preventDefault();box.classList.toggle('show');if(box.classList.contains('show')){inp.focus();inp.select();}}
+    if(e.key==='Escape'&&box.classList.contains('show')){box.classList.remove('show');doSearch('');}
+  });
+})();
+
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTO-BUILD: [F38] Chế độ toàn màn hình Preview
+   Ngày: 17/06/2026  |  Phóng to vùng xem trước
+   ═══════════════════════════════════════════════════════════════ */
+(function(){
+  const btn=document.createElement('button');
+  btn.id='auto-fs-btn';btn.title='Toàn màn hình preview (F)';btn.textContent='⛶';
+  btn.style.cssText='background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--t2);padding:4px 8px;font-size:14px;cursor:pointer;flex-shrink:0;line-height:1;';
+  const prevContainer=document.querySelector('#preview,.preview-area,.preview-panel');
+  if(prevContainer) prevContainer.appendChild(btn);
+  btn.onclick=toggle;
+  let isFS=false,origStyle='';
+  function toggle(){
+    isFS=!isFS;
+    if(isFS){
+      origStyle=prevContainer.getAttribute('style')||'';
+      Object.assign(prevContainer.style,{position:'fixed',inset:'0',zIndex:'9990',background:'#000',display:'flex',alignItems:'center',justifyContent:'center'});
+      btn.textContent='✕';if(typeof toast==='function') toast('Nhấn Esc hoặc ✕ để thoát');
+    } else {
+      prevContainer.setAttribute('style',origStyle);btn.textContent='⛶';
+    }
+  }
+  document.addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+    if(e.key==='f'||e.key==='F') toggle();
+    if(e.key==='Escape'&&isFS) toggle();
+  });
+})();
+
 </script>
 </body>
 </html>
