@@ -159,6 +159,13 @@
 |----|-----------|----------|------|
 | F32 | Xem trước màu Bộ lọc | Hover lên thumbnail bộ lọc hiển thị tên và mô tả hiệu ứng màu trong tooltip | 17/06/2026 |
 
+
+### Nhóm 2 — Phím tắt & Điều hướng
+
+| ID | Tính năng | Chi tiết | Ngày |
+|----|-----------|----------|------|
+| F33 | Phím tắt I/O vùng chọn | Phím I đặt điểm vào (In), phím O đặt điểm ra (Out); hiển thị vùng trên ruler | 17/06/2026 |
+
 ---
 
 ## BACKLOG — TÍNH NĂNG CẦN BUILD

@@ -5893,6 +5893,34 @@ window.switchRP=function(tab){
   document.addEventListener('mouseout',e=>{if(!e.target.closest('.filter-btn,.fx-btn,[class*="filter"]')) tip.style.display='none';});
 })();
 
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTO-BUILD: [F33] Phím tắt I/O vùng chọn
+   Ngày: 17/06/2026  |  Phím I đặt điểm vào (In), phím O đặt điểm ra (Out); hiển thị vùng trên ruler
+   ═══════════════════════════════════════════════════════════════ */
+(function(){
+  let inPt=null,outPt=null;
+  const st=document.createElement('style');
+  st.textContent='#auto-io-range{position:absolute;top:0;height:100%;background:rgba(212,160,23,.15);border-left:2px solid var(--accent);border-right:2px solid var(--accent);pointer-events:none;z-index:5;}';
+  document.head.appendChild(st);
+  const range=document.createElement('div');range.id='auto-io-range';range.style.display='none';
+  const ruler=document.getElementById('tl-ruler')||document.querySelector('.tl-ruler');
+  if(ruler) ruler.appendChild(range);
+  function fmt(s){return s==null?'--':s.toFixed(2)+'s';}
+  function updateRange(){
+    if(inPt==null||outPt==null||typeof pxPerSec==='undefined'){range.style.display='none';return;}
+    const l=Math.min(inPt,outPt)*pxPerSec,w=Math.abs(outPt-inPt)*pxPerSec;
+    range.style.display='block';range.style.left=l+'px';range.style.width=w+'px';
+  }
+  document.addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+    if(typeof playhead==='undefined') return;
+    if(e.key==='i'||e.key==='I'){inPt=playhead;if(typeof toast==='function') toast('I: Điểm vào '+fmt(inPt));updateRange();}
+    if(e.key==='o'||e.key==='O'){outPt=playhead;if(typeof toast==='function') toast('O: Điểm ra '+fmt(outPt));updateRange();}
+  });
+  setInterval(updateRange,300);
+})();
+
 </script>
 </body>
 </html>
