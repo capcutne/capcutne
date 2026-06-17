@@ -5,18 +5,20 @@ auto_build.py — Tự động build tính năng mới cho CapCut Video Editor C
 Quy trình:
   1. Đọc tientrinhhethong.md (danh sách tính năng đã có + backlog)
   2. Đọc capcut.html (source code hiện tại)
-  3. Gọi OpenAI: phân tích, chọn 1 tính năng từ backlog (hoặc đề xuất mới)
-  4. Gọi OpenAI: sinh code JS/CSS/HTML để thêm vào capcut.html
+  3. Gọi Gemini: phân tích, chọn 1 tính năng từ backlog (hoặc đề xuất mới)
+  4. Gọi Gemini: sinh code JS/CSS/HTML để thêm vào capcut.html
   5. Chèn code vào capcut.html ngay trước </script> cuối cùng
   6. Cập nhật tientrinhhethong.md: chuyển tính năng sang Đã hoàn thành
 """
 
 import os, re, sys, json
 from datetime import datetime
+from google import genai
+from google.genai import types
 
 MD_FILE   = "tientrinhhethong.md"
 HTML_FILE = "capcut.html"
-MODEL     = "gpt-4.1"
+MODEL     = "gemini-2.0-flash"
 TODAY     = datetime.now().strftime("%d/%m/%Y")
 
 
@@ -35,36 +37,17 @@ def write_file(path, content):
 
 
 def get_api_key():
-    """Đọc OpenAI API key theo thứ tự ưu tiên:
-    1. PostgreSQL database (lưu bởi setup_api_key.py)
-    2. Env var OPENAI_API_KEY (nếu hợp lệ)
-    """
-    db_url = os.environ.get('DATABASE_URL', '')
-
-    # Thử đọc từ PostgreSQL trước
-    if db_url:
-        try:
-            import psycopg2
-            conn = psycopg2.connect(db_url)
-            cur = conn.cursor()
-            cur.execute("SELECT value FROM app_config WHERE key = 'OPENAI_API_KEY'")
-            row = cur.fetchone()
-            cur.close()
-            conn.close()
-            if row and row[0].startswith('sk-'):
-                log(f"✅ Đọc API key từ database (prefix: {row[0][:15]}...)")
-                return row[0]
-            elif row:
-                log(f"⚠️  Key trong database không hợp lệ (prefix: {row[0][:10]}...)")
-        except Exception as e:
-            log(f"⚠️  Không đọc được database: {e}")
-
-    # Fallback: env var
-    env_key = os.environ.get('OPENAI_API_KEY', '').strip()
-    if env_key.startswith('sk-'):
-        log(f"✅ Dùng OPENAI_API_KEY từ environment (prefix: {env_key[:15]}...)")
-        return env_key
-
+    """Đọc Gemini API key — thử nhiều tên env var khác nhau."""
+    candidates = [
+        os.environ.get("GOOGLE_API_KEY", ""),
+        os.environ.get("GEMINI_API_KEY", ""),
+        os.environ.get("GOOGLE_GENERATIVE_AI_API_KEY", ""),
+        os.environ.get("OPENAI_API_KEY", ""),   # user lưu key Gemini vào đây
+    ]
+    for key in candidates:
+        key = key.strip()
+        if key and key.startswith("AIzaSy"):
+            return key
     return None
 
 
@@ -78,7 +61,7 @@ Nguyên tắc:
 - KHÔNG trùng với bất kỳ tính năng nào đã có trong danh sách Đã hoàn thành
 - Tập trung vào UX/UI hoặc chức năng chỉnh sửa video
 
-Trả về JSON:
+Trả về JSON (chỉ JSON, không có markdown):
 {
   "feature_id": "F21",
   "feature_name": "Tên tính năng",
@@ -86,23 +69,6 @@ Trả về JSON:
   "from_backlog": true,
   "reasoning": "Lý do chọn"
 }"""
-
-
-def analyze_and_choose_feature(client, md_content):
-    log("Đang phân tích tientrinhhethong.md và chọn tính năng...")
-    resp = client.chat.completions.create(
-        model=MODEL,
-        messages=[
-            {"role": "system", "content": SYSTEM_ANALYST},
-            {"role": "user",   "content": f"File tiến trình dự án:\n\n{md_content}"}
-        ],
-        response_format={"type": "json_object"},
-        temperature=0.7,
-    )
-    result = json.loads(resp.choices[0].message.content)
-    log(f"Tính năng chọn: [{result['feature_id']}] {result['feature_name']}")
-    log(f"Lý do: {result['reasoning']}")
-    return result
 
 
 SYSTEM_CODER = """Bạn là senior frontend developer chuyên HTML/CSS/JS thuần (không dùng framework).
@@ -114,20 +80,52 @@ Quy tắc QUAN TRỌNG:
 - Prefix hàm mới bằng `auto_` để tránh xung đột
 - Gọi renderAll() sau khi thay đổi state
 - Gọi saveState() trước khi thay đổi tracks[]
-- toast(msg) để hiển thị thông báo
+- toast(msg) để hiển thị thông báo nhỏ
 - selected (Set) = clip đang chọn; tracks[] = mảng track
-- Clip: {id, start, dur, label, cls (cs/cx/cv/ca)}
-- Code HOÀN CHỈNH, không cần sửa phần còn lại
-- HTML mới: inject bằng JS vào DOM
+- Clip: {id, start, dur, label, cls(cs/cx/cv/ca)}
+- Code HOÀN CHỈNH, tự đứng được, không cần sửa phần còn lại
+- HTML mới: inject bằng JS (insertAdjacentHTML hoặc tương tự)
 - CSS mới: tạo <style> tag append vào document.head
 - KHÔNG dùng import/require/async top-level
 
-Trả về JSON:
+Trả về JSON (chỉ JSON, không có markdown):
 {
   "js_code": "// code hoàn chỉnh...",
-  "description": "Mô tả ngắn",
+  "description": "Mô tả ngắn gọn (1 câu)",
   "usage": "Hướng dẫn dùng (1-2 câu)"
 }"""
+
+
+def call_gemini(client, system_prompt, user_prompt):
+    """Gọi Gemini API với JSON output."""
+    response = client.models.generate_content(
+        model=MODEL,
+        contents=user_prompt,
+        config=types.GenerateContentConfig(
+            system_instruction=system_prompt,
+            response_mime_type="application/json",
+            temperature=0.4,
+            max_output_tokens=3000,
+        ),
+    )
+    text = response.text.strip()
+    # Bóc markdown nếu có
+    if text.startswith("```"):
+        text = re.sub(r"^```[a-z]*\n?", "", text)
+        text = re.sub(r"\n?```$", "", text)
+    return json.loads(text)
+
+
+def analyze_and_choose_feature(client, md_content):
+    log("Đang phân tích tientrinhhethong.md và chọn tính năng...")
+    result = call_gemini(
+        client,
+        SYSTEM_ANALYST,
+        f"File tiến trình dự án:\n\n{md_content}"
+    )
+    log(f"Tính năng chọn: [{result['feature_id']}] {result['feature_name']}")
+    log(f"Lý do: {result['reasoning']}")
+    return result
 
 
 def generate_feature_code(client, feature, html_summary):
@@ -142,17 +140,7 @@ Tóm tắt capcut.html:
 
 Code sẽ được chèn ngay trước </script> cuối cùng."""
 
-    resp = client.chat.completions.create(
-        model=MODEL,
-        messages=[
-            {"role": "system", "content": SYSTEM_CODER},
-            {"role": "user",   "content": prompt}
-        ],
-        response_format={"type": "json_object"},
-        temperature=0.3,
-        max_tokens=3000,
-    )
-    result = json.loads(resp.choices[0].message.content)
+    result = call_gemini(client, SYSTEM_CODER, prompt)
     log(f"Code xong: {result['description']}")
     return result
 
@@ -205,7 +193,7 @@ def update_markdown(md_content, feature, code_result):
         f'**Cập nhật lần cuối:** {TODAY}',
         md_content
     )
-    # Xóa khỏi backlog
+    # Xóa khỏi backlog nếu từ backlog
     if feature.get("from_backlog"):
         md_content = re.sub(
             rf'\|[^|]*\|[^|]*{re.escape(feature["feature_name"])}[^|]*\|[^|]*\|\n?',
@@ -257,17 +245,20 @@ def main():
             log(f"LỖI: Không tìm thấy '{f}'")
             sys.exit(1)
 
-    md_content   = read_file(MD_FILE)
+    log(f"Đọc {MD_FILE}...")
+    md_content = read_file(MD_FILE)
+
+    log(f"Đọc {HTML_FILE}...")
     html_content = read_file(HTML_FILE)
 
     api_key = get_api_key()
     if not api_key:
-        log("⚠️  Không tìm thấy OpenAI API key hợp lệ — bỏ qua auto-build.")
-        log("   Chạy: python3 setup_api_key.py sk-YOUR_KEY để cấu hình.")
+        log("⚠️  Không tìm thấy Gemini API key — bỏ qua auto-build.")
+        log("   Thêm GOOGLE_API_KEY vào Replit Secrets (key bắt đầu bằng 'AIzaSy').")
         sys.exit(0)
 
-    from openai import OpenAI
-    client = OpenAI(api_key=api_key)
+    log(f"✅ Dùng Gemini API (key prefix: {api_key[:15]}...)")
+    client = genai.Client(api_key=api_key)
 
     feature     = analyze_and_choose_feature(client, md_content)
     code_result = generate_feature_code(client, feature, summarize_html(html_content))
@@ -276,11 +267,11 @@ def main():
     try:
         log("Chèn code vào capcut.html...")
         write_file(HTML_FILE, inject_code(html_content, feature, code_result))
-        log(f"✅ capcut.html cập nhật")
+        log("✅ capcut.html cập nhật")
 
         log("Cập nhật tientrinhhethong.md...")
         write_file(MD_FILE, update_markdown(md_content, feature, code_result))
-        log(f"✅ tientrinhhethong.md cập nhật")
+        log("✅ tientrinhhethong.md cập nhật")
 
     except Exception as e:
         log(f"LỖI: {e} — Khôi phục file gốc...")
