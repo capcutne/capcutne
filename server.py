@@ -72,7 +72,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             project_delete(pid)
 
     def do_POST(self):
-        if self.path not in AI_PATHS:
+        ALLOWED_PATHS = AI_PATHS | {"/project/save"}
+        if self.path not in ALLOWED_PATHS:
             self.send_json({"error": "Not found"}, 404)
             return
 
