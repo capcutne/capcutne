@@ -5383,6 +5383,31 @@ window.switchRP=function(tab){
   });
 })();
 
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTO-BUILD: [F28] Thanh tiến trình Xuất video
+   Ngày: 17/06/2026  |  Modal giả lập xuất với progress bar, phần trăm, bước xử lý khi nhấn 'Xuất video'
+   ═══════════════════════════════════════════════════════════════ */
+(function(){
+  const st=document.createElement('style');
+  st.textContent='#auto-exp{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9998;align-items:center;justify-content:center;}#auto-exp.show{display:flex;}#auto-expb{background:var(--bg2);border:1px solid var(--border2);border-radius:12px;padding:28px 36px;min-width:320px;text-align:center;}#auto-expb h3{color:var(--t1);margin-bottom:16px;font-size:15px;}#auto-expbw{background:var(--bg4);border-radius:20px;height:8px;overflow:hidden;margin:12px 0;}#auto-expbf{height:100%;background:var(--accent);border-radius:20px;transition:width .3s;width:0%;}#auto-expp{color:var(--accent);font-size:20px;font-weight:700;margin:8px 0;}#auto-expm{color:var(--t3);font-size:12px;}#auto-expc{margin-top:18px;background:var(--accent);color:#000;border:none;border-radius:8px;padding:8px 24px;font-weight:600;cursor:pointer;display:none;font-size:13px;}';
+  document.head.appendChild(st);
+  const md=document.createElement('div');md.id='auto-exp';
+  md.innerHTML='<div id="auto-expb"><h3>🎬 Đang xuất video...</h3><div id="auto-expp">0%</div><div id="auto-expbw"><div id="auto-expbf"></div></div><div id="auto-expm">Đang chuẩn bị...</div><button id="auto-expc" onclick="document.getElementById(\'auto-exp\').classList.remove(\'show\')">✅ Xong</button></div>';
+  document.body.appendChild(md);
+  const STEPS=['Phân tích timeline...','Xử lý video track...','Render hiệu ứng...','Encode audio...','Ghép file...','Hoàn tất!'];
+  function run(){
+    const bar=document.getElementById('auto-expbf'),pct=document.getElementById('auto-expp'),msg=document.getElementById('auto-expm'),btn=document.getElementById('auto-expc');
+    document.getElementById('auto-exp').classList.add('show');
+    bar.style.width='0%';pct.textContent='0%';btn.style.display='none';
+    let p=0;const iv=setInterval(()=>{
+      p+=Math.random()*8+3;if(p>=100){p=100;clearInterval(iv);btn.style.display='inline-block';}
+      bar.style.width=p+'%';pct.textContent=Math.floor(p)+'%';msg.textContent=STEPS[Math.min(5,Math.floor(p/20))];
+    },180);
+  }
+  document.addEventListener('click',e=>{const b=e.target.closest('button');if(b&&b.textContent.includes('Xuất video')){e.stopImmediatePropagation();run();}},true);
+})();
+
 </script>
 </body>
 </html>

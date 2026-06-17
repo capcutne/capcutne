@@ -124,6 +124,13 @@
 |----|-----------|----------|------|
 | F27 | Mute / Unmute clip audio | Phím M khi chọn clip audio để mute/unmute; icon 🔇 hiển thị trên clip | 17/06/2026 |
 
+
+### Nhóm 1 — Hạ tầng & Khởi động
+
+| ID | Tính năng | Chi tiết | Ngày |
+|----|-----------|----------|------|
+| F28 | Thanh tiến trình Xuất video | Modal giả lập xuất với progress bar, phần trăm, bước xử lý khi nhấn 'Xuất video' | 17/06/2026 |
+
 ---
 
 ## BACKLOG — TÍNH NĂNG CẦN BUILD
