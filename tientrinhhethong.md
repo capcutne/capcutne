@@ -96,6 +96,13 @@
 |----|-----------|----------|------|
 | F38 | Chế độ toàn màn hình Preview | Phóng to vùng xem trước | 17/06/2026 |
 
+
+### Nhóm 3 — Timeline & Zoom
+
+| ID | Tính năng | Chi tiết | Ngày |
+|----|-----------|----------|------|
+| F24 | Đánh dấu mốc thời gian (Markers) | Phím M đặt marker tại playhead; hiển thị trên ruler; click để seek; Delete để xóa | 17/06/2026 |
+
 ---
 
 ## BACKLOG — TÍNH NĂNG CẦN BUILD

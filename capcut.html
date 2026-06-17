@@ -4864,7 +4864,6 @@ function freezeFrame(){
 }
 
 /* ---- TRANSLATE TAB ---- */
-let _lastTranslations=[];
 function translateAllSubtitles(){
   if(!subtitles.length){toast('Chưa có phụ đề để dịch');return;}
   const dst=document.getElementById('trs-dst-lang');
@@ -5209,6 +5208,42 @@ window.switchRP=function(tab){
     if(e.key==='f'||e.key==='F') toggle();
     if(e.key==='Escape'&&isFS) toggle();
   });
+})();
+
+
+/* ═══════════════════════════════════════════════════════════════
+   AUTO-BUILD: [F24] Đánh dấu mốc thời gian (Markers)
+   Ngày: 17/06/2026  |  Phím M đặt marker tại playhead; hiển thị trên ruler; click để seek; Delete để xóa
+   ═══════════════════════════════════════════════════════════════ */
+(function(){
+  let markers=[],sel=null;
+  const st=document.createElement('style');
+  st.textContent='.auto-mk{position:absolute;top:0;width:2px;background:var(--accent);height:100%;cursor:pointer;z-index:30;transform:translateX(-1px);}.auto-mk::before{content:"";position:absolute;top:0;left:-4px;border:5px solid transparent;border-top:8px solid var(--accent);}.auto-mk.sel{background:#ff6b6b;}.auto-mk.sel::before{border-top-color:#ff6b6b;}.auto-mk-l{position:absolute;top:10px;left:4px;font-size:9px;color:var(--accent);white-space:nowrap;pointer-events:none;}';
+  document.head.appendChild(st);
+  function fmt(s){return Math.floor(s/60)+':'+(s%60).toFixed(1).padStart(4,'0');}
+  function render(){
+    document.querySelectorAll('.auto-mk').forEach(e=>e.remove());
+    const ruler=document.getElementById('tl-ruler')||document.querySelector('.tl-ruler');
+    if(!ruler||typeof pxPerSec==='undefined') return;
+    markers.forEach((m,i)=>{
+      const el=document.createElement('div');
+      el.className='auto-mk'+(sel===i?' sel':'');
+      el.style.left=(m.t*pxPerSec)+'px';
+      el.title='Marker '+fmt(m.t);
+      el.innerHTML=`<div class="auto-mk-l">${fmt(m.t)}</div>`;
+      el.onclick=e=>{e.stopPropagation();sel=(sel===i)?null:i;if(typeof renderAll==='function'){window.playhead=m.t;renderAll();}render();};
+      ruler.appendChild(el);
+    });
+  }
+  document.addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+    if((e.key==='m'||e.key==='M')&&typeof playhead!=='undefined'){
+      markers.push({t:Math.round(playhead*10)/10});markers.sort((a,b)=>a.t-b.t);render();
+      if(typeof toast==='function') toast('📍 Marker '+fmt(playhead));
+    }
+    if((e.key==='Delete'||e.key==='Backspace')&&sel!==null){markers.splice(sel,1);sel=null;render();}
+  });
+  setInterval(render,600);
 })();
 
 </script>
