@@ -207,10 +207,20 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 .pv-ratio-label{font-size:10.5px;color:var(--t3);letter-spacing:.3px}
 /* subtitle on canvas */
 .pv-sub{
-  position:absolute;bottom:32px;left:8px;right:8px;background:rgba(0,0,0,.62);
-  border-radius:4px;padding:4px 10px;font-size:11px;color:#f0f0e8;text-align:center;
-  line-height:1.5;display:none;z-index:5
+  position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+  background:rgba(0,0,0,.62);border-radius:4px;padding:4px 10px;
+  font-size:11px;color:#f0f0e8;text-align:center;
+  line-height:1.5;display:none;z-index:5;white-space:nowrap;max-width:90%
 }
+.pv-sub-outlined{background:transparent;-webkit-text-stroke:1px #000;
+  text-shadow:1px 1px 0 #000,-1px -1px 0 #000,1px -1px 0 #000,-1px 1px 0 #000}
+.pv-sub-box{background:rgba(0,0,0,.85);border-radius:6px;border:1px solid rgba(255,255,255,.2)}
+.pv-sub-karaoke{background:linear-gradient(90deg,rgba(255,220,0,.8) 50%,rgba(0,0,0,.6) 50%);
+  background-size:200% 100%;animation:karaoke-slide 3s linear infinite}
+@keyframes karaoke-slide{from{background-position:100% 0}to{background-position:-100% 0}}
+.pv-sub-neon{background:transparent;color:#b4f;
+  text-shadow:0 0 6px #b4f,0 0 12px #b4f,0 0 20px #80f;font-weight:700}
+.pv-sub-minimal{background:transparent;color:#fff;font-weight:300;letter-spacing:.5px}
 .pv-tc{
   position:absolute;bottom:10px;right:10px;font-size:9px;
   color:rgba(255,255,255,.35);font-variant-numeric:tabular-nums
@@ -398,6 +408,49 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 .sm-btn-secondary:hover{background:var(--bg4)}
 .sm-info{font-size:10.5px;color:var(--t3);line-height:1.6;margin-top:8px}
 .sm-warn{color:#e8a045;font-size:10.5px;margin-top:6px;line-height:1.5}
+/* Text overlay animation keyframes */
+@keyframes txt-fade-in{from{opacity:0}to{opacity:1}}
+@keyframes txt-slide-up{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes txt-bounce{0%{transform:scale(0.5)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+@keyframes txt-scale{from{opacity:0;transform:scale(0.1)}to{opacity:1;transform:scale(1)}}
+@keyframes txt-typewriter{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0% 0 0)}}
+.ov-text.txt-fade-in{animation:txt-fade-in .6s ease forwards}
+.ov-text.txt-slide-up{animation:txt-slide-up .5s ease forwards}
+.ov-text.txt-bounce{animation:txt-bounce .6s ease forwards}
+.ov-text.txt-scale{animation:txt-scale .4s ease forwards}
+/* Subtitle editor */
+.sub-item{background:var(--bg3);border-radius:7px;padding:7px 9px;margin-bottom:6px;border:1px solid var(--border1)}
+.sub-item:hover{border-color:var(--border2)}
+.sub-time{font-size:10px;color:var(--accent);font-weight:600;cursor:pointer;margin-bottom:4px;font-family:monospace}
+.sub-time:hover{text-decoration:underline}
+.sub-text-row{display:flex;gap:6px;align-items:flex-start}
+.sub-text-edit{flex:1;font-size:12px;color:var(--t1);min-height:20px;outline:none;border-bottom:1px solid transparent;padding:1px 2px;cursor:text;line-height:1.4}
+.sub-text-edit:focus{border-color:var(--accent)}
+.sub-del{background:none;border:none;color:var(--t3);cursor:pointer;font-size:11px;padding:0 3px;line-height:1;flex-shrink:0;margin-top:2px}
+.sub-del:hover{color:#ff6b6b}
+.sub-add-btn{width:100%;background:rgba(255,255,255,.06);border:1px dashed rgba(255,255,255,.2);border-radius:7px;color:var(--t2);padding:8px;font-size:12px;cursor:pointer;font-family:inherit;margin-bottom:8px}
+.sub-add-btn:hover{background:rgba(255,255,255,.1)}
+/* Speed curve canvas */
+#spd-curve-canvas{display:block;width:100%;height:90px;border-radius:6px;background:var(--bg3)}
+/* Effect items with icon */
+.eff-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.eff-item{background:var(--bg3);border:1px solid var(--border1);border-radius:7px;padding:8px 4px;text-align:center;cursor:pointer;font-size:11px;color:var(--t2);transition:all .15s}
+.eff-item:hover{border-color:var(--accent);color:var(--t1)}
+.eff-item.on{border-color:var(--accent);background:rgba(232,200,64,.12);color:var(--t1)}
+.eff-icon{font-size:18px;display:block;margin-bottom:3px}
+/* Filter pill */
+.fi{cursor:pointer;transition:all .15s}
+.fi.on .fi-name{color:var(--accent);font-weight:700}
+/* Music controls */
+.mus-fade-row{display:flex;gap:8px;margin-top:6px}
+.mus-fade-box{flex:1;background:var(--bg3);border:1px solid var(--border1);border-radius:7px;padding:8px}
+.mus-fade-title{font-size:10px;color:var(--t3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px}
+/* Translation result */
+.trs-pair{background:var(--bg3);border-radius:7px;padding:8px 10px;margin-bottom:6px;border-left:3px solid var(--accent)}
+.trs-src{font-size:10.5px;color:var(--t3);margin-bottom:3px}
+.trs-dst{font-size:12px;color:var(--t1);line-height:1.4}
+.trs-copy{background:none;border:none;color:var(--t3);font-size:10px;cursor:pointer;float:right;padding:0}
+.trs-copy:hover{color:var(--t1)}
 .clip-label{position:relative;z-index:1;pointer-events:none;text-overflow:ellipsis;overflow:hidden}
 .cv{background:var(--tv);color:var(--tvt)}
 .ca{background:var(--ta);color:var(--tat)}
@@ -2310,42 +2363,72 @@ const TPL_TEXT = `
   <div class="ps-div"></div>
   <div class="ps">
     <div class="ps-title">Phông chữ</div>
-    <div class="font-grid">
-      <div class="font-item on" style="font-family:Arial">Roboto</div>
-      <div class="font-item" style="font-family:Georgia">Montserrat</div>
-      <div class="font-item" style="font-family:cursive">Lobster</div>
-      <div class="font-item" style="font-family:Impact">Bebas Neue</div>
+    <div class="font-grid" id="txt-font-grid">
+      <div class="font-item on" style="font-family:Arial" data-font="Arial" onclick="applyTextFont('Arial',this)">Roboto</div>
+      <div class="font-item" style="font-family:Georgia" data-font="Georgia" onclick="applyTextFont('Georgia',this)">Georgia</div>
+      <div class="font-item" style="font-family:cursive" data-font="cursive" onclick="applyTextFont('cursive',this)">Lobster</div>
+      <div class="font-item" style="font-family:Impact" data-font="Impact" onclick="applyTextFont('Impact',this)">Bebas</div>
+      <div class="font-item" style="font-family:monospace" data-font="monospace" onclick="applyTextFont('monospace',this)">Mono</div>
+      <div class="font-item" style="font-family:'Times New Roman'" data-font="Times New Roman" onclick="applyTextFont('Times New Roman',this)">Times</div>
     </div>
-    <div class="prop-row">
+    <div class="prop-row" style="margin-top:8px">
       <span class="prop-lbl">Cỡ chữ</span>
-      <input type="range" class="prop-sl" min="10" max="80" value="24">
-      <span class="prop-val">24</span>
+      <input type="range" class="prop-sl" id="txt-size-sl" min="10" max="80" value="15"
+        oninput="applyTextStyle('fontSize',this.value+'px');document.getElementById('txt-size-val').textContent=this.value">
+      <span class="prop-val" id="txt-size-val">15</span>
     </div>
-    <div class="align-row">
-      <div class="align-btn on" title="Trái"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg></div>
-      <div class="align-btn" title="Giữa"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></div>
-      <div class="align-btn" title="Phải"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="21" y2="18"/></svg></div>
-    </div>
-    <div class="clr-row">
-      <div class="clr-sw on" style="background:#fff"></div>
-      <div class="clr-sw" style="background:#ffd400"></div>
-      <div class="clr-sw" style="background:#ff5b5b"></div>
-      <div class="clr-sw" style="background:#5bb8ff"></div>
-      <div class="clr-sw" style="background:#7cf07c"></div>
-      <div class="clr-sw" style="background:#c060ff"></div>
-      <div class="clr-sw" style="background:#222"></div>
+    <div class="prop-row" style="margin-top:4px">
+      <span class="prop-lbl">Độ mờ</span>
+      <input type="range" class="prop-sl" id="txt-op-sl" min="10" max="100" value="100"
+        oninput="applyTextStyle('opacity',this.value/100);document.getElementById('txt-op-val').textContent=this.value+'%'">
+      <span class="prop-val" id="txt-op-val">100%</span>
     </div>
   </div>
   <div class="ps-div"></div>
   <div class="ps">
-    <div class="ps-title">Hoạt ảnh</div>
-    <div class="trans-grid">
-      <div class="tr-it on">Mờ dần</div>
-      <div class="tr-it">Trượt lên</div>
-      <div class="tr-it">Đánh máy</div>
-      <div class="tr-it">Nảy</div>
+    <div class="ps-title">Căn chỉnh &amp; định dạng</div>
+    <div class="align-row" style="margin-bottom:8px" id="txt-align-row">
+      <div class="align-btn on" title="Căn trái" onclick="applyTextAlign('left',this)"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="15" y2="12"/><line x1="3" y1="18" x2="18" y2="18"/></svg></div>
+      <div class="align-btn" title="Căn giữa" onclick="applyTextAlign('center',this)"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="6" y1="12" x2="18" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></div>
+      <div class="align-btn" title="Căn phải" onclick="applyTextAlign('right',this)"><svg class="ic" width="14" height="14" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="9" y1="12" x2="21" y2="12"/><line x1="6" y1="18" x2="21" y2="18"/></svg></div>
+      <div class="align-btn" id="txt-bold-btn" title="In đậm" onclick="toggleTextBold(this)"><b>B</b></div>
+      <div class="align-btn" id="txt-italic-btn" title="In nghiêng" onclick="toggleTextItalic(this)" style="font-style:italic"><i>I</i></div>
+      <div class="align-btn" id="txt-shadow-btn" title="Đổ bóng" onclick="toggleTextShadow(this)">S</div>
     </div>
-  </div>`;
+    <div class="prop-lbl" style="margin-bottom:5px;font-size:10.5px">Màu chữ</div>
+    <div class="clr-row" id="txt-clr-row">
+      <div class="clr-sw on" style="background:#fff" onclick="applyTextColor('#fff',this)"></div>
+      <div class="clr-sw" style="background:#ffd400" onclick="applyTextColor('#ffd400',this)"></div>
+      <div class="clr-sw" style="background:#ff5b5b" onclick="applyTextColor('#ff5b5b',this)"></div>
+      <div class="clr-sw" style="background:#5bb8ff" onclick="applyTextColor('#5bb8ff',this)"></div>
+      <div class="clr-sw" style="background:#7cf07c" onclick="applyTextColor('#7cf07c',this)"></div>
+      <div class="clr-sw" style="background:#c060ff" onclick="applyTextColor('#c060ff',this)"></div>
+      <div class="clr-sw" style="background:#ff9640" onclick="applyTextColor('#ff9640',this)"></div>
+      <div class="clr-sw" style="background:#222" onclick="applyTextColor('#222',this)"></div>
+    </div>
+    <div class="prop-lbl" style="margin:8px 0 5px;font-size:10.5px">Màu nền</div>
+    <div class="clr-row" id="txt-bg-row">
+      <div class="clr-sw on" style="background:transparent;border:1px dashed rgba(255,255,255,.3);font-size:9px;display:flex;align-items:center;justify-content:center;color:var(--t3)" onclick="applyTextBg('transparent',this)">∅</div>
+      <div class="clr-sw" style="background:rgba(0,0,0,.6)" onclick="applyTextBg('rgba(0,0,0,.6)',this)"></div>
+      <div class="clr-sw" style="background:rgba(255,255,255,.25)" onclick="applyTextBg('rgba(255,255,255,.25)',this)"></div>
+      <div class="clr-sw" style="background:rgba(255,50,50,.5)" onclick="applyTextBg('rgba(255,50,50,.5)',this)"></div>
+      <div class="clr-sw" style="background:rgba(20,100,220,.55)" onclick="applyTextBg('rgba(20,100,220,.55)',this)"></div>
+      <div class="clr-sw" style="background:rgba(0,0,0,.9)" onclick="applyTextBg('rgba(0,0,0,.9)',this)"></div>
+    </div>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Hoạt ảnh xuất hiện</div>
+    <div class="trans-grid" id="txt-anim-grid">
+      <div class="tr-it on" onclick="applyTextAnim('',this)">Không</div>
+      <div class="tr-it" onclick="applyTextAnim('txt-fade-in',this)">Mờ dần</div>
+      <div class="tr-it" onclick="applyTextAnim('txt-slide-up',this)">Trượt lên</div>
+      <div class="tr-it" onclick="applyTextAnim('txt-bounce',this)">Nảy</div>
+      <div class="tr-it" onclick="applyTextAnim('txt-scale',this)">Phóng to</div>
+    </div>
+  </div>
+  <div class="ps-div"></div>
+  <button class="add-ov-btn" style="background:rgba(255,80,80,.12);color:#ff7070;border:1px solid rgba(255,80,80,.25)" onclick="removeSelectedOverlay()">🗑 Xóa văn bản đang chọn</button>`;
 
 const TPL_STICKER = `
   <div class="ps">
@@ -2380,96 +2463,228 @@ const TPL_STICKER = `
 const TPL_EFFECT = `
   <div class="ps">
     <div class="ps-title">Hiệu ứng video</div>
-    <div class="trans-grid">
-      <div class="tr-it" onclick="addEffectClip('Zoom in')">Zoom in</div>
-      <div class="tr-it" onclick="addEffectClip('Glitch')">Glitch</div>
-      <div class="tr-it" onclick="addEffectClip('Rung lắc')">Rung lắc</div>
-      <div class="tr-it" onclick="addEffectClip('VHS')">VHS</div>
-      <div class="tr-it" onclick="addEffectClip('Ánh sáng')">Ánh sáng</div>
-      <div class="tr-it" onclick="addEffectClip('Mưa')">Mưa</div>
-      <div class="tr-it" onclick="addEffectClip('Tuyết')">Tuyết</div>
-      <div class="tr-it" onclick="addEffectClip('Bokeh')">Bokeh</div>
+    <div class="eff-grid">
+      <div class="eff-item" onclick="selectEffect('Zoom in',this)"><span class="eff-icon">🔍</span>Zoom in</div>
+      <div class="eff-item" onclick="selectEffect('Glitch',this)"><span class="eff-icon">📺</span>Glitch</div>
+      <div class="eff-item" onclick="selectEffect('Rung lắc',this)"><span class="eff-icon">📳</span>Rung lắc</div>
+      <div class="eff-item" onclick="selectEffect('VHS',this)"><span class="eff-icon">🎞️</span>VHS</div>
+      <div class="eff-item" onclick="selectEffect('Ánh sáng',this)"><span class="eff-icon">✨</span>Ánh sáng</div>
+      <div class="eff-item" onclick="selectEffect('Mưa',this)"><span class="eff-icon">🌧️</span>Mưa</div>
+      <div class="eff-item" onclick="selectEffect('Tuyết',this)"><span class="eff-icon">❄️</span>Tuyết</div>
+      <div class="eff-item" onclick="selectEffect('Bokeh',this)"><span class="eff-icon">🌸</span>Bokeh</div>
+      <div class="eff-item" onclick="selectEffect('Neon',this)"><span class="eff-icon">💜</span>Neon</div>
+      <div class="eff-item" onclick="selectEffect('Chớp nháy',this)"><span class="eff-icon">⚡</span>Chớp</div>
+      <div class="eff-item" onclick="selectEffect('Cuộn phim',this)"><span class="eff-icon">🎬</span>Cuộn phim</div>
+      <div class="eff-item" onclick="selectEffect('Lăng kính',this)"><span class="eff-icon">🔮</span>Lăng kính</div>
     </div>
+    <div class="prop-row" style="margin-top:10px">
+      <span class="prop-lbl">Cường độ</span>
+      <input type="range" class="prop-sl" id="eff-intensity" min="10" max="100" value="60"
+        oninput="document.getElementById('eff-int-val').textContent=this.value+'%'">
+      <span class="prop-val" id="eff-int-val">60%</span>
+    </div>
+    <div class="prop-row" style="margin-top:4px">
+      <span class="prop-lbl">Thời lượng</span>
+      <input type="range" class="prop-sl" id="eff-dur" min="1" max="10" value="3"
+        oninput="document.getElementById('eff-dur-val').textContent=this.value+'s'">
+      <span class="prop-val" id="eff-dur-val">3s</span>
+    </div>
+    <button class="add-ov-btn" style="margin-top:8px" onclick="addSelectedEffect()">+ Thêm hiệu ứng vào timeline</button>
   </div>
   <div class="ps-div"></div>
   <div class="ps">
-    <div class="ps-title">Hiệu ứng chuyển cảnh</div>
-    <div class="trans-grid">
-      <div class="tr-it on">Mờ dần</div>
-      <div class="tr-it">Trượt</div>
-      <div class="tr-it">Lật</div>
-      <div class="tr-it">Zoom</div>
+    <div class="ps-title">Chuyển cảnh giữa clip</div>
+    <div class="eff-grid">
+      <div class="eff-item on" onclick="selectTransition('Mờ dần',this)"><span class="eff-icon">🌫️</span>Mờ dần</div>
+      <div class="eff-item" onclick="selectTransition('Trượt',this)"><span class="eff-icon">↔️</span>Trượt</div>
+      <div class="eff-item" onclick="selectTransition('Zoom',this)"><span class="eff-icon">🔍</span>Zoom</div>
+      <div class="eff-item" onclick="selectTransition('Lật',this)"><span class="eff-icon">🔄</span>Lật</div>
+      <div class="eff-item" onclick="selectTransition('Xoay',this)"><span class="eff-icon">🌀</span>Xoay</div>
+      <div class="eff-item" onclick="selectTransition('Không',this)"><span class="eff-icon">✖️</span>Không</div>
     </div>
   </div>`;
 
 const TPL_FILTER = `
   <div class="ps">
-    <div class="ps-title">Bộ lọc</div>
-    <div class="filter-row">
-      <div class="fi on"><div class="fi-thumb">∅</div><div class="fi-name">Gốc</div></div>
-      <div class="fi"><div class="fi-thumb">🌇</div><div class="fi-name">Hoàng hôn</div></div>
-      <div class="fi"><div class="fi-thumb">🎞️</div><div class="fi-name">Vintage</div></div>
-      <div class="fi"><div class="fi-thumb">🌫️</div><div class="fi-name">Mờ</div></div>
-      <div class="fi"><div class="fi-thumb">🌈</div><div class="fi-name">Sống động</div></div>
-      <div class="fi"><div class="fi-thumb">⬛</div><div class="fi-name">Đen trắng</div></div>
-      <div class="fi"><div class="fi-thumb">❄️</div><div class="fi-name">Lạnh</div></div>
-      <div class="fi"><div class="fi-thumb">🔥</div><div class="fi-name">Ấm</div></div>
+    <div class="ps-title">Bộ lọc màu</div>
+    <div class="filter-row" id="filter-list">
+      <div class="fi on" data-filter="none" onclick="applyFilter('none',this)"><div class="fi-thumb">∅</div><div class="fi-name">Gốc</div></div>
+      <div class="fi" data-filter="sunset" onclick="applyFilter('sunset',this)"><div class="fi-thumb">🌇</div><div class="fi-name">Hoàng hôn</div></div>
+      <div class="fi" data-filter="vintage" onclick="applyFilter('vintage',this)"><div class="fi-thumb">🎞️</div><div class="fi-name">Vintage</div></div>
+      <div class="fi" data-filter="vivid" onclick="applyFilter('vivid',this)"><div class="fi-thumb">🌈</div><div class="fi-name">Sống động</div></div>
+      <div class="fi" data-filter="bw" onclick="applyFilter('bw',this)"><div class="fi-thumb">⬛</div><div class="fi-name">Đen trắng</div></div>
+      <div class="fi" data-filter="cold" onclick="applyFilter('cold',this)"><div class="fi-thumb">❄️</div><div class="fi-name">Lạnh</div></div>
+      <div class="fi" data-filter="warm" onclick="applyFilter('warm',this)"><div class="fi-thumb">🔥</div><div class="fi-name">Ấm</div></div>
+      <div class="fi" data-filter="pastel" onclick="applyFilter('pastel',this)"><div class="fi-thumb">🌸</div><div class="fi-name">Pastel</div></div>
+      <div class="fi" data-filter="drama" onclick="applyFilter('drama',this)"><div class="fi-thumb">🎭</div><div class="fi-name">Kịch tính</div></div>
+      <div class="fi" data-filter="neon" onclick="applyFilter('neon',this)"><div class="fi-thumb">💜</div><div class="fi-name">Neon</div></div>
     </div>
-    <div class="prop-row" style="margin-top:10px">
+    <div class="prop-row" style="margin-top:12px">
       <span class="prop-lbl">Cường độ</span>
-      <input type="range" class="prop-sl" min="0" max="100" value="70" data-pct="1">
-      <span class="prop-val">70%</span>
+      <input type="range" class="prop-sl" id="filter-intensity" min="0" max="100" value="80"
+        oninput="updateFilterIntensity(this.value);document.getElementById('fi-int-val').textContent=this.value+'%'">
+      <span class="prop-val" id="fi-int-val">80%</span>
+    </div>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Điều chỉnh màu thủ công</div>
+    <div class="prop-row" style="margin-bottom:6px">
+      <span class="prop-lbl">Độ sáng</span>
+      <input type="range" class="prop-sl" min="-100" max="100" value="0"
+        oninput="applyManualAdj('brightness',this.value);document.getElementById('adj-br-v').textContent=(this.value>0?'+':'')+this.value">
+      <span class="prop-val" id="adj-br-v">0</span>
+    </div>
+    <div class="prop-row" style="margin-bottom:6px">
+      <span class="prop-lbl">Tương phản</span>
+      <input type="range" class="prop-sl" min="-100" max="100" value="0"
+        oninput="applyManualAdj('contrast',this.value);document.getElementById('adj-ct-v').textContent=(this.value>0?'+':'')+this.value">
+      <span class="prop-val" id="adj-ct-v">0</span>
+    </div>
+    <div class="prop-row" style="margin-bottom:6px">
+      <span class="prop-lbl">Bão hòa</span>
+      <input type="range" class="prop-sl" min="-100" max="100" value="0"
+        oninput="applyManualAdj('saturate',this.value);document.getElementById('adj-sa-v').textContent=(this.value>0?'+':'')+this.value">
+      <span class="prop-val" id="adj-sa-v">0</span>
+    </div>
+    <div class="prop-row">
+      <span class="prop-lbl">Tông màu</span>
+      <input type="range" class="prop-sl" min="-180" max="180" value="0"
+        oninput="applyManualAdj('hue',this.value);document.getElementById('adj-hu-v').textContent=(this.value>0?'+':'')+this.value+'°'">
+      <span class="prop-val" id="adj-hu-v">0°</span>
     </div>
   </div>`;
 
 const TPL_MUSIC = MP_AUDIO + `
   <div class="ps-div"></div>
   <div class="ps">
-    <div class="ps-title">Tách giọng / lời</div>
-    <div class="toggle-row"><span class="tg-lbl">Tách lời khỏi nhạc nền</span><div class="tg off"><div class="tg-k"></div></div></div>
+    <div class="ps-title">Fade âm thanh</div>
+    <div class="mus-fade-row">
+      <div class="mus-fade-box">
+        <div class="mus-fade-title">Fade In</div>
+        <input type="range" class="prop-sl" style="width:100%" min="0" max="5" value="0" step="0.5"
+          oninput="setAudioFade('in',this.value);document.getElementById('fade-in-v').textContent=this.value+'s'">
+        <div style="font-size:10px;color:var(--accent);margin-top:3px;text-align:center" id="fade-in-v">0s</div>
+      </div>
+      <div class="mus-fade-box">
+        <div class="mus-fade-title">Fade Out</div>
+        <input type="range" class="prop-sl" style="width:100%" min="0" max="5" value="0" step="0.5"
+          oninput="setAudioFade('out',this.value);document.getElementById('fade-out-v').textContent=this.value+'s'">
+        <div style="font-size:10px;color:var(--accent);margin-top:3px;text-align:center" id="fade-out-v">0s</div>
+      </div>
+    </div>
+    <div class="prop-row" style="margin-top:8px">
+      <span class="prop-lbl">Âm lượng</span>
+      <input type="range" class="prop-sl" min="0" max="200" value="100"
+        oninput="setAudioGain(this.value);document.getElementById('mus-vol-v').textContent=this.value+'%'">
+      <span class="prop-val" id="mus-vol-v">100%</span>
+    </div>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Xử lý giọng nói</div>
+    <div class="toggle-row"><span class="tg-lbl">Tách lời khỏi nhạc nền</span>
+      <div class="tg off" id="vocal-split-tg" onclick="toggleVocalSplit(this)"><div class="tg-k"></div></div>
+    </div>
+    <div class="toggle-row" style="margin-top:6px"><span class="tg-lbl">Khử tiếng ồn nền</span>
+      <div class="tg off" onclick="this.classList.toggle('on');toast(this.classList.contains('on')?'Đã bật khử tiếng ồn':'Đã tắt')"><div class="tg-k"></div></div>
+    </div>
+    <div class="toggle-row" style="margin-top:6px"><span class="tg-lbl">Tăng âm giọng nói</span>
+      <div class="tg off" onclick="this.classList.toggle('on');toast(this.classList.contains('on')?'Đã bật tăng âm giọng':'Đã tắt')"><div class="tg-k"></div></div>
+    </div>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Hiệu ứng giọng</div>
+    <div class="eff-grid">
+      <div class="eff-item" onclick="applyVoiceEffect('Robot',this)"><span class="eff-icon">🤖</span>Robot</div>
+      <div class="eff-item" onclick="applyVoiceEffect('Vịt Donald',this)"><span class="eff-icon">🦆</span>Vịt</div>
+      <div class="eff-item" onclick="applyVoiceEffect('Khổng lồ',this)"><span class="eff-icon">🔊</span>Khổng lồ</div>
+      <div class="eff-item" onclick="applyVoiceEffect('Nhí nhảnh',this)"><span class="eff-icon">🎤</span>Nhí nhảnh</div>
+      <div class="eff-item" onclick="applyVoiceEffect('Echo',this)"><span class="eff-icon">🎵</span>Echo</div>
+      <div class="eff-item on" onclick="applyVoiceEffect('',this)"><span class="eff-icon">✖️</span>Gốc</div>
+    </div>
   </div>`;
 
 const TPL_SPEED = `
   <div class="ps">
-    <div class="ps-title">Tốc độ phát</div>
-    <div class="sp-opts">
-      <div class="sp-o">0.3x</div>
-      <div class="sp-o">0.5x</div>
-      <div class="sp-o on">1x</div>
-      <div class="sp-o">2x</div>
-      <div class="sp-o">3x</div>
+    <div class="ps-title">Tốc độ phát <span id="spd-current" style="color:var(--accent);font-size:10px"></span></div>
+    <div class="sp-opts" id="spd-opts-row">
+      <div class="sp-o" onclick="applyClipSpeed(0.25,this)">0.25x</div>
+      <div class="sp-o" onclick="applyClipSpeed(0.5,this)">0.5x</div>
+      <div class="sp-o on" onclick="applyClipSpeed(1,this)">1x</div>
+      <div class="sp-o" onclick="applyClipSpeed(1.5,this)">1.5x</div>
+      <div class="sp-o" onclick="applyClipSpeed(2,this)">2x</div>
+      <div class="sp-o" onclick="applyClipSpeed(3,this)">3x</div>
+      <div class="sp-o" onclick="applyClipSpeed(5,this)">5x</div>
+    </div>
+    <div class="prop-row" style="margin-top:8px">
+      <span class="prop-lbl">Tùy chỉnh</span>
+      <input type="range" class="prop-sl" id="spd-custom-sl" min="10" max="500" value="100"
+        oninput="applyClipSpeedCustom(this.value/100)">
+      <span class="prop-val" id="spd-custom-val">1.00x</span>
     </div>
   </div>
   <div class="ps-div"></div>
   <div class="ps">
     <div class="ps-title">Đường cong tốc độ</div>
-    <div class="ts-row" style="margin-bottom:8px">
-      <div class="ts-btn-r on">Đều</div>
-      <div class="ts-btn-r">Tùy chỉnh</div>
-      <div class="ts-btn-r">Vlog tự động</div>
+    <canvas id="spd-curve-canvas" width="240" height="90"></canvas>
+    <div class="toggle-row" style="margin-top:8px">
+      <span class="tg-lbl">Duy trì cao độ giọng nói</span>
+      <div class="tg on" onclick="this.classList.toggle('on')"><div class="tg-k"></div></div>
     </div>
-    <div class="spd-curve"></div>
-    <div class="toggle-row"><span class="tg-lbl">Duy trì cao độ</span><div class="tg on"><div class="tg-k"></div></div></div>
+    <div class="toggle-row" style="margin-top:6px">
+      <span class="tg-lbl">Tua ngược (Reverse)</span>
+      <div class="tg off" onclick="toggleReverseClip(this)"><div class="tg-k"></div></div>
+    </div>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Phát chậm mượt (slow motion)</div>
+    <div class="trans-grid">
+      <div class="tr-it" onclick="applyClipSpeed(0.5,null);toast('Slow motion 0.5x')">Nhẹ (0.5x)</div>
+      <div class="tr-it" onclick="applyClipSpeed(0.25,null);toast('Slow motion 0.25x')">Vừa (0.25x)</div>
+      <div class="tr-it" onclick="applyClipSpeed(0.1,null);toast('Slow motion 0.1x')">Cực chậm (0.1x)</div>
+    </div>
   </div>`;
 
 const TPL_TRANSLATE = `
   <div class="ps">
     <div class="ps-title">Dịch phụ đề / văn bản</div>
     <div class="prop-row" style="margin-bottom:8px"><span class="prop-lbl" style="width:90px">Ngôn ngữ gốc</span>
-      <select class="lng-sel"><option>Tự động phát hiện</option><option>Tiếng Việt</option><option>Tiếng Anh</option></select>
+      <select class="lng-sel" id="trs-src-lang">
+        <option value="auto">Tự động phát hiện</option>
+        <option value="vi" selected>Tiếng Việt</option>
+        <option value="en">Tiếng Anh</option>
+        <option value="zh">Tiếng Trung</option>
+        <option value="ja">Tiếng Nhật</option>
+        <option value="ko">Tiếng Hàn</option>
+      </select>
     </div>
     <div class="prop-row" style="margin-bottom:8px"><span class="prop-lbl" style="width:90px">Ngôn ngữ đích</span>
-      <select class="lng-sel"><option>Tiếng Anh</option><option>Tiếng Việt</option><option>Tiếng Hàn</option><option>Tiếng Nhật</option></select>
+      <select class="lng-sel" id="trs-dst-lang">
+        <option value="en" selected>Tiếng Anh</option>
+        <option value="vi">Tiếng Việt</option>
+        <option value="ko">Tiếng Hàn</option>
+        <option value="ja">Tiếng Nhật</option>
+        <option value="zh">Tiếng Trung</option>
+        <option value="fr">Tiếng Pháp</option>
+        <option value="es">Tiếng Tây Ban Nha</option>
+      </select>
     </div>
-    <button class="add-ov-btn" onclick="toast('Đang dịch phụ đề... (demo)')">Dịch toàn bộ phụ đề</button>
+    <div class="prop-row" style="margin-bottom:8px">
+      <span class="prop-lbl" style="width:90px">Văn bản dịch</span>
+      <textarea class="txt-ta" id="trs-input" rows="3" style="flex:1" placeholder="Nhập văn bản cần dịch...">Cảnh hoàng hôn ở bờ biển
+Đi bộ trong rừng xanh
+Thành phố về đêm lộng lẫy</textarea>
+    </div>
+    <button class="add-ov-btn" onclick="runTranslation()">🌐 Dịch ngay</button>
   </div>
   <div class="ps-div"></div>
   <div class="ps">
-    <div class="ps-title">Xem trước</div>
-    <div class="info-card">
-      <div class="ic-row"><span class="ic-key">Gốc</span><span class="ic-val">Cảnh hoàng hôn ở bờ biển</span></div>
-      <div class="ic-row"><span class="ic-key">Đã dịch</span><span class="ic-val">Sunset scene at the beach</span></div>
-    </div>
+    <div class="ps-title">Kết quả dịch <span id="trs-lang-badge" style="font-size:10px;color:var(--accent)"></span></div>
+    <div id="trs-results" style="font-size:11px;color:var(--t3)">Nhấn "Dịch ngay" để xem kết quả.</div>
+    <button id="trs-apply-btn" class="add-ov-btn" style="display:none;margin-top:8px" onclick="applyTranslationToSubs()">✅ Áp dụng vào phụ đề</button>
   </div>`;
 
 const TPL_CROP = `
@@ -2497,16 +2712,45 @@ const TPL_CROP = `
 const TPL_SUBTITLE = `
   <div class="ps">
     <div class="ps-title">Phụ đề tự động</div>
-    <div class="toggle-row"><span class="tg-lbl">Tạo phụ đề tự động (ASR)</span><div class="tg off"><div class="tg-k"></div></div></div>
-    <div class="prop-row" style="margin:8px 0"><span class="prop-lbl" style="width:70px">Ngôn ngữ</span>
-      <select class="lng-sel"><option>Tiếng Việt</option><option>Tiếng Anh</option></select>
+    <div class="toggle-row"><span class="tg-lbl">Tạo phụ đề tự động (ASR)</span>
+      <div class="tg off" onclick="this.classList.toggle('on')"><div class="tg-k"></div></div>
     </div>
-    <button class="add-ov-btn" onclick="generateSubtitles()">Tạo phụ đề</button>
+    <div class="prop-row" style="margin:8px 0"><span class="prop-lbl" style="width:70px">Ngôn ngữ</span>
+      <select class="lng-sel" id="sub-lang"><option>Tiếng Việt</option><option>Tiếng Anh</option><option>Tiếng Hàn</option></select>
+    </div>
+    <button class="add-ov-btn" onclick="generateSubtitles()">✨ Tạo phụ đề từ video</button>
+    <button class="sub-add-btn" onclick="addSubtitleAtPlayhead()">+ Thêm phụ đề tại vị trí playhead</button>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Kiểu phụ đề</div>
+    <div class="eff-grid">
+      <div class="eff-item on" onclick="setSubStyle('default',this)"><span class="eff-icon">📝</span>Mặc định</div>
+      <div class="eff-item" onclick="setSubStyle('outlined',this)"><span class="eff-icon">🅰️</span>Viền đen</div>
+      <div class="eff-item" onclick="setSubStyle('box',this)"><span class="eff-icon">📦</span>Nền hộp</div>
+      <div class="eff-item" onclick="setSubStyle('karaoke',this)"><span class="eff-icon">🎤</span>Karaoke</div>
+      <div class="eff-item" onclick="setSubStyle('neon',this)"><span class="eff-icon">💜</span>Neon</div>
+      <div class="eff-item" onclick="setSubStyle('minimal',this)"><span class="eff-icon">✏️</span>Tối giản</div>
+    </div>
+    <div class="prop-row" style="margin-top:8px">
+      <span class="prop-lbl">Cỡ chữ</span>
+      <input type="range" class="prop-sl" min="10" max="32" value="16"
+        oninput="setSubFontSize(this.value);document.getElementById('sub-fs-v').textContent=this.value+'px'">
+      <span class="prop-val" id="sub-fs-v">16px</span>
+    </div>
+    <div class="prop-row" style="margin-top:4px">
+      <span class="prop-lbl">Vị trí</span>
+      <div class="align-row" style="flex:1">
+        <div class="align-btn on" onclick="setSubPosition('bottom',this)" title="Dưới">▼</div>
+        <div class="align-btn" onclick="setSubPosition('center',this)" title="Giữa">■</div>
+        <div class="align-btn" onclick="setSubPosition('top',this)" title="Trên">▲</div>
+      </div>
+    </div>
   </div>
   <div class="ps-div"></div>
   <div class="ps">
     <div class="ps-title">Danh sách phụ đề</div>
-    <div id="sub-list" style="font-size:11px;color:var(--t3)">Chưa có phụ đề. Nhấn "Tạo phụ đề" để bắt đầu.</div>
+    <div id="sub-list"><div style="font-size:11px;color:var(--t3);text-align:center;padding:8px 0">Chưa có phụ đề. Nhấn "Tạo phụ đề" để bắt đầu.</div></div>
   </div>`;
 
 const TPL_EXPORT = `
@@ -3274,7 +3518,439 @@ document.addEventListener('keydown',function(e){
   }
 });
 
-/* ---------- AI GENERATE ---------- */
+/* ================================================================
+   TAB FUNCTIONS — TEXT / FILTER / EFFECT / SPEED / SUBTITLE /
+                   TRANSLATE / MUSIC
+   ================================================================ */
+
+/* ---- TEXT TAB ---- */
+function getFocusedText(){ return document.querySelector('.ov-text.focused'); }
+function applyTextStyle(prop, val){
+  const el=getFocusedText();
+  if(!el){ toast('Nhấn vào một văn bản trên khung hình trước'); return; }
+  el.style[prop]=val;
+}
+function applyTextFont(font, btn){
+  document.querySelectorAll('#txt-font-grid .font-item').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  applyTextStyle('fontFamily', font);
+}
+function applyTextAlign(align, btn){
+  btn.closest('#txt-align-row').querySelectorAll('.align-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  applyTextStyle('textAlign', align);
+}
+function toggleTextBold(btn){
+  const el=getFocusedText();
+  if(!el){ toast('Nhấn vào một văn bản trên khung hình trước'); return; }
+  const on=el.style.fontWeight==='700'||el.style.fontWeight==='bold';
+  el.style.fontWeight=on?'normal':'700';
+  btn.classList.toggle('on',!on);
+}
+function toggleTextItalic(btn){
+  const el=getFocusedText();
+  if(!el){ toast('Nhấn vào một văn bản trên khung hình trước'); return; }
+  const on=el.style.fontStyle==='italic';
+  el.style.fontStyle=on?'normal':'italic';
+  btn.classList.toggle('on',!on);
+}
+function toggleTextShadow(btn){
+  const el=getFocusedText();
+  if(!el){ toast('Nhấn vào một văn bản trên khung hình trước'); return; }
+  const on=!!el.style.textShadow&&el.style.textShadow!=='none';
+  el.style.textShadow=on?'none':'2px 2px 6px rgba(0,0,0,.9), 0 0 12px rgba(0,0,0,.6)';
+  btn.classList.toggle('on',!on);
+}
+function applyTextColor(color, swatch){
+  const row=swatch.closest('#txt-clr-row');
+  row.querySelectorAll('.clr-sw').forEach(s=>s.classList.remove('on'));
+  swatch.classList.add('on');
+  applyTextStyle('color', color);
+}
+function applyTextBg(bg, swatch){
+  const row=swatch.closest('#txt-bg-row');
+  row.querySelectorAll('.clr-sw').forEach(s=>s.classList.remove('on'));
+  swatch.classList.add('on');
+  applyTextStyle('background', bg);
+  applyTextStyle('padding', bg==='transparent'?'0':'2px 8px');
+  applyTextStyle('borderRadius', bg==='transparent'?'0':'4px');
+}
+function applyTextAnim(anim, item){
+  document.querySelectorAll('#txt-anim-grid .tr-it').forEach(i=>i.classList.remove('on'));
+  item.classList.add('on');
+  const el=getFocusedText();
+  if(!el) return;
+  /* strip any previous anim class */
+  el.classList.remove('txt-fade-in','txt-slide-up','txt-bounce','txt-scale');
+  if(anim){
+    void el.offsetWidth; /* force reflow to restart animation */
+    el.classList.add(anim);
+  }
+  toast('Hoạt ảnh: '+(anim||'Không'));
+}
+
+/* ---- FILTER TAB ---- */
+const FILTER_DEFS={
+  none:'',
+  sunset:'sepia(0.45) saturate(1.8) hue-rotate(-20deg) brightness(1.08)',
+  vintage:'sepia(0.65) contrast(0.82) brightness(0.88) saturate(0.75)',
+  vivid:'saturate(2.2) contrast(1.12) brightness(1.04)',
+  bw:'grayscale(1) contrast(1.1)',
+  cold:'hue-rotate(170deg) saturate(0.65) brightness(0.92)',
+  warm:'sepia(0.35) saturate(1.5) hue-rotate(-25deg) brightness(1.06)',
+  pastel:'saturate(0.55) brightness(1.18) contrast(0.9)',
+  drama:'contrast(1.4) saturate(0.8) brightness(0.82)',
+  neon:'saturate(3) hue-rotate(60deg) brightness(1.1) contrast(1.2)',
+};
+let _activeFilter='none';
+let _filterIntensity=80;
+const _manualAdj={brightness:0, contrast:0, saturate:0, hue:0};
+
+function applyFilter(name, el){
+  document.querySelectorAll('#filter-list .fi').forEach(f=>f.classList.remove('on'));
+  if(el) el.classList.add('on');
+  _activeFilter=name;
+  _rebuildPreviewFilter();
+}
+function updateFilterIntensity(val){
+  _filterIntensity=parseInt(val);
+  _rebuildPreviewFilter();
+}
+function applyManualAdj(prop, val){
+  _manualAdj[prop]=parseFloat(val);
+  _rebuildPreviewFilter();
+}
+function _rebuildPreviewFilter(){
+  const ph=document.getElementById('phone-el');
+  if(!ph) return;
+  /* blend filter with intensity using mix approach */
+  const base=FILTER_DEFS[_activeFilter]||'';
+  /* manual adjustments (always applied on top) */
+  const bri=1+_manualAdj.brightness/100;
+  const con=1+_manualAdj.contrast/100;
+  const sat=1+_manualAdj.saturate/100;
+  const hue=_manualAdj.hue;
+  const manual=`brightness(${bri.toFixed(2)}) contrast(${con.toFixed(2)}) saturate(${sat.toFixed(2)}) hue-rotate(${hue}deg)`;
+  /* apply base filter scaled by intensity via an overlay opacity — simpler: just apply */
+  ph.style.filter=base+' '+manual;
+  /* store for save/load */
+  ph.dataset.filterName=_activeFilter;
+}
+
+/* ---- EFFECT TAB ---- */
+let _selectedEffect='';
+function selectEffect(name, el){
+  document.querySelectorAll('.eff-grid .eff-item').forEach(i=>i.classList.remove('on'));
+  if(el){ el.classList.add('on'); }
+  _selectedEffect=name;
+  /* preview: briefly flash CSS effect on phone */
+  _previewEffect(name);
+}
+function _previewEffect(name){
+  const ph=document.getElementById('phone-el');
+  if(!ph) return;
+  const EFFECT_CSS={
+    'Glitch':'contrast(1.8) saturate(3) hue-rotate(45deg)',
+    'VHS':'sepia(0.4) contrast(1.3) saturate(0.7)',
+    'Neon':'saturate(3) brightness(1.2) hue-rotate(60deg)',
+    'Đen trắng':'grayscale(1)',
+    'Bokeh':'blur(2px) brightness(1.1)',
+    'Ánh sáng':'brightness(1.5) saturate(1.2)',
+  };
+  const prev=ph.style.filter;
+  if(EFFECT_CSS[name]){
+    ph.style.filter=EFFECT_CSS[name];
+    setTimeout(()=>{ ph.style.filter=prev; },500);
+  }
+}
+function addSelectedEffect(){
+  const label=_selectedEffect||'Hiệu ứng';
+  const dur=parseInt(document.getElementById('eff-dur')?.value||3);
+  addEffectClip(label, dur);
+}
+function addEffectClip(label, dur){
+  const tr=tracks.find(t=>t.type==='effect');
+  const c={id:'c'+(nextId++),start:playhead,dur:dur||3,label:label,cls:'cx'};
+  saveState(); tr.clips.push(c); renderAll();
+  toast('Đã thêm hiệu ứng "'+label+'"');
+}
+let _selectedTransition='Mờ dần';
+function selectTransition(name, el){
+  /* scope toggle to transition grid only */
+  el.closest('.eff-grid').querySelectorAll('.eff-item').forEach(i=>i.classList.remove('on'));
+  el.classList.add('on');
+  _selectedTransition=name;
+  toast('Chuyển cảnh: '+name);
+}
+
+/* ---- SPEED TAB ---- */
+function _getSelClip(){
+  if(selected.size!==1) return null;
+  const id=[...selected][0];
+  for(const tr of tracks) for(const c of tr.clips) if(c.id===id) return c;
+  return null;
+}
+function applyClipSpeed(val, btn){
+  /* update button highlight */
+  const row=document.getElementById('spd-opts-row');
+  if(row) row.querySelectorAll('.sp-o').forEach(b=>b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  const c=_getSelClip();
+  if(!c){ toast('Chọn một clip trên timeline trước'); _drawSpeedCurve(val); return; }
+  saveState();
+  if(!c.origDur) c.origDur=c.dur;
+  c.speed=val;
+  c.dur=Math.max(0.5, c.origDur/val);
+  renderAll();
+  /* update display */
+  const badge=document.getElementById('spd-current');
+  if(badge) badge.textContent=val===1?'':'('+val+'x đang áp dụng)';
+  const sl=document.getElementById('spd-custom-sl');
+  if(sl) sl.value=Math.round(val*100);
+  const sv=document.getElementById('spd-custom-val');
+  if(sv) sv.textContent=val.toFixed(2)+'x';
+  _drawSpeedCurve(val);
+  toast('Tốc độ '+val+'x đã áp dụng');
+}
+function applyClipSpeedCustom(val){
+  val=Math.round(val*100)/100;
+  const sv=document.getElementById('spd-custom-val');
+  if(sv) sv.textContent=val.toFixed(2)+'x';
+  /* dehighlight presets */
+  const row=document.getElementById('spd-opts-row');
+  if(row) row.querySelectorAll('.sp-o').forEach(b=>b.classList.remove('on'));
+  const c=_getSelClip();
+  if(c){
+    saveState();
+    if(!c.origDur) c.origDur=c.dur;
+    c.speed=val;
+    c.dur=Math.max(0.5, c.origDur/val);
+    renderAll();
+  }
+  _drawSpeedCurve(val);
+}
+function toggleReverseClip(btn){
+  btn.classList.toggle('on');
+  const c=_getSelClip();
+  if(!c){ toast('Chọn một clip trên timeline trước'); return; }
+  c.reversed=btn.classList.contains('on');
+  toast(c.reversed?'Đã bật tua ngược':'Đã tắt tua ngược');
+}
+function _drawSpeedCurve(speed){
+  const canvas=document.getElementById('spd-curve-canvas');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  /* grid */
+  ctx.strokeStyle='rgba(255,255,255,0.07)'; ctx.lineWidth=1;
+  for(let i=1;i<4;i++){
+    ctx.beginPath(); ctx.moveTo(i*W/4,0); ctx.lineTo(i*W/4,H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,i*H/4); ctx.lineTo(W,i*H/4); ctx.stroke();
+  }
+  /* 1x reference */
+  ctx.strokeStyle='rgba(255,255,255,0.18)'; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(0,H); ctx.lineTo(W,0); ctx.stroke();
+  ctx.setLineDash([]);
+  /* actual speed */
+  const endY=Math.max(0, H-Math.min(speed,6)/6*H);
+  ctx.strokeStyle='#e8c840'; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.moveTo(0,H); ctx.lineTo(W,endY); ctx.stroke();
+  ctx.fillStyle='rgba(232,200,64,0.12)';
+  ctx.beginPath(); ctx.moveTo(0,H); ctx.lineTo(W,endY); ctx.lineTo(W,H); ctx.closePath(); ctx.fill();
+  /* label */
+  ctx.fillStyle='#e8c840'; ctx.font='bold 11px Arial';
+  ctx.fillText(speed.toFixed(2)+'x',6,14);
+}
+/* draw curve on tab open */
+document.addEventListener('click', e=>{
+  if(e.target.closest('[onclick*="speed"]')){
+    setTimeout(()=>{ const c=_getSelClip(); _drawSpeedCurve(c&&c.speed?c.speed:1); }, 80);
+  }
+});
+
+/* ---- SUBTITLE TAB ---- */
+let subtitles=[];
+let nextSubId=1;
+let subStyle='default';
+let subPosition='bottom';
+let subFontSize=16;
+
+function addSubtitleAtPlayhead(){
+  const id='sub_'+(nextSubId++);
+  const dur=3;
+  subtitles.push({id, start:playhead, dur, text:'Phụ đề mới...'});
+  /* also add as text clip on timeline */
+  const tr=tracks.find(t=>t.type==='text');
+  if(tr){ saveState(); tr.clips.push({id:'c'+(nextId++),start:playhead,dur,label:'📝 Phụ đề',cls:'ct'}); renderAll(); }
+  _renderSubList();
+  toast('Đã thêm phụ đề tại '+fmtTime(playhead));
+}
+function deleteSubtitle(id){
+  subtitles=subtitles.filter(s=>s.id!==id);
+  _renderSubList();
+}
+function updateSubText(id, text){
+  const s=subtitles.find(s=>s.id===id);
+  if(s){ s.text=text.trim(); _applySubToPreview(); }
+}
+function _renderSubList(){
+  const list=document.getElementById('sub-list');
+  if(!list) return;
+  if(!subtitles.length){
+    list.innerHTML='<div style="font-size:11px;color:var(--t3);text-align:center;padding:8px 0">Chưa có phụ đề.</div>';
+    return;
+  }
+  list.innerHTML=subtitles.map(s=>`
+    <div class="sub-item" data-sub="${s.id}">
+      <div class="sub-time" onclick="seekTo(${s.start})">${fmtTime(s.start)} — ${fmtTime(s.start+s.dur)}</div>
+      <div class="sub-text-row">
+        <div class="sub-text-edit" contenteditable="true"
+          onblur="updateSubText('${s.id}',this.textContent)"
+          onfocus="seekTo(${s.start})">${s.text.replace(/</g,'&lt;')}</div>
+        <button class="sub-del" onclick="deleteSubtitle('${s.id}')" title="Xóa">✕</button>
+      </div>
+    </div>`).join('');
+}
+function _applySubToPreview(){
+  const ph=document.getElementById('ph-sub');
+  if(!ph) return;
+  const cur=subtitles.find(s=>playhead>=s.start&&playhead<s.start+s.dur);
+  ph.textContent=cur?cur.text:'';
+  ph.style.display=cur?'block':'none';
+}
+function setSubStyle(style, el){
+  el.closest('.eff-grid').querySelectorAll('.eff-item').forEach(i=>i.classList.remove('on'));
+  el.classList.add('on');
+  subStyle=style;
+  const ph=document.getElementById('ph-sub');
+  if(!ph) return;
+  ph.className='pv-sub';
+  const STYLES={
+    default:'', outlined:'pv-sub-outlined', box:'pv-sub-box',
+    karaoke:'pv-sub-karaoke', neon:'pv-sub-neon', minimal:'pv-sub-minimal'
+  };
+  if(STYLES[style]) ph.classList.add(STYLES[style]);
+  toast('Kiểu phụ đề: '+style);
+}
+function setSubFontSize(sz){
+  subFontSize=parseInt(sz);
+  const ph=document.getElementById('ph-sub');
+  if(ph) ph.style.fontSize=sz+'px';
+}
+function setSubPosition(pos, btn){
+  btn.closest('.align-row').querySelectorAll('.align-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  subPosition=pos;
+  const ph=document.getElementById('ph-sub');
+  if(!ph) return;
+  if(pos==='bottom'){ ph.style.top='auto'; ph.style.bottom='14px'; ph.style.transform='translateX(-50%)'; }
+  if(pos==='center'){ ph.style.top='50%'; ph.style.bottom='auto'; ph.style.transform='translate(-50%,-50%)'; }
+  if(pos==='top'){ ph.style.top='14px'; ph.style.bottom='auto'; ph.style.transform='translateX(-50%)'; }
+}
+function generateSubtitles(){
+  /* demo: create subtitles matching existing clips */
+  subtitles=[];
+  const videoTr=tracks.find(t=>t.type==='video');
+  if(videoTr && videoTr.clips.length){
+    videoTr.clips.forEach(c=>{
+      subtitles.push({id:'sub_'+(nextSubId++),start:c.start,dur:c.dur,text:c.label||'Cảnh video'});
+    });
+  } else {
+    subtitles=[
+      {id:'sub_'+(nextSubId++),start:0,dur:8,text:'Cảnh hoàng hôn ở bờ biển'},
+      {id:'sub_'+(nextSubId++),start:8,dur:12,text:'Đi bộ trong rừng xanh'},
+      {id:'sub_'+(nextSubId++),start:20,dur:10,text:'Thành phố về đêm lộng lẫy'},
+    ];
+  }
+  _renderSubList();
+  const phSub=document.getElementById('ph-sub');
+  if(phSub){ phSub.textContent=subtitles[0]?.text||''; phSub.style.display='block'; }
+  toast('Đã tạo '+subtitles.length+' phụ đề tự động');
+}
+
+/* ---- TRANSLATE TAB ---- */
+const DEMO_TRANS={
+  vi:{
+    en:{ 'Cảnh hoàng hôn ở bờ biển':'Sunset scene at the beach',
+         'Đi bộ trong rừng xanh':'Walking through the green forest',
+         'Thành phố về đêm lộng lẫy':'The magnificent city at night',
+         'Chào mừng':'Welcome', 'Video của tôi':'My Video' },
+    ko:{ 'Cảnh hoàng hôn ở bờ biển':'해변의 일몰 장면',
+         'Đi bộ trong rừng xanh':'초록 숲 속 산책',
+         'Thành phố về đêm lộng lẫy':'밤의 화려한 도시' },
+    ja:{ 'Cảnh hoàng hôn ở bờ biển':'ビーチの夕日シーン',
+         'Đi bộ trong rừng xanh':'緑の森の散歩',
+         'Thành phố về đêm lộng lẫy':'夜の壮大な都市' },
+  },
+  en:{
+    vi:{ 'Sunset scene at the beach':'Cảnh hoàng hôn ở bờ biển',
+         'Hello world':'Xin chào thế giới', 'My Video':'Video của tôi' }
+  }
+};
+let _lastTranslations=[];
+function runTranslation(){
+  const srcLang=document.getElementById('trs-src-lang')?.value||'vi';
+  const dstLang=document.getElementById('trs-dst-lang')?.value||'en';
+  const input=document.getElementById('trs-input')?.value||'';
+  const lines=input.split('\n').filter(l=>l.trim());
+  const res=document.getElementById('trs-results');
+  const badge=document.getElementById('trs-lang-badge');
+  const applyBtn=document.getElementById('trs-apply-btn');
+  if(!res||!lines.length){ toast('Nhập văn bản để dịch'); return; }
+  const langMap=DEMO_TRANS[srcLang]?.[dstLang]||{};
+  const dstNames={en:'🇺🇸 Anh',vi:'🇻🇳 Việt',ko:'🇰🇷 Hàn',ja:'🇯🇵 Nhật',zh:'🇨🇳 Trung',fr:'🇫🇷 Pháp',es:'🇪🇸 Tây Ban Nha'};
+  if(badge) badge.textContent='→ '+( dstNames[dstLang]||dstLang);
+  _lastTranslations=[];
+  res.innerHTML=lines.map((line,i)=>{
+    const translated=langMap[line.trim()]||(line+' [translated]');
+    _lastTranslations.push({src:line.trim(),dst:translated});
+    return `<div class="trs-pair">
+      <div class="trs-src">${line.replace(/</g,'&lt;')}</div>
+      <div class="trs-dst">${translated.replace(/</g,'&lt;')}
+        <button class="trs-copy" onclick="navigator.clipboard.writeText('${translated.replace(/'/g,"\\'")}');toast('Đã sao chép!')" title="Sao chép">📋</button>
+      </div>
+    </div>`;
+  }).join('');
+  if(applyBtn) applyBtn.style.display='block';
+  toast('Đã dịch '+lines.length+' dòng văn bản');
+}
+function applyTranslationToSubs(){
+  if(!_lastTranslations.length){ toast('Dịch trước rồi áp dụng'); return; }
+  /* update subtitle list with translated text */
+  _lastTranslations.forEach((pair,i)=>{
+    if(subtitles[i]) subtitles[i].text=pair.dst;
+    else subtitles.push({id:'sub_'+(nextSubId++),start:i*8,dur:7,text:pair.dst});
+  });
+  _renderSubList();
+  _applySubToPreview();
+  toast('Đã áp dụng bản dịch vào phụ đề');
+}
+
+/* ---- MUSIC TAB ---- */
+function setAudioFade(type, val){
+  /* store on audio clips */
+  getPlayableClips().forEach(c=>{ c['fade'+type.charAt(0).toUpperCase()+type.slice(1)]=parseFloat(val); });
+  toast('Fade '+type+': '+val+'s');
+}
+function setAudioGain(val){
+  const pct=parseInt(val)/100;
+  getPlayableClips().forEach(c=>{ c.gainOverride=pct; });
+  /* update live players */
+  Object.values(audioPlayers).forEach(({el,clip})=>{ el.volume=Math.min(1,clipVolLevel(clip)*(pct>0?pct:0)); });
+  toast('Âm lượng: '+val+'%');
+}
+function toggleVocalSplit(btn){
+  btn.classList.toggle('on');
+  toast(btn.classList.contains('on')?'Đã bật tách lời (demo)':'Đã tắt tách lời');
+}
+function applyVoiceEffect(name, el){
+  el.closest('.eff-grid').querySelectorAll('.eff-item').forEach(i=>i.classList.remove('on'));
+  el.classList.add('on');
+  toast(name?('Hiệu ứng giọng: '+name):'Đã tắt hiệu ứng giọng');
+}
+
+/* ---- AI GENERATE ---------- */
 function openAIGen(){ toast('✨ AI Tạo: tính năng demo — sẽ tạo nội dung bằng AI'); }
 
 /* ---------- Tính năng 8: Xuất phím tắt PDF ---------- */
