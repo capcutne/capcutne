@@ -1,0 +1,156 @@
+PHASE 1.4 - MEDIA ASSET MANAGER
+
+Analyze the current project architecture first.
+
+Goal:
+Build a professional asset management system.
+
+==================================================
+1. ASSET SIDEBAR
+==================================================
+
+Create a dedicated Media panel.
+
+Sections:
+
+Videos
+Audio
+Images
+
+Search bar at top.
+
+Display:
+
+- Thumbnail
+- File name
+- Duration
+- Type
+
+==================================================
+2. ASSET LIBRARY
+==================================================
+
+Create AssetManager.
+
+Schema:
+
+{
+ id:"",
+ name:"",
+ type:"",
+ size:0,
+ duration:0,
+ createdAt:"",
+ thumbnail:"",
+ source:"local"
+}
+
+Supported:
+
+video/*
+audio/*
+image/*
+
+==================================================
+3. DRAG AND DROP
+==================================================
+
+Allow:
+
+- Drag asset from library
+- Drop directly onto timeline
+
+Auto-create clip.
+
+==================================================
+4. THUMBNAIL GENERATION
+==================================================
+
+Video:
+generate thumbnail from first frame.
+
+Audio:
+show waveform preview.
+
+Image:
+show image preview.
+
+==================================================
+5. MEDIA PERSISTENCE
+==================================================
+
+Store metadata separately from editorState.
+
+Create:
+
+assetIndex
+
+Do not embed assets inside project saves.
+
+Projects reference asset ids only.
+
+==================================================
+6. IMPORT SYSTEM
+==================================================
+
+Support:
+
+- File picker
+- Drag files into browser
+- Multi-file upload
+
+Show upload progress.
+
+==================================================
+7. SEARCH
+==================================================
+
+Real-time search.
+
+Filter by:
+
+- video
+- audio
+- image
+
+==================================================
+8. FUTURE READY
+==================================================
+
+Create abstraction:
+
+AssetStorage.save()
+AssetStorage.load()
+AssetStorage.delete()
+
+Current:
+local browser storage
+
+Future:
+Cloudflare R2 / S3
+
+==================================================
+9. NON-BREAKING REQUIREMENT
+==================================================
+
+Do not break:
+
+- Timeline
+- Save/Load
+- AI Copilot
+- Action Engine
+- Subtitle System
+
+==================================================
+10. DELIVERABLE
+==================================================
+
+Provide:
+
+1. files created
+2. files modified
+3. asset schema
+4. upload workflow
+5. drag/drop workflow
+6. storage workflow
+7. known limitations
