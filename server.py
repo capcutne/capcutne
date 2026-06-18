@@ -7,11 +7,13 @@ import os
 import json
 import uuid
 import time
+import math
 import mimetypes
 import threading
 import subprocess
 import http.server
 import socketserver
+import tempfile
 from pathlib import Path
 from openai import OpenAI
 
@@ -19,6 +21,8 @@ PROJECTS_DIR = Path("projects")
 PROJECTS_DIR.mkdir(exist_ok=True)
 EXPORTS_DIR  = Path("exports")
 EXPORTS_DIR.mkdir(exist_ok=True)
+UPLOADS_DIR  = Path("uploads")
+UPLOADS_DIR.mkdir(exist_ok=True)
 
 # the newest OpenAI model is "gpt-5" which was released August 7, 2025.
 # do not change this unless explicitly requested by the user
@@ -31,6 +35,7 @@ AI_PATHS = {
     "/ai/subtitle", "/ai/title", "/ai/describe",
     "/ai/translate", "/ai/editor-command", "/ai/generate-shorts",
     "/ai/viral-analysis", "/ai/transcribe",
+    "/ai/upload-media", "/ai/transcribe-real",
 }
 
 # ── Export job store ──────────────────────────────────────────────────────────
@@ -322,6 +327,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_json({"error": "Not found"}, 404)
             return
 
+        # Multipart upload must be handled before the JSON body read
+        if self.path == "/ai/upload-media":
+            try:
+                return self.send_json(handle_upload_media(self))
+            except Exception as exc:
+                return self.send_json({"error": str(exc)}, 500)
+
         length = int(self.headers.get("Content-Length", 0))
         body   = json.loads(self.rfile.read(length)) if length else {}
 
@@ -372,6 +384,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 result = handle_viral_analysis(body)
             elif self.path == "/ai/transcribe":
                 result = handle_transcribe(body)
+            elif self.path == "/ai/transcribe-real":
+                result = handle_transcribe_real(body)
             else:
                 result = {"error": "Unknown endpoint"}
 
@@ -625,6 +639,205 @@ Rules:
         s["end"]   = round(min(float(total_dur) if total_dur else 999,
                                float(s.get("end", 30))), 2)
     return result
+
+
+def handle_upload_media(handler):
+    """Parse multipart/form-data upload, save file to UPLOADS_DIR.
+    Uses stdlib email.parser — no deprecated cgi module needed."""
+    from email import policy as _ep
+    from email.parser import BytesFeedParser as _BFP
+
+    ct     = handler.headers.get("Content-Type", "")
+    length = int(handler.headers.get("Content-Length", 0))
+    if not ct.startswith("multipart/form-data"):
+        raise ValueError("Expected multipart/form-data")
+    if length > 200 * 1024 * 1024:
+        raise ValueError("File too large (max 200 MB)")
+
+    raw_body = handler.rfile.read(length)
+
+    # Extract boundary from Content-Type
+    bnd = None
+    for part in ct.split(";"):
+        part = part.strip()
+        if part.lower().startswith("boundary="):
+            bnd = part[9:].strip().strip('"')
+            break
+    if not bnd:
+        raise ValueError("No boundary in Content-Type")
+
+    # Split body into parts on the boundary
+    sep    = ("--" + bnd).encode()
+    term   = ("--" + bnd + "--").encode()
+    chunks = raw_body.split(sep)
+
+    filename = None
+    file_data = None
+
+    for chunk in chunks:
+        chunk = chunk.strip(b"\r\n")
+        if not chunk or chunk == b"--" or chunk.startswith(b"--"):
+            continue
+        # Each chunk: headers \r\n\r\n body
+        if b"\r\n\r\n" not in chunk:
+            continue
+        head_raw, body = chunk.split(b"\r\n\r\n", 1)
+        # Strip trailing boundary marker
+        if body.endswith(b"\r\n"):
+            body = body[:-2]
+
+        # Parse headers via email
+        parser = _BFP(policy=_ep.compat32)
+        parser.feed(head_raw + b"\r\n\r\n")
+        msg = parser.close()
+        disp = msg.get("Content-Disposition", "")
+        if 'name="file"' not in disp and "name=file" not in disp:
+            continue
+        # Extract filename
+        for token in disp.split(";"):
+            token = token.strip()
+            if token.lower().startswith("filename="):
+                filename = token[9:].strip().strip('"')
+                break
+        file_data = body
+        break
+
+    if file_data is None:
+        raise ValueError("No 'file' field found in multipart body")
+
+    filename = filename or "upload.bin"
+    file_id  = "upl_" + uuid.uuid4().hex[:14]
+    ext      = Path(filename).suffix.lower() or ".bin"
+    save_path = UPLOADS_DIR / f"{file_id}{ext}"
+    save_path.write_bytes(file_data)
+
+    print(f"[upload] saved {filename} → {save_path} ({len(file_data)//1024} KB)", flush=True)
+    return {
+        "ok":       True,
+        "fileId":   file_id,
+        "filename": filename,
+        "size":     len(file_data),
+        "ext":      ext,
+    }
+
+
+def handle_transcribe_real(body):
+    """FFmpeg audio extraction → OpenAI Whisper → word-level transcript."""
+    _require_client()
+
+    file_id  = body.get("fileId", "").strip()
+    if not file_id:
+        return {"error": "fileId required. Call /ai/upload-media first."}
+
+    # Locate the uploaded file
+    matches = list(UPLOADS_DIR.glob(f"{file_id}.*"))
+    if not matches:
+        return {"error": f"Upload not found for fileId={file_id}. Re-upload the file."}
+
+    src_path = matches[0]
+    ext      = src_path.suffix.lower()
+
+    # ── FFmpeg: extract / convert to 16 kHz mono WAV ──────────────────────────
+    audio_path = UPLOADS_DIR / f"{file_id}_audio.wav"
+    VIDEO_EXTS = {".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v", ".flv", ".wmv"}
+    AUDIO_EXTS = {".mp3", ".m4a", ".aac", ".ogg", ".wav", ".flac", ".opus", ".wma"}
+
+    if ext in VIDEO_EXTS:
+        cmd = [
+            "ffmpeg", "-y", "-i", str(src_path),
+            "-vn", "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1",
+            str(audio_path),
+        ]
+        proc = subprocess.run(cmd, capture_output=True, timeout=180)
+        if proc.returncode != 0:
+            return {"error": "FFmpeg audio extraction failed: " + proc.stderr.decode()[-300:]}
+        transcribe_path = audio_path
+    elif ext in AUDIO_EXTS:
+        # Convert to WAV 16 kHz mono anyway for best Whisper results
+        cmd = [
+            "ffmpeg", "-y", "-i", str(src_path),
+            "-acodec", "pcm_s16le", "-ar", "16000", "-ac", "1",
+            str(audio_path),
+        ]
+        proc = subprocess.run(cmd, capture_output=True, timeout=120)
+        transcribe_path = audio_path if proc.returncode == 0 else src_path
+    else:
+        return {"error": f"Unsupported file type: {ext}"}
+
+    # ── Size check: Whisper API limit is 25 MB ─────────────────────────────────
+    size_mb = transcribe_path.stat().st_size / 1024 / 1024
+    if size_mb > 24.5:
+        _cleanup(src_path, audio_path)
+        return {"error": f"Audio is {size_mb:.1f} MB — Whisper limit is 25 MB. Use a shorter clip."}
+
+    # ── Whisper API call ───────────────────────────────────────────────────────
+    print(f"[whisper] transcribing {transcribe_path.name} ({size_mb:.1f} MB)…", flush=True)
+    try:
+        with open(transcribe_path, "rb") as f:
+            response = client.audio.transcriptions.create(
+                model="whisper-1",
+                file=f,
+                response_format="verbose_json",
+                timestamp_granularities=["word", "segment"],
+            )
+    except Exception as exc:
+        _cleanup(src_path, audio_path)
+        return {"error": f"Whisper API error: {exc}"}
+
+    # ── Parse response ─────────────────────────────────────────────────────────
+    segments   = []
+    total_words = 0
+
+    for seg in (response.segments or []):
+        raw_conf  = getattr(seg, "avg_logprob", -0.5)
+        # avg_logprob is negative; convert to 0-1 via exp, then clip
+        confidence = round(min(1.0, max(0.0, math.exp(raw_conf))), 3)
+
+        words = []
+        for w in (getattr(seg, "words", None) or []):
+            words.append({
+                "word":       w.word.strip(),
+                "start":      round(float(w.start), 3),
+                "end":        round(float(w.end),   3),
+                "confidence": round(float(getattr(w, "probability", 0.9)), 3),
+            })
+        total_words += len(words)
+
+        segments.append({
+            "start":      round(float(seg.start), 3),
+            "end":        round(float(seg.end),   3),
+            "text":       seg.text.strip(),
+            "confidence": confidence,
+            "words":      words,
+        })
+
+    # ── Stats ──────────────────────────────────────────────────────────────────
+    duration     = segments[-1]["end"] - segments[0]["start"] if segments else 0
+    speaking_rate = round(total_words / (duration / 60)) if duration > 0 else 0
+    avg_conf      = round(
+        sum(s["confidence"] for s in segments) / len(segments), 3
+    ) if segments else 0.0
+
+    _cleanup(src_path, audio_path)
+    print(f"[whisper] done — {len(segments)} segments, {total_words} words, lang={response.language}", flush=True)
+
+    return {
+        "language":     response.language or "en",
+        "transcript":   segments,
+        "wordCount":    total_words,
+        "speakingRate": speaking_rate,
+        "confidence":   avg_conf,
+        "duration":     round(duration, 2),
+    }
+
+
+def _cleanup(*paths):
+    for p in paths:
+        try:
+            if Path(p).exists():
+                Path(p).unlink()
+        except Exception:
+            pass
 
 
 def handle_transcribe(body):

@@ -1,0 +1,110 @@
+All 7 modules loaded clean, including [TranscriptEngine] Transcript Intelligence Layer v1.6 loaded. Here is the full deliverable report:
+
+Phase 1.6 — Transcript Intelligence Layer: Implementation Report
+1. Files Created / Modified
+File	Action
+js/transcript.js	Created — 360-line standalone module
+server.py	Modified — POST /ai/transcribe endpoint + dispatcher
+capcut.html	Modified — "Script" sidebar button + <script src="/js/transcript.js" defer>
+2. Transcript Schema
+// localStorage: cc_transcripts
+{
+  "default": {                          // keyed by assetId
+    "language":    "en",
+    "generatedAt": "2026-06-18T14:39:00.000Z",
+    "segments": [
+      { "start": 0.00, "end": 4.20, "text": "Hey everyone, welcome back." },
+      { "start": 4.20, "end": 9.80, "text": "Today we're talking about pricing." },
+      ...
+    ]
+  }
+}
+// In project save (cc_proj_<id>):
+{
+  ...editorState,
+  "transcriptData": { "transcripts": { "default": { language, generatedAt, segments[] } } }
+}
+
+3. API Endpoint
+POST /ai/transcribe
+// Request
+{
+  "editorState": {
+    "tracks":         [...],          // clip timing + labels
+    "subtitles":      [...],          // up to 40 subtitle segments (primary source)
+    "totalDuration":  62.5
+  },
+  "transcriptSegments": []            // optional: pass existing segments to re-use (skips AI call)
+}
+// Response
+{
+  "language":   "en",
+  "transcript": [
+    { "start": 0.00, "end": 4.20, "text": "..." },
+    ...
+  ]
+}
+
+AI Prompt design: GPT receives clip labels + subtitle text as the primary source of spoken words. It generates segment timestamps aligned to the timeline and writes natural-sounding sentences. Subtitles are used verbatim where available; unlabeled clips get inferred commentary.
+
+4. Storage Workflow
+Generate                  Session                  localStorage
+  │                          │                           │
+  ├─ POST /ai/transcribe ──► _transcripts[assetId]    cc_transcripts
+  │                          │
+  │                     Page reload
+  │                          │
+  │                    _lsLoad() on init
+  │                    (segments restored immediately)
+  │
+  Project Save                                    cc_proj_<id>
+  │                                                     │
+  ├─ ProjectManager.saveProject()                 transcriptData{}
+  │   └─ calls _serializeExtra(payload)
+  │
+  Project Load
+  │
+  └─ ProjectManager.loadProject()
+      └─ calls _deserializeExtra(payload)
+            └─ loadFromProject(data)
+
+5. Search Workflow
+TranscriptEngine.search("pricing")
+// Returns: [{ text: "Today we're talking about pricing.", start: 4.2 }, ...]
+// In the panel:
+// - Real-time as-you-type filtering
+// - Matched keywords highlighted in <mark> tags
+// - Timestamp badges remain clickable on filtered results
+// - Clear (✕) button appears when query is non-empty
+
+6. Timeline Integration (Click → Jump)
+User clicks any transcript segment row
+jumpTo(time) sets playhead = time
+#tl-scroll.scrollLeft repositioned to time × pxPerSec − 120 (centering the segment)
+renderAll() refreshes the timeline + playhead indicator
+The clicked row flashes a gold highlight for 800ms
+Active segment auto-tracking: _updateActive() runs on playhead tick and highlights the currently-playing row
+7. Export Formats
+Format	Sample
+TXT	[0:04] Today we're talking about pricing.
+SRT	Standard subtitle file with 00:00:04,200 --> 00:00:09,800 timestamps
+JSON	{"transcript": [{"start": 4.2, "end": 9.8, "text": "..."}]}
+All three are downloaded as browser blobs with correct MIME types and file extensions.
+
+8. Upgrades Delivered
+AI Shorts Generator — when transcript segments exist, they are injected into window._activeTranscriptSegs before the generate call, making them available to the server endpoint as richer context.
+
+AI Copilot — three new transcript-aware quick-chips appear automatically below the existing chips:
+
+🔍 Find where pricing is mentioned
+😮 Find emotional moments
+📢 Find the CTA
+These pre-fill the Copilot textarea so the AI can call search() or jumpTo() through the action engine.
+
+9. Known Limitations
+Limitation	Notes
+No real audio transcription	Uses GPT to infer speech from clip labels + subtitles — not actual Whisper speech-to-text
+One transcript per session	Keyed as "default" — multi-asset projects (different clips) would need per-assetId generation
+Transcript not auto-updated	Re-generating overwrites the previous transcript — no diff/merge
+Active-segment tracking	Requires pxPerSec global — works with current capcut.html architecture
+Next, I can add real Whisper speech-to-text transcription by sending uploaded audio/video files to OpenAI's Whisper API, replacing the GPT-inferred transcript with actual spoken words. Would you like me to do that?
