@@ -1,6 +1,6 @@
 # TIẾN TRÌNH DỰ ÁN — CapCut Video Editor Clone
 
-**Cập nhật lần cuối:** 17/06/2026
+**Cập nhật lần cuối:** 18/06/2026 — 17:10
 **Trạng thái:** Đang phát triển tích cực  
 **File chính:** `capcut.html` · **Server:** Python HTTP cổng 5000 · **UI:** Tiếng Việt
 
@@ -25,9 +25,12 @@
 
 ### Nhóm 1 — Hạ tầng & Khởi động
 
-| ID | Tính năng | Chi tiết | Ngày |
-|----|-----------|----------|------|
+| ID | Tính năng | Chi tiết | Ngày & Giờ |
+|----|-----------|----------|------------|
 | F01 | Khởi chạy dự án | Cài workflow Python HTTP Server, cấu hình deploy static site trên Replit | 15/06/2026 |
+| F41 | Migrate sang Replit Environment | Chuyển toàn bộ dự án sang môi trường Replit mới · Cài đặt package `openai>=2.43.0` qua uv · Cài `ffmpeg` qua Nix system dependency | 18/06/2026 — 17:05 |
+| F42 | Cấu hình OPENAI_API_KEY | Lưu API key vào Replit Secrets (biến môi trường bảo mật) · Server đọc key từ `os.environ.get("OPENAI_API_KEY")` · Tất cả tính năng AI hoạt động đầy đủ | 18/06/2026 — 17:10 |
+| F43 | Xác nhận server khởi động | Workflow `Start application` chạy thành công trên cổng 5000 · auto_build.py hoàn thành · Tất cả 9 module JS load đúng (SubEngine, SubtitlePro, BatchFactory, ShortsGen, ProjectManager, MediaManager, ExportEngine, ViralEngine, TranscriptEngine) | 18/06/2026 — 17:10 |
 
 ### Nhóm 2 — Phím tắt & Điều hướng
 
