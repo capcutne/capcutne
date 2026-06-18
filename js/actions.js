@@ -301,32 +301,53 @@ function _actCreateShort(params) {
   return { ok: true, duration: maxDur, trimmed };
 }
 
-/* generate_subtitles — create subtitles from timeline clips
+/* generate_subtitles — create subtitles from transcript (preferred) or clips
    params: { style? }  — optional template key */
 function _actGenerateSubtitles(params) {
   if (typeof subtitles === 'undefined')
     return { ok: false, error: 'subtitles not initialised' };
-  if (typeof tracks === 'undefined' || !tracks.length)
-    return { ok: false, error: 'No tracks to generate from' };
 
   _saveHistory();
   subtitles.length = 0;
   let count = 0;
-  tracks.forEach(tr => {
-    (tr.clips || []).forEach(c => {
+  let source = 'clips';
+
+  // Prefer transcript segments (real speech from Whisper / AI)
+  const transcriptSegs = (
+    typeof TranscriptEngine !== 'undefined' &&
+    typeof TranscriptEngine.getSegments === 'function'
+      ? TranscriptEngine.getSegments()
+      : []
+  );
+
+  if (transcriptSegs.length) {
+    source = 'transcript';
+    transcriptSegs.forEach(seg => {
       const id = 'sub_act_' + (typeof nextSubId !== 'undefined' ? nextSubId++ : Date.now() + count);
-      subtitles.push({ id, start: c.start, dur: c.dur || 3, text: c.label || 'Subtitle' });
+      const dur = Math.max(0.3, (seg.end || seg.start + 3) - seg.start);
+      subtitles.push({ id, start: seg.start, dur, text: seg.text || '' });
       count++;
     });
-  });
+  } else {
+    // Fallback: generate from clip labels
+    if (typeof tracks === 'undefined' || !tracks.length)
+      return { ok: false, error: 'No tracks or transcript to generate from' };
+    tracks.forEach(tr => {
+      (tr.clips || []).forEach(c => {
+        const id = 'sub_act_' + (typeof nextSubId !== 'undefined' ? nextSubId++ : Date.now() + count);
+        subtitles.push({ id, start: c.start, dur: c.dur || 3, text: c.label || 'Subtitle' });
+        count++;
+      });
+    });
+  }
 
   if (window.SubEngine) window.SubEngine.upgradeAll();
   if (params.style && window.SubEngine) {
     window.SubEngine.applyTemplate(params.style, null);
   }
   if (typeof _renderSubList === 'function') _renderSubList();
-  _toast(`💬 Generated ${count} subtitles`);
-  return { ok: true, count };
+  _toast(`💬 Generated ${count} subtitles from ${source}`);
+  return { ok: true, count, source };
 }
 
 /* restyle_subtitles — apply a template to all existing subtitles

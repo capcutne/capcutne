@@ -1141,6 +1141,17 @@ remove_silence— { "threshold"?: number (0-1) }
 create_short  — { "duration"?: number (seconds, default 30) }
 apply_style   — { "style": str, "clipId"?: str }
 
+SUBTITLE SYSTEM (Phase 2.1):
+generate_subtitles — { "style"?: "tiktok"|"mrbeast"|"podcast"|"netflix"|"gaming"|"minimal"|"documentary" }
+  Use when user says: "generate subtitles", "tạo phụ đề", "add captions", "subtitle this", "tạo caption"
+  Generates subtitles from transcript (if available) or clip labels. Optional style applies a template.
+restyle_subtitles  — { "style": "tiktok"|"mrbeast"|"podcast"|"netflix"|"gaming"|"minimal"|"documentary" }
+  Use when user says: "make subtitles like MrBeast", "style like TikTok", "netflix style", "apply template",
+  "làm phụ đề kiểu MrBeast", "đổi style phụ đề", "restyle subtitles"
+highlight_keywords — { "keywords"?: [str] }
+  Use when user says: "highlight keywords", "highlight important words", "tô đậm từ khóa", "mark key words"
+  Omit keywords[] for auto-detection from subtitle text.
+
 AI PUBLISHING SYSTEM (Phase 4.1):
 optimize_platform       — { "platform"?: "youtube"|"tiktok"|"instagram"|"facebook"|"linkedin"|"x", "id"?: str }
   Use when user says: "tối ưu cho TikTok", "optimize for YouTube", "tối ưu cho Instagram", etc.

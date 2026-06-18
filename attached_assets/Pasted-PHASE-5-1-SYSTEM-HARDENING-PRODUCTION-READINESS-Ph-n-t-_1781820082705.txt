@@ -1,0 +1,298 @@
+PHASE 5.1 - SYSTEM HARDENING & PRODUCTION READINESS
+
+Phân tích toàn bộ codebase hiện tại trước khi thực hiện.
+
+KHÔNG thêm tính năng mới.
+
+KHÔNG thêm module AI mới.
+
+Mục tiêu duy nhất:
+
+Biến hệ thống hiện tại thành sản phẩm production-ready.
+
+==================================================
+MỤC TIÊU
+==================================================
+
+Thực hiện:
+
+- Audit toàn bộ hệ thống
+- Refactor
+- Tăng độ ổn định
+- Giảm technical debt
+- Tăng hiệu năng
+- Chuẩn hóa kiến trúc
+
+==================================================
+1. CODEBASE AUDIT
+==================================================
+
+Phân tích:
+
+- file trùng chức năng
+- logic trùng lặp
+- dead code
+- unused functions
+- unused CSS
+- duplicate APIs
+
+Tạo:
+
+System Audit Report
+
+==================================================
+2. STATE MANAGEMENT AUDIT
+==================================================
+
+Kiểm tra:
+
+editorState
+
+projectState
+
+assetState
+
+transcriptState
+
+brandState
+
+analyticsState
+
+agentState
+
+Đảm bảo:
+
+Single Source Of Truth
+
+Không tồn tại state bị duplicate.
+
+==================================================
+3. MEMORY OPTIMIZATION
+==================================================
+
+Kiểm tra:
+
+- memory leaks
+- unreleased blob URLs
+- event listener leaks
+- orphan references
+
+Đặc biệt:
+
+Media Manager
+Timeline
+Preview System
+
+==================================================
+4. PERFORMANCE OPTIMIZATION
+==================================================
+
+Kiểm tra:
+
+- timeline rendering
+- subtitle rendering
+- waveform rendering
+- analytics rendering
+
+Mục tiêu:
+
+Timeline phải xử lý được:
+
+100+
+video clips
+
+500+
+subtitles
+
+không lag.
+
+==================================================
+5. API AUDIT
+==================================================
+
+Kiểm tra:
+
+- route trùng lặp
+- endpoint không dùng
+- response schema không đồng nhất
+- lỗi validation
+
+Chuẩn hóa:
+
+{
+ success:true,
+ data:{},
+ error:null
+}
+
+==================================================
+6. ERROR HANDLING
+==================================================
+
+Toàn bộ hệ thống phải có:
+
+try/catch
+
+fallback
+
+user-friendly message
+
+Không được crash UI.
+
+==================================================
+7. AUTO RECOVERY SYSTEM
+==================================================
+
+Nếu:
+
+- export fail
+- AI fail
+- browser reload
+- autosave corruption
+
+Hệ thống phải:
+
+- recover
+- restore state
+- thông báo nguyên nhân
+
+==================================================
+8. EXPORT ENGINE STRESS TEST
+==================================================
+
+Kiểm tra:
+
+- nhiều export cùng lúc
+- file lớn
+- queue dài
+
+Báo cáo:
+
+throughput
+memory usage
+failure cases
+
+==================================================
+9. SAVE/LOAD STRESS TEST
+==================================================
+
+Kiểm tra:
+
+- project lớn
+- nhiều versions
+- nhiều assets
+
+Đảm bảo:
+
+không mất dữ liệu.
+
+==================================================
+10. SECURITY REVIEW
+==================================================
+
+Kiểm tra:
+
+- XSS
+- unsafe HTML injection
+- prompt injection
+- localStorage corruption
+
+==================================================
+11. LOGGING SYSTEM
+==================================================
+
+Tạo:
+
+Logger
+
+Schema:
+
+{
+ timestamp:"",
+ module:"",
+ level:"",
+ message:""
+}
+
+Levels:
+
+INFO
+WARN
+ERROR
+
+==================================================
+12. HEALTH MONITOR
+==================================================
+
+Tạo:
+
+System Health Dashboard
+
+Hiển thị:
+
+- memory usage
+- project size
+- asset count
+- transcript count
+- export queue length
+
+==================================================
+13. REFACTOR REPORT
+==================================================
+
+Bắt buộc tạo:
+
+Production Readiness Report
+
+Bao gồm:
+
+- vấn đề tìm thấy
+- vấn đề đã sửa
+- vấn đề còn tồn tại
+- technical debt còn lại
+
+==================================================
+14. KHÔNG ĐƯỢC THÊM TÍNH NĂNG MỚI
+==================================================
+
+Không thêm:
+
+- editor mới
+- AI mới
+- dashboard mới ngoài monitoring
+
+Chỉ tập trung:
+
+ổn định
+hiệu năng
+bảo trì
+
+==================================================
+15. DELIVERABLE
+==================================================
+
+Sau khi hoàn thành cung cấp:
+
+1. File tạo mới
+2. File chỉnh sửa
+3. Audit report
+4. Performance report
+5. Memory report
+6. API report
+7. Security report
+8. Production readiness score (0-100)
+9. Remaining technical debt
+10. Recommended next steps
+
+==================================================
+YÊU CẦU QUAN TRỌNG
+==================================================
+
+Ưu tiên chất lượng hơn số lượng.
+
+Nếu phát hiện kiến trúc sai hoặc technical debt lớn,
+được phép refactor để chuẩn hóa.
+
+Mục tiêu cuối cùng:
+
+Đưa hệ thống lên mức có thể beta test với người dùng thật.

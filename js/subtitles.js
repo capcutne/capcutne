@@ -67,6 +67,26 @@ function _fmtT (t)   { return (typeof fmtTime === 'function') ? fmtTime(t) : (ty
 
 /* ── Word-level timing ──────────────────────────────────── */
 function addWordTimings (sub) {
+  // Prefer real Whisper word timestamps from TranscriptEngine when available
+  if (typeof TranscriptEngine !== 'undefined' &&
+      typeof TranscriptEngine.getSegments === 'function') {
+    const segs   = TranscriptEngine.getSegments();
+    const subEnd = sub.start + (sub.dur || 3);
+    const realWords = [];
+    for (const seg of segs) {
+      if ((seg.end || seg.start + 5) < sub.start - 0.05 || seg.start > subEnd + 0.05) continue;
+      if (seg.words && seg.words.length) {
+        for (const w of seg.words) {
+          if (w.start >= sub.start - 0.15 && w.end <= subEnd + 0.15) {
+            realWords.push({ word: w.word, start: w.start, end: w.end,
+              highlight: _wordIsKw(w.word) });
+          }
+        }
+      }
+    }
+    if (realWords.length) { sub.words = realWords; return sub; }
+  }
+  // Fallback: even distribution across subtitle duration
   const words = (sub.text || '').trim().split(/\s+/).filter(Boolean);
   if (!words.length) { sub.words = []; return sub; }
   const dur = sub.dur || Math.max(0.5, (sub.end || 0) - (sub.start || 0)) || 3;
@@ -217,7 +237,11 @@ function _applySubToPreviewAdvanced () {
   // Ensure word timings are up-to-date
   if (!cur.words || !cur.words.length) addWordTimings(cur);
 
-  const useWBW = !!(tpl?.wordByWord);
+  // Karaoke animation forces word-by-word mode so active-word highlight fires
+  const karaokeActive = typeof window.SubtitlePro !== 'undefined' &&
+    typeof window.SubtitlePro.getActiveAnimation === 'function' &&
+    window.SubtitlePro.getActiveAnimation() === 'karaoke';
+  const useWBW = !!(tpl?.wordByWord) || karaokeActive;
   let displayText = tpl?.allCaps ? (cur.text || '').toUpperCase() : (cur.text || '');
   displayText = autoLineBreak(displayText, tpl?.maxChars);
 
