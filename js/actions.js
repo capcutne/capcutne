@@ -29,6 +29,11 @@ const ActionTypes = {
   COMPARE_BRAND:        'compare_brand',
   GENERATE_BRAND_CTA:   'generate_brand_cta',
   GENERATE_BRAND_SHORT: 'generate_brand_short',
+  // Phase 4.2 — Performance Analytics & Learning System
+  ANALYZE_PERFORMANCE:  'analyze_performance',
+  COMPARE_CONTENT:      'compare_content',
+  GENERATE_INSIGHTS:    'generate_insights',
+  IMPROVE_BRAND:        'improve_brand',
 };
 
 /* ── Public API ─────────────────────────────────────────── */
@@ -59,6 +64,11 @@ function executeAction(action) {
       case ActionTypes.COMPARE_BRAND:        return _actCompareBrand(params);
       case ActionTypes.GENERATE_BRAND_CTA:   return _actGenerateBrandCTA(params);
       case ActionTypes.GENERATE_BRAND_SHORT: return _actGenerateBrandShort(params);
+      // Phase 4.2 — Performance Analytics
+      case ActionTypes.ANALYZE_PERFORMANCE:  return _actAnalyzePerformance(params);
+      case ActionTypes.COMPARE_CONTENT:      return _actCompareContent(params);
+      case ActionTypes.GENERATE_INSIGHTS:    return _actGenerateInsights(params);
+      case ActionTypes.IMPROVE_BRAND:        return _actImproveBrand(params);
       default:
         return { ok: false, error: 'Unknown action: ' + action.type };
     }
@@ -430,6 +440,32 @@ function _actGenerateBrandShort(params) {
   if (!window.BrandClone) return { ok: false, error: 'BrandClone not loaded' };
   window.BrandClone.generateBrandShort();
   return { ok: true };
+}
+
+/* ── Phase 4.2 — Performance Analytics & Learning System ── */
+
+/* analyze_performance — trigger full insight generation */
+function _actAnalyzePerformance(params) {
+  if (!window.AnalyticsManager) return { ok: false, error: 'AnalyticsManager not loaded' };
+  return window.AnalyticsManager.actAnalyzePerformance(params);
+}
+
+/* compare_content — compare a set of content records by id */
+function _actCompareContent(params) {
+  if (!window.AnalyticsManager) return { ok: false, error: 'AnalyticsManager not loaded' };
+  return window.AnalyticsManager.actCompareContent(params);
+}
+
+/* generate_insights — run learning engine and open insights tab */
+function _actGenerateInsights(params) {
+  if (!window.AnalyticsManager) return { ok: false, error: 'AnalyticsManager not loaded' };
+  return window.AnalyticsManager.actGenerateInsights(params);
+}
+
+/* improve_brand — update brand confidence from performance data */
+function _actImproveBrand(params) {
+  if (!window.AnalyticsManager) return { ok: false, error: 'AnalyticsManager not loaded' };
+  return window.AnalyticsManager.actImproveBrand(params);
 }
 
 /* apply_style — apply a named filter/style to clip(s)

@@ -1195,6 +1195,14 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
   display:flex;flex-direction:column;z-index:110;overflow:hidden
 }
 #brand-panel.hidden{display:none}
+
+/* ─── PHASE 4.2: ANALYTICS PANEL ───────────────────── */
+#analytics-panel{
+  position:absolute;left:68px;top:0;height:100%;width:290px;
+  background:var(--bg1);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;z-index:110;overflow:hidden
+}
+#analytics-panel.hidden{display:none}
 .bc-brand-name{font-size:15px;font-weight:700;color:var(--t1)}
 .bc-brand-meta{font-size:10px;color:var(--t3)}
 .bc-profile-sel{
@@ -1269,6 +1277,7 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 <script src="/js/transcript.js" defer></script>
 <script src="/js/memory.js" defer></script>
 <script src="/js/brand.js" defer></script>
+<script src="/js/analytics.js" defer></script>
 </head>
 <body>
 <div id="app">
@@ -1426,6 +1435,10 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
     <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
     <span>Brand</span>
   </button>
+  <button class="tb" id="tb-analytics" onclick="setTool(this,'analytics')" title="Performance Analytics — phân tích hiệu suất nội dung &amp; học từ kết quả thực tế">
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    <span>Analytics</span>
+  </button>
 </div>
 
 <!-- MY STYLE PANEL (Phase 3.0) -->
@@ -1433,6 +1446,9 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 
 <!-- BRAND CLONE PANEL (Phase 3.1) -->
 <div id="brand-panel" class="hidden"></div>
+
+<!-- ANALYTICS PANEL (Phase 4.2) -->
+<div id="analytics-panel" class="hidden"></div>
 
 <!-- MEDIA PANEL -->
 <div id="media-panel">
@@ -3851,6 +3867,7 @@ function setTool(el,name){
   // Phase 3.0/3.1 side panels
   const msPanel = document.getElementById('mystyle-panel');
   const bcPanel = document.getElementById('brand-panel');
+  const apPanel = document.getElementById('analytics-panel');
   if(name==='mystyle'){
     if(msPanel){ msPanel.classList.remove('hidden'); if(window.StyleMemory) StyleMemory.renderDashboard(); }
     if(bcPanel) bcPanel.classList.add('hidden');
@@ -3859,10 +3876,18 @@ function setTool(el,name){
   if(name==='brand'){
     if(bcPanel){ bcPanel.classList.remove('hidden'); if(window.BrandClone) BrandClone.renderDashboard(); }
     if(msPanel) msPanel.classList.add('hidden');
+    if(apPanel) apPanel.classList.add('hidden');
+    return;
+  }
+  if(name==='analytics'){
+    if(apPanel){ apPanel.classList.remove('hidden'); if(window.AnalyticsManager) AnalyticsManager.renderDashboard(); }
+    if(msPanel) msPanel.classList.add('hidden');
+    if(bcPanel) bcPanel.classList.add('hidden');
     return;
   }
   if(msPanel) msPanel.classList.add('hidden');
   if(bcPanel) bcPanel.classList.add('hidden');
+  if(apPanel) apPanel.classList.add('hidden');
   if(name==='export'){ switchTab('export'); return; }
   if(name==='subtitle'){ switchTab('trans'); return; }
   switchTab('edit');
