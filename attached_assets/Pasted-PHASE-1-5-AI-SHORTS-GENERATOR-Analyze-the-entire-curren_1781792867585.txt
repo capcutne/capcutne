@@ -1,0 +1,174 @@
+PHASE 1.5 - AI SHORTS GENERATOR
+
+Analyze the entire current codebase first.
+
+Goal:
+Generate viral short clips automatically from long-form videos.
+
+==================================================
+
+1. SHORTS GENERATION PIPELINE
+   ==================================================
+
+Workflow:
+
+Video
+→ Transcript
+→ AI Analysis
+→ Viral Segment Detection
+→ Candidate Shorts
+
+Create:
+
+POST /ai/generate-shorts
+
+Input:
+
+{
+assetId:"",
+transcript:"",
+duration:0
+}
+
+Output:
+
+{
+shorts:[
+{
+id:"",
+title:"",
+start:0,
+end:0,
+duration:0,
+score:0,
+reason:""
+}
+]
+}
+
+==================================================
+2. AI ANALYSIS
+==============
+
+The AI should identify:
+
+* strong hooks
+* emotional moments
+* surprising statements
+* controversial opinions
+* actionable advice
+* story peaks
+* audience retention opportunities
+
+Return top 10 candidates.
+
+==================================================
+3. SHORTS PANEL
+===============
+
+Create a new sidebar panel:
+
+AI Shorts
+
+Features:
+
+Generate Shorts button
+
+Results list:
+
+Title
+Duration
+Score
+Reason
+
+==================================================
+4. TIMELINE INTEGRATION
+=======================
+
+User clicks:
+
+"Create Short"
+
+System automatically:
+
+* creates new sequence
+* trims to timestamps
+* inserts clip
+* adds marker
+
+Do not modify original timeline.
+
+==================================================
+5. SHORT SCORE
+==============
+
+Generate score:
+
+0-100
+
+Factors:
+
+Hook Strength
+Information Density
+Emotional Intensity
+Novelty
+Shareability
+
+==================================================
+6. ACTION ENGINE
+================
+
+Integrate with Action Engine.
+
+New action:
+
+create_short
+
+AI Copilot should be able to execute:
+
+"Create shorts from this video"
+
+==================================================
+7. STORAGE
+==========
+
+Store generated shorts in project data.
+
+Schema:
+
+generatedShorts:[
+{
+id:"",
+title:"",
+start:0,
+end:0,
+score:0
+}
+]
+
+==================================================
+8. NON-BREAKING REQUIREMENT
+===========================
+
+Do not break:
+
+* Save/Load
+* Media Manager
+* AI Copilot
+* Timeline
+* Undo/Redo
+
+==================================================
+9. DELIVERABLE
+==============
+
+Provide:
+
+1. files created
+2. files modified
+3. API endpoints
+4. AI prompt design
+5. scoring system
+6. UI screenshots description
+7. limitations
+8. future improvements
