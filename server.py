@@ -37,6 +37,7 @@ AI_PATHS = {
     "/ai/viral-analysis", "/ai/transcribe",
     "/ai/upload-media", "/ai/transcribe-real",
     "/ai/auto-style",
+    "/brand/train", "/brand/compare",
 }
 
 # ── Export job store ──────────────────────────────────────────────────────────
@@ -748,6 +749,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 result = handle_transcribe_real(body)
             elif self.path == "/ai/auto-style":
                 result = handle_auto_style(body)
+            elif self.path == "/brand/train":
+                result = handle_brand_train(body)
+            elif self.path == "/brand/compare":
+                result = handle_brand_compare(body)
             else:
                 result = {"error": "Unknown endpoint"}
 
@@ -760,6 +765,209 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.send_json({"error": "FREE_CLOUD_BUDGET_EXCEEDED"}, 402)
             else:
                 self.send_json({"error": err}, 500)
+
+
+# ── Brand Clone Handlers ───────────────────────────────────────────────────────
+
+def handle_brand_train(body):
+    """Phân tích assets và trích xuất brand patterns bằng AI."""
+    if not client:
+        return {"error": "OpenAI not configured"}
+
+    brand_name = body.get("brand_name", "My Brand")
+    assets     = body.get("assets", [])
+    if not assets:
+        return {"error": "No assets provided"}
+
+    all_transcripts = []
+    all_subtitles   = []
+    clip_durations  = []
+
+    for asset in assets:
+        tx = (asset.get("transcript") or "").strip()
+        if tx:
+            all_transcripts.append(tx[:800])
+        for s in (asset.get("subtitles") or [])[:30]:
+            text = (s.get("text") or "").strip()
+            if text:
+                all_subtitles.append(text)
+        for clip in (asset.get("timeline") or {}).get("clips", []):
+            dur = float(clip.get("dur", 0))
+            if dur > 0:
+                clip_durations.append(dur)
+
+    avg_clip_dur = round(sum(clip_durations) / len(clip_durations), 2) if clip_durations else None
+    if avg_clip_dur:
+        cut_style = "fast" if avg_clip_dur < 3 else ("medium" if avg_clip_dur < 6 else "slow")
+    else:
+        cut_style = None
+
+    tx_block   = "\n---\n".join(all_transcripts[:10]) or "(không có transcript)"
+    sub_block  = "\n".join(all_subtitles[:50])         or "(không có subtitle)"
+
+    prompt = f"""Bạn là AI chuyên gia phân tích phong cách sáng tạo nội dung video.
+Phân tích dữ liệu từ {len(assets)} video của creator có tên brand: "{brand_name}".
+
+TRANSCRIPT (nội dung nói):
+{tx_block}
+
+SUBTITLE TEXT:
+{sub_block}
+
+THỐNG KÊ TIMELINE:
+- Số video phân tích: {len(assets)}
+- Thời lượng clip trung bình: {avg_clip_dur}s
+- Phong cách cắt: {cut_style}
+- Tổng số clip: {len(clip_durations)}
+
+Dựa HOÀN TOÀN trên dữ liệu thực được cung cấp. Trả về JSON:
+{{
+  "subtitlePatterns": {{
+    "dominantColor": "yellow|white|green|...|null",
+    "dominantFont": "bold|normal|null",
+    "usesHighlight": true,
+    "highlightWords": ["từ hay được highlight"],
+    "templateUsage": {{"tiktok": 3, "mrbeast": 2}},
+    "topTemplate": "tên template hay dùng nhất hoặc null"
+  }},
+  "editingPatterns": {{
+    "avgCutInterval": {avg_clip_dur if avg_clip_dur else 'null'},
+    "cutStyle": "{cut_style if cut_style else 'null'}",
+    "paceRating": "fast|medium|slow",
+    "usesZoom": false,
+    "avgClipDur": {avg_clip_dur if avg_clip_dur else 'null'}
+  }},
+  "hookPatterns": {{
+    "examples": ["hook ví dụ lấy từ transcript thật"],
+    "commonStructures": ["câu hỏi tu từ", "số liệu gây shock"],
+    "dominantType": "question|shock|story|listicle|promise"
+  }},
+  "titlePatterns": {{
+    "examples": ["title từ nội dung thật"],
+    "commonStructures": ["dùng số", "dùng câu hỏi"],
+    "avgLength": 8
+  }},
+  "ctaPatterns": {{
+    "examples": ["Follow để xem thêm", "Like nếu hữu ích"],
+    "placement": "end|start|middle",
+    "dominantType": "follow|like|comment|share"
+  }},
+  "shortPatterns": {{
+    "avgDuration": 30,
+    "hookStyle": "mở đầu bằng câu hỏi",
+    "paceRating": "fast|medium|slow"
+  }},
+  "brandScore": {{
+    "consistency": 75,
+    "subtitleConsistency": 80,
+    "hookConsistency": 70,
+    "editingConsistency": 75
+  }},
+  "confidence": 0.72
+}}
+
+Quy tắc:
+- Chỉ trả JSON hợp lệ, không thêm text
+- Dựa hoàn toàn trên dữ liệu thực, không bịa đặt
+- Nếu không đủ dữ liệu cho một trường, để null
+- confidence: 0.0–1.0 (dựa trên mức độ nhất quán quan sát được)
+- brandScore fields: 0–100"""
+
+    resp = client.chat.completions.create(
+        model=MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+        max_completion_tokens=1500,
+    )
+    return json.loads(resp.choices[0].message.content)
+
+
+def handle_brand_compare(body):
+    """So sánh video hiện tại với Brand Profile, hoặc tạo CTA theo brand."""
+    if not client:
+        return {"error": "OpenAI not configured"}
+
+    mode = body.get("mode", "compare")
+
+    # ── Generate CTA mode ──
+    if mode == "generate_cta":
+        brand   = body.get("brand_profile", {})
+        tx      = body.get("transcript", "") or ""
+        cta_ex  = (brand.get("ctaPatterns") or {}).get("examples", [])
+        dom_cta = (brand.get("ctaPatterns") or {}).get("dominantType", "follow")
+        hook_ex = (brand.get("hookPatterns") or {}).get("examples", [])
+        prompt  = f"""Bạn là AI sáng tạo nội dung thương hiệu.
+
+Brand: "{brand.get('brandName','?')}"
+CTA examples từ brand:
+{chr(10).join(cta_ex[:3]) if cta_ex else "(chưa có)"}
+Loại CTA hay dùng: {dom_cta}
+
+Hook examples từ brand:
+{chr(10).join(hook_ex[:2]) if hook_ex else "(chưa có)"}
+
+Nội dung video hiện tại:
+{tx[:400] or "(chưa có transcript)"}
+
+Tạo CTA và hook phù hợp đúng phong cách brand.
+Trả về JSON: {{"cta": "câu CTA ngắn gọn, tự nhiên", "hook": "câu mở đầu video theo phong cách brand"}}"""
+        resp = client.chat.completions.create(
+            model=MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+            max_completion_tokens=250,
+        )
+        return json.loads(resp.choices[0].message.content)
+
+    # ── Default: compare mode ──
+    brand  = body.get("brand_profile", {})
+    estate = body.get("editor_state", {})
+    subs   = estate.get("subtitles", []) or []
+    trks   = estate.get("tracks", [])    or []
+    clips  = [c for t in trks for c in (t.get("clips") or [])]
+    durs   = [float(c.get("dur", 0)) for c in clips if float(c.get("dur", 0)) > 0]
+    avg_d  = round(sum(durs)/len(durs), 2) if durs else None
+    texts  = [s.get("text","") for s in subs[:20]]
+
+    ep = brand.get("editingPatterns") or {}
+    hp = brand.get("hookPatterns")    or {}
+    sp = brand.get("subtitlePatterns") or {}
+    cp = brand.get("ctaPatterns")     or {}
+
+    prompt = f"""Bạn là AI phân tích brand consistency.
+
+Brand Profile: "{brand.get('brandName','?')}"
+- Hook dominantType: {hp.get('dominantType','?')}
+- Subtitle template: {sp.get('topTemplate','?')}
+- CTA type: {cp.get('dominantType','?')} ở {cp.get('placement','?')} video
+- Cut style: {ep.get('cutStyle','?')}
+- Avg clip dur: {ep.get('avgClipDur','?')}s
+
+Video hiện tại:
+- Subtitle text (20 mẫu): {texts[:10]}
+- Avg clip dur: {avg_d}s
+- Số clip: {len(clips)}
+
+Đánh giá mức độ giống Brand Profile:
+{{
+  "similarity": 75,
+  "differences": [
+    "Chưa có hook dạng câu hỏi ở đầu video",
+    "Cần thêm CTA ở cuối"
+  ]
+}}
+
+similarity: 0–100. differences: tối đa 5 điểm khác biệt (tiếng Việt). Chỉ JSON hợp lệ."""
+
+    resp = client.chat.completions.create(
+        model=MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+        max_completion_tokens=400,
+    )
+    result = json.loads(resp.choices[0].message.content)
+    result["similarity"] = max(0, min(100, int(result.get("similarity", 50))))
+    return result
 
 
 # ── AI Handlers ───────────────────────────────────────────────────────────────

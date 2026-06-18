@@ -23,6 +23,12 @@ const ActionTypes = {
   APPLY_MY_STYLE:      'apply_my_style',
   SAVE_STYLE_SNAPSHOT: 'save_style_snapshot',
   RESTORE_STYLE:       'restore_style',
+  // Phase 3.1 — Brand Clone System
+  TRAIN_BRAND:          'train_brand',
+  APPLY_BRAND:          'apply_brand',
+  COMPARE_BRAND:        'compare_brand',
+  GENERATE_BRAND_CTA:   'generate_brand_cta',
+  GENERATE_BRAND_SHORT: 'generate_brand_short',
 };
 
 /* ── Public API ─────────────────────────────────────────── */
@@ -48,6 +54,11 @@ function executeAction(action) {
       case ActionTypes.APPLY_MY_STYLE:      return _actApplyMyStyle(params);
       case ActionTypes.SAVE_STYLE_SNAPSHOT: return _actSaveStyleSnapshot(params);
       case ActionTypes.RESTORE_STYLE:       return _actRestoreStyle(params);
+      case ActionTypes.TRAIN_BRAND:          return _actTrainBrand(params);
+      case ActionTypes.APPLY_BRAND:          return _actApplyBrand(params);
+      case ActionTypes.COMPARE_BRAND:        return _actCompareBrand(params);
+      case ActionTypes.GENERATE_BRAND_CTA:   return _actGenerateBrandCTA(params);
+      case ActionTypes.GENERATE_BRAND_SHORT: return _actGenerateBrandShort(params);
       default:
         return { ok: false, error: 'Unknown action: ' + action.type };
     }
@@ -376,6 +387,49 @@ function _actRestoreStyle(params) {
   if (!snap) return { ok: false, error: 'Không tìm thấy preset' };
   window.StyleMemory.applySnapshot(snap.id);
   return { ok: true, applied: snap.name };
+}
+
+/* ── Phase 3.1 — Brand Clone System actions ──────────── */
+
+/* train_brand — học từ editor hiện tại hoặc projects
+   params: { source?: 'editor'|'projects' } */
+function _actTrainBrand(params) {
+  if (!window.BrandClone) return { ok: false, error: 'BrandClone not loaded' };
+  const src = (params.source || 'editor').toLowerCase();
+  if (src === 'projects') {
+    window.BrandClone.trainFromProjects();
+  } else {
+    window.BrandClone.trainFromCurrentEditor();
+  }
+  return { ok: true, source: src };
+}
+
+/* apply_brand — áp dụng Brand Style vào project hiện tại */
+function _actApplyBrand(params) {
+  if (!window.BrandClone) return { ok: false, error: 'BrandClone not loaded' };
+  return window.BrandClone.applyBrandStyle();
+}
+
+/* compare_brand — so sánh video hiện tại với Brand Profile */
+function _actCompareBrand(params) {
+  if (!window.BrandClone) return { ok: false, error: 'BrandClone not loaded' };
+  window.BrandClone.compareToBrand();
+  return { ok: true };
+}
+
+/* generate_brand_cta — tạo CTA giống phong cách brand
+   params: {} */
+function _actGenerateBrandCTA(params) {
+  if (!window.BrandClone) return { ok: false, error: 'BrandClone not loaded' };
+  window.BrandClone.generateBrandCTA();
+  return { ok: true };
+}
+
+/* generate_brand_short — tạo short theo phong cách brand */
+function _actGenerateBrandShort(params) {
+  if (!window.BrandClone) return { ok: false, error: 'BrandClone not loaded' };
+  window.BrandClone.generateBrandShort();
+  return { ok: true };
 }
 
 /* apply_style — apply a named filter/style to clip(s)

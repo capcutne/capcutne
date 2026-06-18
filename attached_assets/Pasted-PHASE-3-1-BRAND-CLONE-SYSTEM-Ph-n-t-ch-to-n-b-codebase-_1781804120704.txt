@@ -1,0 +1,322 @@
+PHASE 3.1 - BRAND CLONE SYSTEM
+
+Phân tích toàn bộ codebase hiện tại trước khi thực hiện.
+
+Các module hiện có:
+
+- AI Copilot
+- Action Engine
+- Save/Load Project
+- Media Manager
+- Transcript Engine
+- AI Shorts Generator
+- Viral Intelligence
+- Auto Subtitle Pro
+- Export Engine
+- Batch Shorts Factory
+- Personal Editing Memory
+
+==================================================
+MỤC TIÊU
+==================================================
+
+Xây dựng hệ thống AI học phong cách chỉnh sửa từ các video cũ của người dùng.
+
+Người dùng có thể:
+
+- Upload 10–100 video đã từng làm
+- Chọn các project cũ đã export
+- Chọn các shorts hiệu suất cao
+
+AI sẽ học:
+
+- cách mở đầu video
+- nhịp cắt
+- phong cách subtitle
+- kiểu hook
+- cách dùng emoji
+- cách highlight từ khóa
+- cách đặt CTA
+- cách đặt tiêu đề
+- cách tạo short
+
+Sau đó AI có thể:
+
+- áp dụng phong cách
+- tạo short theo phong cách
+- tạo subtitle theo phong cách
+- đề xuất edit theo phong cách
+
+==================================================
+1. BRAND PROFILE SYSTEM
+==================================================
+
+Tạo:
+
+BrandCloneManager
+
+Schema:
+
+{
+  id:"",
+  brandName:"",
+
+  videosAnalyzed:0,
+
+  subtitlePatterns:{},
+  editingPatterns:{},
+  hookPatterns:{},
+  titlePatterns:{},
+  ctaPatterns:{},
+  shortPatterns:{},
+
+  confidence:0,
+
+  createdAt:"",
+  updatedAt:""
+}
+
+==================================================
+2. TRAINING PIPELINE
+==================================================
+
+Workflow:
+
+Video
+↓
+Transcript
+↓
+Timeline Analysis
+↓
+Subtitle Analysis
+↓
+Viral Analysis
+↓
+Pattern Extraction
+↓
+Brand Profile
+
+Tạo:
+
+POST /brand/train
+
+Input:
+
+{
+  assets:[]
+}
+
+==================================================
+3. PATTERN EXTRACTION
+==================================================
+
+AI phải học:
+
+HOOK
+
+Ví dụ:
+
+"Không ai nói với bạn điều này..."
+
+"Đây là sai lầm lớn nhất..."
+
+--------------------------------------------------
+
+CTA
+
+Ví dụ:
+
+"Follow để xem phần tiếp theo"
+
+--------------------------------------------------
+
+SUBTITLE
+
+Ví dụ:
+
+- màu vàng
+- font đậm
+- highlight số liệu
+
+--------------------------------------------------
+
+EDITING
+
+Ví dụ:
+
+- zoom mỗi 5 giây
+- cut nhanh
+- nhịp cao
+
+==================================================
+4. BRAND SCORE
+==================================================
+
+Đánh giá độ ổn định thương hiệu.
+
+Ví dụ:
+
+{
+  consistency:89,
+  subtitleConsistency:92,
+  hookConsistency:85,
+  editingConsistency:90
+}
+
+==================================================
+5. BRAND DASHBOARD
+==================================================
+
+Tạo tab:
+
+Brand Clone
+
+Hiển thị:
+
+- số video đã học
+- độ tin cậy
+- hook phổ biến
+- subtitle phổ biến
+- CTA phổ biến
+- template phổ biến
+
+==================================================
+6. APPLY BRAND STYLE
+==================================================
+
+Cho phép:
+
+Áp dụng vào project hiện tại.
+
+AI sẽ:
+
+- đổi subtitle
+- đổi template
+- đổi style
+- đổi shorts workflow
+
+theo Brand Profile.
+
+==================================================
+7. AI COPILOT INTEGRATION
+==================================================
+
+Các lệnh mới:
+
+"Áp dụng phong cách thương hiệu"
+
+"Tạo short theo phong cách thương hiệu"
+
+"Tạo subtitle theo phong cách thương hiệu"
+
+"Tạo CTA giống các video cũ"
+
+==================================================
+8. BRAND RECOMMENDATIONS
+==================================================
+
+Khi edit video mới.
+
+AI gợi ý:
+
+"Bạn thường mở đầu bằng câu hỏi"
+
+"Bạn thường dùng subtitle màu vàng"
+
+"Bạn thường đặt CTA ở 85% video"
+
+==================================================
+9. BRAND COMPARISON
+==================================================
+
+Cho phép so sánh:
+
+Video hiện tại
+
+VS
+
+Brand Profile
+
+Output:
+
+{
+  similarity:84,
+  differences:[]
+}
+
+==================================================
+10. BRAND EXPORT PACKAGE
+==================================================
+
+Cho phép export:
+
+Brand Profile
+
+JSON
+
+Schema:
+
+{
+  brandProfile:{}
+}
+
+Để backup hoặc import sang máy khác.
+
+==================================================
+11. ACTION ENGINE
+==================================================
+
+Thêm actions:
+
+train_brand
+apply_brand
+compare_brand
+generate_brand_cta
+generate_brand_short
+
+==================================================
+12. KHÔNG ĐƯỢC PHÁ VỠ
+==================================================
+
+Không làm hỏng:
+
+- Save/Load
+- Export Engine
+- Batch Shorts Factory
+- Personal Editing Memory
+- Viral Intelligence
+- Subtitle Pro
+
+==================================================
+13. BÁO CÁO BẮT BUỘC
+==================================================
+
+Sau khi hoàn thành cung cấp:
+
+1. File tạo mới
+2. File chỉnh sửa
+3. Brand schema
+4. Training workflow
+5. Pattern extraction workflow
+6. Dashboard UI
+7. AI Copilot integration
+8. Similarity scoring logic
+9. Export/import workflow
+10. Hạn chế hiện tại
+
+==================================================
+YÊU CẦU QUAN TRỌNG
+==================================================
+
+Không sử dụng dữ liệu giả.
+
+Không hardcode kết quả.
+
+Mọi phân tích phải dựa trên:
+
+- transcript thật
+- timeline thật
+- subtitle thật
+- dữ liệu project thật
+
+Ưu tiên kiến trúc mở rộng được cho hàng nghìn video trong tương lai.

@@ -1,6 +1,6 @@
 # TIẾN TRÌNH DỰ ÁN — CapCut Video Editor Clone
 
-**Cập nhật lần cuối:** 18/06/2026 — 17:45
+**Cập nhật lần cuối:** 18/06/2026 — 17:55
 **Trạng thái:** Đang phát triển tích cực  
 **File chính:** `capcut.html` · **Server:** Python HTTP cổng 5000 · **UI:** Tiếng Việt
 
@@ -216,6 +216,24 @@
 | F49 | Dashboard "My Style" | Tab mới trên sidebar trái (⭐ My Style) · Hiển thị: gợi ý phong cách, thống kê (template/animation/quality/tỷ lệ), template yêu thích top 3, hoạt động (export/save/shorts count), danh sách presets, nút xóa dữ liệu | 18/06/2026 — 17:45 |
 | F50 | Gợi ý tự động (Suggestion Banner) | Banner nổi xuất hiện sau 3s khi mở app (nếu đủ ≥2 lần hoạt động) · Hiển thị template và export hay dùng · Nút "Áp dụng" 1-click · Tự đóng sau 9s | 18/06/2026 — 17:45 |
 | F51 | Action Engine Phase 3.0 | Thêm 3 ActionType mới: `apply_my_style`, `save_style_snapshot`, `restore_style` · AI Copilot có thể ra lệnh bằng tiếng Việt như "Áp dụng phong cách quen thuộc", "Lưu preset" | 18/06/2026 — 17:45 |
+
+### Nhóm 8 — Phase 3.1: Brand Clone System
+
+| ID | Tính năng | Chi tiết | Ngày & Giờ |
+|----|-----------|----------|------------|
+| F52 | BrandCloneManager | Module `js/brand.js` — IIFE, localStorage `cc_brand_profiles` + `cc_brand_active` · Schema đầy đủ: id, brandName, videosAnalyzed, subtitlePatterns, editingPatterns, hookPatterns, titlePatterns, ctaPatterns, shortPatterns, brandScore, confidence | 18/06/2026 — 17:55 |
+| F53 | Training Pipeline | `POST /brand/train` — GPT phân tích transcripts + subtitles + timeline clips · Tính avg_clip_dur, cut_style tự động · Trích xuất: hookPatterns, ctaPatterns, subtitlePatterns, titlePatterns, shortPatterns, brandScore, confidence · Hỗ trợ tối đa 20 video/lần | 18/06/2026 — 17:55 |
+| F54 | Train từ nhiều nguồn | `trainFromCurrentEditor()` — học từ video đang mở · `trainFromProjects()` — tự đọc tất cả `cc_proj_*` trong localStorage (tối đa 20 project) · Merge patterns không trùng lặp | 18/06/2026 — 17:55 |
+| F55 | Brand Profile CRUD | Tạo mới / xóa / chuyển đổi giữa tối đa 5 Brand Profile · selector dropdown khi nhiều brand · auto-persist sang localStorage | 18/06/2026 — 17:55 |
+| F56 | Brand Score | 4 chiều: consistency, subtitleConsistency, hookConsistency, editingConsistency (0–100) · confidence 0.0–1.0 · Progress bar visualization trong dashboard | 18/06/2026 — 17:55 |
+| F57 | Apply Brand Style | `applyBrandStyle()` — áp template hay dùng nhất qua SubEngine · action `apply_brand` trong Action Engine · Thông báo những gì đã áp dụng | 18/06/2026 — 17:55 |
+| F58 | Brand Comparison | `POST /brand/compare` — GPT so sánh editor state với brand profile · Output: `{ similarity: 0–100, differences: [] }` · Visual score card với màu xanh/vàng/đỏ | 18/06/2026 — 17:55 |
+| F59 | Generate Brand CTA + Hook | `POST /brand/compare?mode=generate_cta` — GPT tạo CTA + hook theo đúng phong cách brand · Dựa trên examples thật từ profile | 18/06/2026 — 17:55 |
+| F60 | Generate Brand Short | `generateBrandShort()` — gọi ShortsGen với brandStyle params (hookType, paceRating, hookExample) | 18/06/2026 — 17:55 |
+| F61 | Export / Import JSON | Export brand profile ra file `.json` · Import từ file JSON để backup/chuyển thiết bị · Schema: `{ brandProfile: {} }` | 18/06/2026 — 17:55 |
+| F62 | Brand Recommendations Banner | Banner nổi (màu xanh dương) sau 5s · Hiển thị hookType, subtitle template, CTA placement · Nút "Áp dụng" 1-click · Tự đóng sau 10s | 18/06/2026 — 17:55 |
+| F63 | Brand Dashboard UI | Tab 🗄 Brand trên sidebar trái · 8 cards: Brand Profile, Huấn luyện, Brand Score, Hook, Subtitle, CTA, So sánh, Tạo CTA, Tạo Short, Export/Import | 18/06/2026 — 17:55 |
+| F64 | Action Engine Phase 3.1 | 5 ActionType mới: `train_brand`, `apply_brand`, `compare_brand`, `generate_brand_cta`, `generate_brand_short` · AI Copilot có thể gọi qua lệnh tiếng Việt | 18/06/2026 — 17:55 |
 
 ---
 
