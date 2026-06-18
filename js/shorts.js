@@ -74,6 +74,13 @@ async function generate () {
   _setStatus('Sending timeline to AI — analyzing for viral potential…', 'info');
   results.innerHTML = '';
 
+  // Pull transcript segments from TranscriptEngine if available
+  const transcriptSegs = (
+    typeof TranscriptEngine !== 'undefined' && typeof TranscriptEngine.getSegments === 'function'
+      ? TranscriptEngine.getSegments()
+      : (window._activeTranscriptSegs || [])
+  ).slice(0, 80);
+
   const payload = {
     editorState: {
       tracks: (typeof tracks !== 'undefined' ? tracks : []).map(tr => ({
@@ -86,7 +93,8 @@ async function generate () {
       subtitles: (typeof subtitles !== 'undefined' ? subtitles : []).map(s => ({
         start: s.start, dur: s.dur || 3, text: s.text || ''
       })).slice(0, 20),
-      totalDuration: totalDur
+      totalDuration: totalDur,
+      transcriptSegments: transcriptSegs
     }
   };
 

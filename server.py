@@ -1116,8 +1116,14 @@ def handle_editor_command(body):
         f"dur={s.get('dur',3)}s text=\"{s.get('text','')}\""
         for s in state.get("subtitles", [])[:10]
     ]
-    timeline_text = "\n".join(clips_summary) if clips_summary else "  (empty timeline)"
-    subs_text     = "\n".join(subs_summary)  if subs_summary  else "  (no subtitles)"
+    transcript_segs = state.get("transcriptSegments", [])
+    transcript_summary = [
+        f"  {float(s.get('start', 0)):.1f}s: \"{s.get('text', '')}\""
+        for s in transcript_segs[:60]
+    ]
+    timeline_text    = "\n".join(clips_summary)      if clips_summary      else "  (empty timeline)"
+    subs_text        = "\n".join(subs_summary)        if subs_summary        else "  (no subtitles)"
+    transcript_text  = "\n".join(transcript_summary)  if transcript_summary  else "  (not available)"
     playhead      = state.get("playhead", 0)
     system_prompt = """You are an AI video editing assistant for a CapCut-style editor (Vietnamese UI).
 The user tells you what they want to do with their video project.
@@ -1172,6 +1178,8 @@ Timeline clips:
 {timeline_text}
 Current subtitles:
 {subs_text}
+Transcript (spoken words with timestamps):
+{transcript_text}
 
 User request: {prompt}
 
@@ -1204,8 +1212,14 @@ def handle_generate_shorts(body):
         f'  {float(s.get("start",0)):.1f}s: "{s.get("text","")}"'
         for s in state.get("subtitles", [])[:20]
     ]
-    timeline_text = "\n".join(clips_lines) if clips_lines else "  (empty)"
-    subs_text     = "\n".join(subs_lines)  if subs_lines  else "  (none)"
+    transcript_segs = state.get("transcriptSegments", [])
+    transcript_lines = [
+        f'  {float(s.get("start", 0)):.1f}s: "{s.get("text", "")}"'
+        for s in transcript_segs[:60]
+    ]
+    timeline_text    = "\n".join(clips_lines)      if clips_lines      else "  (empty)"
+    subs_text        = "\n".join(subs_lines)        if subs_lines        else "  (none)"
+    transcript_text  = "\n".join(transcript_lines)  if transcript_lines  else "  (not available)"
     prompt = f"""You are a viral content strategist and professional video editor.
 Analyze the following video timeline and return the TOP 10 most viral-worthy short segments.
 
@@ -1214,6 +1228,9 @@ VIDEO TIMELINE  (total: {total_dur:.1f}s)
 
 SUBTITLES
 {subs_text}
+
+TRANSCRIPT (actual spoken words with timestamps — use this as primary context when available)
+{transcript_text}
 
 Score each candidate 0.0–1.0 using these criteria:
   • Hook strength — how engaging are the first 3 seconds?

@@ -262,6 +262,12 @@
   function _serializeState() {
     try {
       if (typeof editorState === 'undefined') return {};
+      // Include transcript segments so copilot can answer questions about speech content
+      const transcriptSegs = (
+        typeof TranscriptEngine !== 'undefined' && typeof TranscriptEngine.getSegments === 'function'
+          ? TranscriptEngine.getSegments()
+          : []
+      ).slice(0, 60);
       return {
         project: editorState.project,
         tracks: (editorState.tracks || []).map(tr => ({
@@ -275,7 +281,8 @@
           cls: c.cls, trackId: c.trackId, trackType: c.trackType
         })),
         subtitles: (editorState.subtitles || []).slice(0, 20),
-        playhead: typeof playhead !== 'undefined' ? playhead : 0
+        playhead: typeof playhead !== 'undefined' ? playhead : 0,
+        transcriptSegments: transcriptSegs
       };
     } catch (e) { return {}; }
   }
