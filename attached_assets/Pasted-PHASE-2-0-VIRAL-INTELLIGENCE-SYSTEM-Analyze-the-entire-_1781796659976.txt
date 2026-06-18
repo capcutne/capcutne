@@ -1,0 +1,157 @@
+PHASE 2.0 - VIRAL INTELLIGENCE SYSTEM
+
+Analyze the entire codebase first.
+
+Goal:
+
+Predict audience retention and identify weak video segments.
+
+==================================================
+
+1. VIRAL ANALYSIS ENGINE
+   ==================================================
+
+Create:
+
+js/viral.js
+
+Backend:
+
+POST /ai/viral-analysis
+
+Input:
+
+{
+transcript:{},
+editorState:{}
+}
+
+Output:
+
+{
+overallScore:87,
+hookScore:91,
+retentionScore:82,
+pacingScore:79,
+emotionalScore:88,
+
+segments:[
+{
+start:0,
+end:12,
+score:95,
+status:"strong",
+reason:"Strong hook"
+}
+]
+}
+
+==================================================
+2. HOOK DETECTOR
+================
+
+Analyze first 15 seconds.
+
+Detect:
+
+* curiosity
+* controversy
+* urgency
+* surprise
+* promise
+
+Output:
+
+Hook Score
+
+Suggestions for improvement.
+
+==================================================
+3. RETENTION HEATMAP
+====================
+
+Overlay on timeline.
+
+Colors:
+
+Green = strong
+Yellow = average
+Red = weak
+
+Every segment receives a score.
+
+==================================================
+4. BORING SEGMENT DETECTOR
+==========================
+
+Detect:
+
+* long pauses
+* repetitive speech
+* filler words
+* low information density
+
+Mark directly on timeline.
+
+==================================================
+5. EMOTIONAL PEAK DETECTOR
+==========================
+
+Find:
+
+* surprise
+* humor
+* conflict
+* excitement
+* inspiration
+
+Add markers automatically.
+
+==================================================
+6. AI SUGGESTIONS
+=================
+
+Panel:
+
+"Improve Video"
+
+Examples:
+
+Cut 0:35-0:48
+Move hook earlier
+Remove filler sentence
+Add CTA
+
+==================================================
+7. ACTION ENGINE
+================
+
+New actions:
+
+cut_boring_segment
+jump_to_hook
+highlight_peak
+
+==================================================
+8. TIMELINE OVERLAY
+===================
+
+Visual layer only.
+
+Do not modify clips automatically.
+
+User chooses.
+
+==================================================
+9. DELIVERABLE
+==============
+
+Provide:
+
+1. files created
+2. files modified
+3. scoring model
+4. heatmap logic
+5. hook detection logic
+6. emotional analysis logic
+7. limitations

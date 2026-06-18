@@ -19,6 +19,24 @@ const LEVEL_COLORS = {
   low:    { fill: 'rgba(231,76,60,.55)',   glow: '#e74c3c' },
 };
 
+/* ── Hook type icons/labels ──────────────────────────────── */
+const HOOK_TYPE = {
+  curiosity:   { icon: '🔍', label: 'Curiosity' },
+  controversy: { icon: '⚔️', label: 'Controversy' },
+  urgency:     { icon: '⏰', label: 'Urgency' },
+  surprise:    { icon: '😲', label: 'Surprise' },
+  promise:     { icon: '🤝', label: 'Promise' },
+};
+
+/* ── Emotional peak icons/labels ─────────────────────────── */
+const PEAK_TYPE = {
+  surprise:    { icon: '😲', color: '#9b59b6', label: 'Surprise' },
+  humor:       { icon: '😂', color: '#f39c12', label: 'Humor' },
+  conflict:    { icon: '⚔️', color: '#e74c3c', label: 'Conflict' },
+  excitement:  { icon: '🔥', color: '#e67e22', label: 'Excitement' },
+  inspiration: { icon: '✨', color: '#2ecc71', label: 'Inspiration' },
+};
+
 /* ── Helpers ─────────────────────────────────────────────── */
 function _pps () {
   if (typeof pps === 'function') return pps();
@@ -102,8 +120,9 @@ function _renderHeatmap () {
 
   // Hook markers
   (_data.hooks || []).forEach(h => {
-    const x = h.start * pps;
-    html += `<div class="vhm-hook" style="left:${x}px" title="Hook: ${_esc(h.reason || '')}">⚡</div>`;
+    const x  = h.start * pps;
+    const ht = HOOK_TYPE[h.hook_type] || HOOK_TYPE.curiosity;
+    html += `<div class="vhm-hook" style="left:${x}px" title="${ht.label} hook: ${_esc(h.reason || '')}">⚡</div>`;
   });
 
   // Boring segment markers
@@ -111,6 +130,14 @@ function _renderHeatmap () {
     const x  = b.start * pps;
     const w  = Math.max(4, (b.end - b.start) * pps);
     html += `<div class="vhm-boring" style="left:${x}px;width:${w}px" title="Boring: ${_esc(b.reason || '')}"></div>`;
+  });
+
+  // Emotional peak markers
+  (_data.peaks || []).forEach(p => {
+    const x  = p.start * pps;
+    const w  = Math.max(4, (p.end - p.start) * pps);
+    const pt = PEAK_TYPE[p.type] || PEAK_TYPE.excitement;
+    html += `<div class="vhm-peak" style="left:${x}px;width:${w}px;border-color:${pt.color};box-shadow:0 0 5px ${pt.color}" title="${pt.label}: ${_esc(p.reason || '')}"><span class="vhm-peak-icon">${pt.icon}</span></div>`;
   });
 
   ov.innerHTML = html;
@@ -198,6 +225,19 @@ function _buildPanel () {
     <div class="viral-section">
       <div class="viral-sm-title">😴 Boring Segments</div>
       <div class="viral-boring-list" id="viral-boring-list"></div>
+    </div>
+
+    <!-- Emotional Peaks -->
+    <div class="viral-section">
+      <div class="viral-sm-title">🎭 Emotional Peaks</div>
+      <div class="viral-peak-legend">
+        <span class="viral-peak-badge" style="background:rgba(155,89,182,.15);border-color:rgba(155,89,182,.4);color:#9b59b6">😲 Surprise</span>
+        <span class="viral-peak-badge" style="background:rgba(243,156,18,.12);border-color:rgba(243,156,18,.35);color:#f39c12">😂 Humor</span>
+        <span class="viral-peak-badge" style="background:rgba(231,76,60,.1);border-color:rgba(231,76,60,.3);color:#e74c3c">⚔️ Conflict</span>
+        <span class="viral-peak-badge" style="background:rgba(230,126,34,.1);border-color:rgba(230,126,34,.3);color:#e67e22">🔥 Excite</span>
+        <span class="viral-peak-badge" style="background:rgba(46,204,113,.1);border-color:rgba(46,204,113,.3);color:#2ecc71">✨ Inspire</span>
+      </div>
+      <div class="viral-peak-list" id="viral-peak-list"></div>
     </div>
 
     <!-- Tips -->
@@ -337,12 +377,21 @@ function _populatePanel (data) {
     if (!hooks.length) {
       hookEl.innerHTML = '<div class="viral-empty-note">No strong hooks detected. Consider adding a captivating opener.</div>';
     } else {
-      hookEl.innerHTML = hooks.map(h => `
+      hookEl.innerHTML = hooks.map(h => {
+        const ht = HOOK_TYPE[h.hook_type] || HOOK_TYPE.curiosity;
+        return `
 <div class="viral-hook-item">
-  <div class="viral-hook-time">⚡ ${_fmtTime(h.start)}</div>
+  <div class="viral-hook-row1">
+    <span class="viral-hook-type-badge">${ht.icon} ${ht.label}</span>
+    <span class="viral-hook-time">⚡ ${_fmtTime(h.start)}</span>
+  </div>
   <div class="viral-hook-reason">${_esc(h.reason || '')}</div>
-  <div class="viral-hook-strength">Strength: ${Math.round((h.strength||0.5)*100)}%</div>
-</div>`).join('');
+  <div class="viral-hook-footer">
+    <span class="viral-hook-strength">Strength: ${Math.round((h.strength||0.5)*100)}%</span>
+    <button class="viral-action-btn viral-jump-btn" onclick="ViralEngine.jumpToHook(${h.start})">Jump to ⚡</button>
+  </div>
+</div>`;
+      }).join('');
     }
   }
 
@@ -357,8 +406,35 @@ function _populatePanel (data) {
 <div class="viral-boring-item">
   <div class="viral-boring-time">😴 ${_fmtTime(b.start)}–${_fmtTime(b.end)}</div>
   <div class="viral-boring-reason">${_esc(b.reason || '')}</div>
-  <button class="viral-boring-jump" onclick="typeof playhead!=='undefined'&&(playhead=${b.start},typeof updatePlayhead==='function'&&updatePlayhead())">Jump to →</button>
+  <div class="viral-boring-actions">
+    <button class="viral-boring-jump" onclick="ViralEngine.jumpToBoring(${b.start})">Jump →</button>
+    <button class="viral-cut-btn" onclick="ViralEngine.cutBoringSegment(${b.start},${b.end})">✂ Cut</button>
+  </div>
 </div>`).join('');
+    }
+  }
+
+  // Emotional Peaks
+  const peakEl = document.getElementById('viral-peak-list');
+  if (peakEl) {
+    const peaks = data.peaks || [];
+    if (!peaks.length) {
+      peakEl.innerHTML = '<div class="viral-empty-note">No emotional peaks detected yet.</div>';
+    } else {
+      peakEl.innerHTML = peaks.map(p => {
+        const pt = PEAK_TYPE[p.type] || PEAK_TYPE.excitement;
+        return `
+<div class="viral-peak-item" style="border-color:${pt.color}30;background:${pt.color}0d">
+  <div class="viral-peak-row1">
+    <span class="viral-peak-type" style="color:${pt.color}">${pt.icon} ${pt.label}</span>
+    <span class="viral-peak-time">${_fmtTime(p.start)}–${_fmtTime(p.end)}</span>
+  </div>
+  <div class="viral-peak-reason">${_esc(p.reason || '')}</div>
+  <div class="viral-peak-footer">
+    <button class="viral-action-btn" style="color:${pt.color};border-color:${pt.color}55;background:${pt.color}15" onclick="ViralEngine.highlightPeak(${p.start},${p.end},'${p.type}')">🎯 Highlight Peak</button>
+  </div>
+</div>`;
+      }).join('');
     }
   }
 
@@ -423,6 +499,22 @@ function _injectStyles () {
 .vhm-boring{
   position:absolute;top:0;height:100%;background:rgba(231,76,60,.18);
   border-bottom:2px dashed rgba(231,76,60,.6);cursor:default;
+}
+.vhm-peak{
+  position:absolute;top:0;height:100%;border-radius:1px;
+  border-top:2px solid;background:transparent;cursor:default;
+  display:flex;align-items:flex-start;justify-content:flex-start;
+  overflow:visible;
+}
+.vhm-peak-icon{
+  font-size:8px;margin-top:-1px;margin-left:1px;
+  filter:drop-shadow(0 0 3px rgba(255,255,255,.5));
+  line-height:1;
+}
+@keyframes viral-peak-flash{
+  0%  {opacity:1;transform:scaleY(1.15)}
+  60% {opacity:.8}
+  100%{opacity:0;transform:scaleY(1)}
 }
 
 /* Viral panel modal */
@@ -509,24 +601,61 @@ function _injectStyles () {
   padding:7px 10px;border-radius:7px;background:rgba(212,160,23,.1);
   border:1px solid rgba(212,160,23,.2);margin-bottom:5px;
 }
-.viral-hook-time{font-size:11px;font-weight:700;color:var(--accent2)}
+.viral-hook-row1{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px}
+.viral-hook-type-badge{
+  font-size:10px;font-weight:700;padding:1px 6px;border-radius:4px;
+  background:rgba(212,160,23,.18);color:var(--accent2);border:1px solid rgba(212,160,23,.3);
+}
+.viral-hook-time{font-size:10.5px;font-weight:700;color:var(--accent2)}
 .viral-hook-reason{font-size:10.5px;color:var(--t3);margin-top:2px}
-.viral-hook-strength{font-size:9.5px;color:var(--t4);margin-top:3px}
+.viral-hook-footer{display:flex;align-items:center;justify-content:space-between;margin-top:5px}
+.viral-hook-strength{font-size:9.5px;color:var(--t4)}
+
+/* Action buttons (shared) */
+.viral-action-btn{
+  border-radius:5px;padding:2px 8px;font-size:10px;font-weight:600;
+  cursor:pointer;flex-shrink:0;border:1px solid;transition:opacity .12s;
+}
+.viral-action-btn:hover{opacity:.75}
+.viral-jump-btn{
+  background:rgba(212,160,23,.15);border-color:rgba(212,160,23,.4);color:var(--accent2);
+}
 
 /* Boring segments */
 .viral-boring-item{
   padding:7px 10px;border-radius:7px;background:rgba(231,76,60,.07);
   border:1px solid rgba(231,76,60,.2);margin-bottom:5px;
-  display:flex;align-items:center;flex-wrap:wrap;gap:6px;
 }
 .viral-boring-time{font-size:11px;font-weight:700;color:#e74c3c}
-.viral-boring-reason{font-size:10.5px;color:var(--t3);flex:1;min-width:100px}
+.viral-boring-reason{font-size:10.5px;color:var(--t3);flex:1;min-width:100px;margin:3px 0}
+.viral-boring-actions{display:flex;align-items:center;gap:5px;margin-top:5px}
 .viral-boring-jump{
-  background:rgba(231,76,60,.15);border:1px solid rgba(231,76,60,.3);
+  background:rgba(231,76,60,.12);border:1px solid rgba(231,76,60,.3);
   color:#e74c3c;border-radius:5px;padding:2px 8px;font-size:10px;
-  cursor:pointer;flex-shrink:0;
+  cursor:pointer;font-weight:600;
 }
-.viral-boring-jump:hover{background:rgba(231,76,60,.25)}
+.viral-boring-jump:hover{background:rgba(231,76,60,.22)}
+.viral-cut-btn{
+  background:rgba(231,76,60,.18);border:1px solid rgba(231,76,60,.45);
+  color:#e74c3c;border-radius:5px;padding:2px 8px;font-size:10px;
+  cursor:pointer;font-weight:700;
+}
+.viral-cut-btn:hover{background:rgba(231,76,60,.3)}
+
+/* Emotional peaks */
+.viral-peak-legend{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.viral-peak-badge{
+  font-size:9.5px;font-weight:600;padding:1px 6px;border-radius:4px;border:1px solid;
+}
+.viral-peak-list{}
+.viral-peak-item{
+  padding:7px 10px;border-radius:7px;border:1px solid;margin-bottom:5px;
+}
+.viral-peak-row1{display:flex;align-items:center;justify-content:space-between;margin-bottom:3px}
+.viral-peak-type{font-size:11px;font-weight:700}
+.viral-peak-time{font-size:10px;color:var(--t4)}
+.viral-peak-reason{font-size:10.5px;color:var(--t3);margin:3px 0}
+.viral-peak-footer{margin-top:5px}
 
 /* Tips */
 .viral-tip-item{display:flex;gap:8px;align-items:flex-start;margin-bottom:6px}
@@ -570,16 +699,101 @@ function init () {
   _injectStyles();
   _injectTopbarButton();
   _hookRenderAll();
-  console.log('[ViralEngine] Viral Intelligence System v2.0 loaded');
+  console.log('[ViralEngine] Viral Intelligence System v2.1 loaded');
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION ENGINE
+   ══════════════════════════════════════════════════════════ */
+
+/* jump_to_hook — seek playhead to hook start time */
+function _jumpToHook (start) {
+  if (typeof playhead !== 'undefined') {
+    window.playhead = start;
+    if (typeof updatePlayhead === 'function') updatePlayhead();
+  }
+  if (typeof toast === 'function') toast(`⚡ Jumped to hook at ${_fmtTime(start)}`);
+}
+
+/* jump_to_boring — seek playhead to boring segment start */
+function _jumpToBoring (start) {
+  if (typeof playhead !== 'undefined') {
+    window.playhead = start;
+    if (typeof updatePlayhead === 'function') updatePlayhead();
+  }
+  if (typeof toast === 'function') toast(`😴 Jumped to boring segment at ${_fmtTime(start)}`);
+}
+
+/* cut_boring_segment — select clips fully inside [start,end] then delete */
+function _cutBoringSegment (start, end) {
+  if (typeof tracks === 'undefined') {
+    if (typeof toast === 'function') toast('❌ No timeline tracks found');
+    return;
+  }
+  if (!confirm(`Cut clips between ${_fmtTime(start)} – ${_fmtTime(end)}?\n\nOnly clips fully inside this range will be removed.`)) return;
+
+  if (typeof saveState === 'function') saveState();
+
+  let removed = 0;
+  tracks.forEach(tr => {
+    const before = tr.clips.length;
+    tr.clips = tr.clips.filter(c => {
+      const clipEnd = c.start + c.dur;
+      const inside  = c.start >= start && clipEnd <= end;
+      if (inside) removed++;
+      return !inside;
+    });
+  });
+
+  if (typeof renderAll === 'function') renderAll();
+
+  if (removed === 0) {
+    if (typeof toast === 'function') toast(`ℹ️ No clips fully inside ${_fmtTime(start)}–${_fmtTime(end)}`);
+  } else {
+    if (typeof toast === 'function') toast(`✂ Removed ${removed} clip${removed > 1 ? 's' : ''} (${_fmtTime(start)}–${_fmtTime(end)})`);
+  }
+}
+
+/* highlight_peak — seek playhead + flash the heatmap peak region */
+function _highlightPeak (start, end, type) {
+  if (typeof playhead !== 'undefined') {
+    window.playhead = start;
+    if (typeof updatePlayhead === 'function') updatePlayhead();
+  }
+
+  const pt = PEAK_TYPE[type] || PEAK_TYPE.excitement;
+  if (typeof toast === 'function') toast(`${pt.icon} ${pt.label} peak at ${_fmtTime(start)}–${_fmtTime(end)}`);
+
+  // Flash the peak region on the overlay
+  const ov = document.getElementById('viral-heatmap-overlay');
+  if (ov) {
+    const pps   = _pps();
+    const x     = start * pps;
+    const w     = Math.max(8, (end - start) * pps);
+    const flash = document.createElement('div');
+    flash.style.cssText = `
+      position:absolute;top:0;left:${x}px;width:${w}px;height:100%;
+      background:${pt.color}55;border:1.5px solid ${pt.color};
+      border-radius:3px;pointer-events:none;z-index:30;
+      animation:viral-peak-flash 1.2s ease-out forwards;
+    `;
+    ov.appendChild(flash);
+    setTimeout(() => flash.remove(), 1400);
+  }
 }
 
 /* ── Public API ──────────────────────────────────────────── */
 window.ViralEngine = {
-  open:          openPanel,
-  close:         closePanel,
-  analyze:       _runAnalysis,
-  renderHeatmap: _renderHeatmap,
-  getData ()     { return _data; },
+  open:               openPanel,
+  close:              closePanel,
+  analyze:            _runAnalysis,
+  renderHeatmap:      _renderHeatmap,
+  getData ()          { return _data; },
+  /* Action Engine */
+  jumpToHook:         _jumpToHook,
+  jumpToBoring:       _jumpToBoring,
+  cutBoringSegment:   _cutBoringSegment,
+  highlightPeak:      _highlightPeak,
 };
 
 if (document.readyState === 'loading') {

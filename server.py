@@ -985,10 +985,23 @@ Return ONLY valid JSON:
     }}
   ],
   "hooks": [
-    {{"start": 0.0, "strength": 0.9, "reason": "Immediate attention grab"}}
+    {{
+      "start": 0.0,
+      "strength": 0.9,
+      "hook_type": "curiosity",
+      "reason": "Immediate attention grab"
+    }}
   ],
   "boring": [
     {{"start": 10.0, "end": 15.0, "reason": "Silent gap, no subtitles"}}
+  ],
+  "peaks": [
+    {{
+      "start": 8.0,
+      "end": 14.0,
+      "type": "excitement",
+      "reason": "High-energy moment with rapid cuts"
+    }}
   ],
   "viral_score": 72,
   "breakdown": {{
@@ -1007,7 +1020,10 @@ Rules:
 - breakdown values are 0–100 integers
 - tags can include: hook, climax, boring, transition, silence, dense-subs, scene-cut
 - tips: 2–4 actionable improvement suggestions
-- Match exact start/end values from the segments list"""
+- Match exact start/end values from the segments list
+- hook_type must be one of: curiosity, controversy, urgency, surprise, promise
+- peaks: 1–4 emotional high points; type must be one of: surprise, humor, conflict, excitement, inspiration
+- boring: only include genuinely low-energy segments (score < 0.4)"""
 
     resp = client.chat.completions.create(
         model=MODEL,
@@ -1034,6 +1050,22 @@ Rules:
     bd = result.get("breakdown", {})
     for k in ("hook_strength", "pacing", "subtitle_density", "emotion", "variety"):
         bd[k] = max(0, min(100, int(bd.get(k, 50))))
+
+    # Validate hook_type
+    valid_hook_types = {"curiosity", "controversy", "urgency", "surprise", "promise"}
+    for h in result.get("hooks", []):
+        h["start"]     = round(max(0.0, float(h.get("start", 0))), 2)
+        h["strength"]  = round(max(0.0, min(1.0, float(h.get("strength", 0.5)))), 2)
+        if h.get("hook_type") not in valid_hook_types:
+            h["hook_type"] = "curiosity"
+
+    # Validate peaks
+    valid_peak_types = {"surprise", "humor", "conflict", "excitement", "inspiration"}
+    for p in result.get("peaks", []):
+        p["start"] = round(max(0.0, float(p.get("start", 0))), 2)
+        p["end"]   = round(max(p["start"] + 0.5, float(p.get("end", p["start"] + 5))), 2)
+        if p.get("type") not in valid_peak_types:
+            p["type"] = "excitement"
 
     return result
 
