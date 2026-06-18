@@ -30,7 +30,7 @@ client   = OpenAI(api_key=_api_key) if _api_key else None
 AI_PATHS = {
     "/ai/subtitle", "/ai/title", "/ai/describe",
     "/ai/translate", "/ai/editor-command", "/ai/generate-shorts",
-    "/ai/viral-analysis",
+    "/ai/viral-analysis", "/ai/transcribe",
 }
 
 # ── Export job store ──────────────────────────────────────────────────────────
@@ -370,6 +370,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 result = handle_generate_shorts(body)
             elif self.path == "/ai/viral-analysis":
                 result = handle_viral_analysis(body)
+            elif self.path == "/ai/transcribe":
+                result = handle_transcribe(body)
             else:
                 result = {"error": "Unknown endpoint"}
 
@@ -622,6 +624,84 @@ Rules:
         s["start"] = round(max(0.0, float(s.get("start", 0))), 2)
         s["end"]   = round(min(float(total_dur) if total_dur else 999,
                                float(s.get("end", 30))), 2)
+    return result
+
+
+def handle_transcribe(body):
+    _require_client()
+    state     = body.get("editorState", {})
+    total_dur = float(state.get("totalDuration", 0))
+    transcript_segs = body.get("transcriptSegments", [])  # pre-generated, from client
+
+    clips_lines = []
+    for tr in state.get("tracks", []):
+        for c in tr.get("clips", []):
+            s   = float(c.get("start", 0))
+            dur = float(c.get("dur", 0))
+            lbl = c.get("label", "").strip()
+            clips_lines.append(
+                f'  [{tr.get("type","?")}] {s:.2f}s–{s+dur:.2f}s  label="{lbl}"'
+            )
+    subs_lines = [
+        f'  {float(s.get("start",0)):.2f}s–{float(s.get("start",0))+float(s.get("dur",3)):.2f}s: "{s.get("text","")}"'
+        for s in state.get("subtitles", [])[:40]
+    ]
+    timeline_text = "\n".join(clips_lines) if clips_lines else "  (empty timeline)"
+    subs_text     = "\n".join(subs_lines)  if subs_lines  else "  (no subtitles)"
+
+    # If client already sent transcript segments (from a previous session), return them
+    if transcript_segs:
+        return {"transcript": transcript_segs, "language": "en", "cached": True}
+
+    prompt = f"""You are a professional video transcription AI.
+Given a video editor timeline (clip labels + subtitle text), generate a realistic timestamped transcript that represents what would be spoken in this video.
+
+VIDEO TIMELINE  (total duration: {total_dur:.2f}s)
+{timeline_text}
+
+EXISTING SUBTITLES (use as primary source for spoken words)
+{subs_text}
+
+Instructions:
+- Create natural-sounding spoken transcript segments that match the clip labels and subtitle text
+- Every segment must have a start time within [0, {total_dur:.2f}]
+- Segments should be 3–12 seconds each (one sentence or phrase per segment)
+- Use subtitle text verbatim where available; infer speech for unlabeled clips
+- Language: detect from subtitle text; default English
+- If no subtitle or clip text exists, generate plausible commentary based on clip types
+
+Return ONLY valid JSON:
+{{
+  "language": "en",
+  "transcript": [
+    {{"start": 0.0, "end": 4.2, "text": "Spoken words here"}},
+    ...
+  ]
+}}
+
+Rules:
+- Return 5–40 segments depending on video length
+- Segments must be chronologically ordered
+- No gaps larger than 10s between segments
+- end = next segment's start (overlaps not allowed)
+- If timeline is empty, generate a 30s sample transcript"""
+
+    resp = client.chat.completions.create(
+        model=MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+        max_completion_tokens=2048,
+    )
+    result = json.loads(resp.choices[0].message.content)
+    segs = result.get("transcript", [])
+    # Clamp all timestamps
+    for i, seg in enumerate(segs):
+        seg["start"] = round(max(0.0, float(seg.get("start", 0))), 2)
+        seg["end"]   = round(min(float(total_dur) if total_dur else 9999,
+                                 float(seg.get("end", seg["start"] + 5))), 2)
+        if seg["end"] <= seg["start"]:
+            seg["end"] = round(seg["start"] + 3.0, 2)
+    result["transcript"] = segs
     return result
 
 

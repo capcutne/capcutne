@@ -1,0 +1,170 @@
+PHASE 1.6 - TRANSCRIPT INTELLIGENCE LAYER
+
+Analyze the existing codebase first.
+
+Goal:
+Create a unified transcript system that powers:
+
+* AI Shorts Generator
+* AI Copilot
+* Subtitle Engine
+* Future Viral Intelligence features
+
+==================================================
+
+1. TRANSCRIPT ENGINE
+   ==================================================
+
+Create:
+
+js/transcript.js
+
+Backend:
+
+POST /ai/transcribe
+
+Input:
+
+{
+assetId:"",
+mediaPath:""
+}
+
+Output:
+
+{
+transcript:[
+{
+start:0.0,
+end:1.2,
+text:"Hello everyone"
+}
+]
+}
+
+==================================================
+2. STORAGE
+==========
+
+Store transcript inside project data.
+
+Schema:
+
+project.transcripts = {
+assetId:"",
+language:"en",
+generatedAt:"",
+segments:[]
+}
+
+Persist through Save/Load.
+
+==================================================
+3. TRANSCRIPT PANEL
+===================
+
+New sidebar:
+
+Transcript
+
+Features:
+
+* Generate Transcript
+* Search Transcript
+* Jump To Timestamp
+* Copy Segment
+* Export Transcript
+
+==================================================
+4. TIMELINE LINKING
+===================
+
+Click transcript segment:
+
+→ move playhead
+→ highlight active clip
+→ scroll timeline into view
+
+==================================================
+5. AI SHORTS UPGRADE
+====================
+
+Modify Shorts Generator:
+
+Current:
+timeline + subtitles
+
+New:
+timeline + transcript + subtitles
+
+Use transcript as primary context.
+
+==================================================
+6. AI COPILOT UPGRADE
+=====================
+
+Copilot can answer:
+
+"Find where I mention pricing"
+
+"Find all mistakes"
+
+"Jump to the CTA"
+
+"Find emotional moments"
+
+==================================================
+7. SEARCH ENGINE
+================
+
+Transcript search:
+
+keyword
+phrase
+timestamp
+
+Results:
+
+[
+{
+text:"",
+start:123.4
+}
+]
+
+==================================================
+8. EXPORT
+=========
+
+Export:
+
+TXT
+JSON
+SRT
+
+==================================================
+9. NON-BREAKING REQUIREMENT
+===========================
+
+Do not break:
+
+* Save/Load
+* AI Shorts
+* Media Manager
+* Timeline
+* Action Engine
+
+==================================================
+10. DELIVERABLE
+===============
+
+Provide:
+
+1. files created
+2. files modified
+3. transcript schema
+4. storage workflow
+5. search workflow
+6. timeline integration
+7. export formats
+8. limitations
