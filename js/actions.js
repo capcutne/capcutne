@@ -39,6 +39,14 @@ const ActionTypes = {
   ANALYZE_STRATEGY:     'analyze_strategy',
   GENERATE_IDEAS:       'generate_ideas',
   CREATE_TASK:          'create_task',
+  // Phase 4.1 — AI Publishing System
+  OPTIMIZE_PLATFORM:       'optimize_platform',
+  VALIDATE_CONTENT:        'validate_content',
+  SCHEDULE_CONTENT:        'schedule_content',
+  PREPARE_PUBLISH_PACKAGE: 'prepare_publish_package',
+  // Phase 4.0 — Auto Content Factory
+  GENERATE_CONTENT_FACTORY: 'generate_content_factory',
+  EXPORT_FACTORY:            'export_factory',
 };
 
 /* ── Public API ─────────────────────────────────────────── */
@@ -79,6 +87,14 @@ function executeAction(action) {
       case ActionTypes.ANALYZE_STRATEGY:      return _actAnalyzeStrategy(params);
       case ActionTypes.GENERATE_IDEAS:        return _actGenerateIdeas(params);
       case ActionTypes.CREATE_TASK:           return _actCreateTask(params);
+      // Phase 4.0 — Auto Content Factory
+      case ActionTypes.GENERATE_CONTENT_FACTORY: return _actGenerateContentFactory(params);
+      case ActionTypes.EXPORT_FACTORY:            return _actExportFactory(params);
+      // Phase 4.1 — AI Publishing System
+      case ActionTypes.OPTIMIZE_PLATFORM:       return _actOptimizePlatform(params);
+      case ActionTypes.VALIDATE_CONTENT:        return _actValidateContent(params);
+      case ActionTypes.SCHEDULE_CONTENT:        return _actScheduleContent(params);
+      case ActionTypes.PREPARE_PUBLISH_PACKAGE: return _actPreparePublishPackage(params);
       default:
         return { ok: false, error: 'Unknown action: ' + action.type };
     }
@@ -502,6 +518,98 @@ function _actGenerateInsights(params) {
 function _actImproveBrand(params) {
   if (!window.AnalyticsManager) return { ok: false, error: 'AnalyticsManager not loaded' };
   return window.AnalyticsManager.actImproveBrand(params);
+}
+
+/* ── Phase 4.0 — Auto Content Factory ── */
+
+/* generate_content_factory — chạy pipeline đầy đủ
+   params: { types?: string[] } */
+function _actGenerateContentFactory(params) {
+  if (!window.ContentFactory) return { ok: false, error: 'ContentFactory not loaded' };
+  const types = params.types || null;
+  ContentFactory.runFactory(types);
+  if (typeof setTool_byName === 'function') setTool_byName('cfactory');
+  return { ok: true, types: types || 'all' };
+}
+
+/* export_factory — xuất export package JSON
+   params: {} */
+function _actExportFactory(params) {
+  if (!window.ContentFactory) return { ok: false, error: 'ContentFactory not loaded' };
+  ContentFactory.exportPackage();
+  return { ok: true };
+}
+
+/* ── Phase 4.1 — AI Publishing System ── */
+
+/* optimize_platform — AI tối ưu nội dung cho nền tảng cụ thể
+   params: { id?, platform? } */
+function _actOptimizePlatform(params) {
+  if (!window.PublishingManager) return { ok: false, error: 'PublishingManager not loaded' };
+  if (params.platform && !params.id) {
+    // Open publishing panel and optimize all for that platform
+    const pkgs = PublishingManager.getPackages(params.platform);
+    if (!pkgs.length) {
+      // Auto-create from editor
+      const created = PublishingManager.createFromEditor([params.platform]);
+      created.forEach(p => PublishingManager.optimizeForPlatform(p.id));
+      if (typeof setTool_byName === 'function') setTool_byName('publish');
+      return { ok: true, created: created.length, platform: params.platform };
+    }
+    pkgs.forEach(p => PublishingManager.optimizeForPlatform(p.id));
+    if (typeof setTool_byName === 'function') setTool_byName('publish');
+    return { ok: true, optimized: pkgs.length, platform: params.platform };
+  }
+  if (params.id) {
+    const result = PublishingManager.optimizeForPlatform(params.id);
+    return result ? { ok: true, id: params.id } : { ok: false, error: 'Package not found' };
+  }
+  // Optimize all
+  PublishingManager.optimizeAll();
+  if (typeof setTool_byName === 'function') setTool_byName('publish');
+  return { ok: true, optimized: 'all' };
+}
+
+/* validate_content — kiểm tra nội dung hàng loạt hoặc theo id
+   params: { id? } */
+function _actValidateContent(params) {
+  if (!window.PublishingManager) return { ok: false, error: 'PublishingManager not loaded' };
+  if (params.id) {
+    const result = PublishingManager.validatePackage(params.id);
+    return { ok: true, id: params.id, ...result };
+  }
+  const results = PublishingManager.bulkValidate(null);
+  const passed = results.filter(r => r.result.passed).length;
+  if (typeof setTool_byName === 'function') setTool_byName('publish');
+  return { ok: true, total: results.length, passed, failed: results.length - passed };
+}
+
+/* schedule_content — lên lịch đăng nội dung
+   params: { id, publishAt, platform? } */
+function _actScheduleContent(params) {
+  if (!window.PublishingManager) return { ok: false, error: 'PublishingManager not loaded' };
+  if (!params.publishAt) return { ok: false, error: 'Cần cung cấp publishAt (ISO datetime)' };
+  const ids = params.ids || (params.id ? [params.id] : PublishingManager.getPackages().filter(p=>p.status==='approved').map(p=>p.id));
+  if (!ids.length) return { ok: false, error: 'Không có nội dung nào được Approved để lên lịch' };
+  const results = ids.map(id => PublishingManager.scheduleContent(id, params.publishAt, params.platform));
+  if (typeof setTool_byName === 'function') setTool_byName('publish');
+  return { ok: true, scheduled: results.filter(Boolean).length };
+}
+
+/* prepare_publish_package — xuất export package JSON
+   params: { ids? } */
+function _actPreparePublishPackage(params) {
+  if (!window.PublishingManager) return { ok: false, error: 'PublishingManager not loaded' };
+  const pkgs = PublishingManager.getPackages();
+  if (!pkgs.length) {
+    // Auto-create packages for all default platforms
+    PublishingManager.createFromEditor();
+    PublishingManager.optimizeAll();
+    PublishingManager.bulkValidate(null);
+  }
+  PublishingManager.downloadManifestJSON(params.ids || null);
+  if (typeof setTool_byName === 'function') setTool_byName('publish');
+  return { ok: true, packages: PublishingManager.getPackages().length };
 }
 
 /* apply_style — apply a named filter/style to clip(s)

@@ -1219,6 +1219,22 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
   display:flex;flex-direction:column;z-index:110;overflow:hidden
 }
 #health-panel.hidden{display:none}
+
+/* ─── PHASE 4.1: AI PUBLISHING PANEL ────────────────── */
+#publish-panel{
+  position:absolute;left:68px;top:0;height:100%;width:320px;
+  background:var(--bg1);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;z-index:110;overflow:hidden
+}
+#publish-panel.hidden{display:none}
+
+/* ─── PHASE 4.0: AUTO CONTENT FACTORY PANEL ─────────── */
+#cfactory-panel{
+  position:absolute;left:68px;top:0;height:100%;width:330px;
+  background:var(--bg1);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;z-index:110;overflow:hidden
+}
+#cfactory-panel.hidden{display:none}
 .bc-brand-name{font-size:15px;font-weight:700;color:var(--t1)}
 .bc-brand-meta{font-size:10px;color:var(--t3)}
 .bc-profile-sel{
@@ -1297,6 +1313,8 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 <script src="/js/analytics.js" defer></script>
 <script src="/js/agent.js" defer></script>
 <script src="/js/health.js" defer></script>
+<script src="/js/publishing.js" defer></script>
+<script src="/js/content_factory.js" defer></script>
 </head>
 <body>
 <div id="app">
@@ -1466,6 +1484,14 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
     <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
     <span>Health</span>
   </button>
+  <button class="tb" id="tb-cfactory" onclick="setTool(this,'cfactory')" title="Content Factory — biến 1 video thành hệ sinh thái nội dung: Blog, Newsletter, Social, Shorts">
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+    <span>Factory</span>
+  </button>
+  <button class="tb" id="tb-publish" onclick="setTool(this,'publish')" title="AI Publishing — quản lý, lên lịch và chuẩn bị publish đa nền tảng">
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
+    <span>Publish</span>
+  </button>
 </div>
 
 <!-- MY STYLE PANEL (Phase 3.0) -->
@@ -1482,6 +1508,12 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 
 <!-- SYSTEM HEALTH PANEL (Phase 5.1) -->
 <div id="health-panel" class="hidden"></div>
+
+<!-- AUTO CONTENT FACTORY PANEL (Phase 4.0) -->
+<div id="cfactory-panel" class="hidden"></div>
+
+<!-- AI PUBLISHING PANEL (Phase 4.1) -->
+<div id="publish-panel" class="hidden"></div>
 
 <!-- MEDIA PANEL -->
 <div id="media-panel">
@@ -3903,45 +3935,53 @@ function setTool(el,name){
   const apPanel = document.getElementById('analytics-panel');
   const agPanel = document.getElementById('agent-panel');
   const hlPanel = document.getElementById('health-panel');
+  const pbPanel = document.getElementById('publish-panel');
+  const cfPanel = document.getElementById('cfactory-panel');
+  function _hideAll(except){
+    if(except!=='mystyle'  && msPanel) msPanel.classList.add('hidden');
+    if(except!=='brand'    && bcPanel) bcPanel.classList.add('hidden');
+    if(except!=='analytics'&& apPanel) apPanel.classList.add('hidden');
+    if(except!=='agent'    && agPanel) agPanel.classList.add('hidden');
+    if(except!=='publish'  && pbPanel) pbPanel.classList.add('hidden');
+    if(except!=='cfactory' && cfPanel) cfPanel.classList.add('hidden');
+    if(except!=='health'&&hlPanel){hlPanel.classList.add('hidden');if(window.HealthMonitor)HealthMonitor.stopAutoRefresh();}
+  }
   if(name==='mystyle'){
+    _hideAll('mystyle');
     if(msPanel){ msPanel.classList.remove('hidden'); if(window.StyleMemory) StyleMemory.renderDashboard(); }
-    if(bcPanel) bcPanel.classList.add('hidden');
     return;
   }
   if(name==='brand'){
+    _hideAll('brand');
     if(bcPanel){ bcPanel.classList.remove('hidden'); if(window.BrandClone) BrandClone.renderDashboard(); }
-    if(msPanel) msPanel.classList.add('hidden');
-    if(apPanel) apPanel.classList.add('hidden');
     return;
   }
   if(name==='analytics'){
+    _hideAll('analytics');
     if(apPanel){ apPanel.classList.remove('hidden'); if(window.AnalyticsManager) AnalyticsManager.renderDashboard(); }
-    if(msPanel) msPanel.classList.add('hidden');
-    if(bcPanel) bcPanel.classList.add('hidden');
-    if(agPanel) agPanel.classList.add('hidden');
     return;
   }
   if(name==='agent'){
+    _hideAll('agent');
     if(agPanel){ agPanel.classList.remove('hidden'); if(window.ContentAgent) ContentAgent.renderDashboard(); }
-    if(msPanel) msPanel.classList.add('hidden');
-    if(bcPanel) bcPanel.classList.add('hidden');
-    if(apPanel) apPanel.classList.add('hidden');
-    if(hlPanel){ hlPanel.classList.add('hidden'); if(window.HealthMonitor) HealthMonitor.stopAutoRefresh(); }
     return;
   }
   if(name==='health'){
+    _hideAll('health');
     if(hlPanel){ hlPanel.classList.remove('hidden'); if(window.HealthMonitor){ HealthMonitor.renderDashboard(); HealthMonitor.startAutoRefresh(); } }
-    if(msPanel) msPanel.classList.add('hidden');
-    if(bcPanel) bcPanel.classList.add('hidden');
-    if(apPanel) apPanel.classList.add('hidden');
-    if(agPanel) agPanel.classList.add('hidden');
     return;
   }
-  if(msPanel) msPanel.classList.add('hidden');
-  if(bcPanel) bcPanel.classList.add('hidden');
-  if(apPanel) apPanel.classList.add('hidden');
-  if(agPanel) agPanel.classList.add('hidden');
-  if(hlPanel){ hlPanel.classList.add('hidden'); if(window.HealthMonitor) HealthMonitor.stopAutoRefresh(); }
+  if(name==='publish'){
+    _hideAll('publish');
+    if(pbPanel){ pbPanel.classList.remove('hidden'); if(window.PublishingManager) PublishingManager.renderDashboard(); }
+    return;
+  }
+  if(name==='cfactory'){
+    _hideAll('cfactory');
+    if(cfPanel){ cfPanel.classList.remove('hidden'); if(window.ContentFactory) ContentFactory.renderDashboard(); }
+    return;
+  }
+  _hideAll('');
   if(name==='export'){ switchTab('export'); return; }
   if(name==='subtitle'){ switchTab('trans'); return; }
   switchTab('edit');

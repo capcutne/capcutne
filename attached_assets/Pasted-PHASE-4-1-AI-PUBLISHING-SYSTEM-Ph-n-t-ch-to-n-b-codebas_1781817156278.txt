@@ -1,0 +1,310 @@
+PHASE 4.1 - AI PUBLISHING SYSTEM
+
+Phân tích toàn bộ codebase hiện tại trước khi thực hiện.
+
+Các module hiện có:
+
+- AI Copilot
+- Action Engine
+- Transcript Engine
+- Viral Intelligence
+- Auto Subtitle Pro
+- Shorts Generator
+- Batch Shorts Factory
+- Export Engine
+- Personal Editing Memory
+- Brand Clone System
+- Auto Content Factory
+
+==================================================
+MỤC TIÊU
+==================================================
+
+Xây dựng hệ thống xuất bản nội dung đa nền tảng.
+
+Người dùng không chỉ tạo nội dung.
+
+Người dùng có thể:
+
+- quản lý
+- lên lịch
+- chuẩn bị publish
+
+toàn bộ nội dung từ một dashboard duy nhất.
+
+LƯU Ý:
+
+Giai đoạn này KHÔNG được tự động đăng bài thật.
+
+Chỉ xây kiến trúc Publishing Layer.
+
+==================================================
+1. PUBLISHING MANAGER
+==================================================
+
+Tạo:
+
+PublishingManager
+
+Schema:
+
+{
+  id:"",
+  projectId:"",
+  createdAt:"",
+  platforms:[],
+  schedules:[],
+  assets:[]
+}
+
+==================================================
+2. CONTENT PACKAGE SYSTEM
+==================================================
+
+Mỗi nội dung xuất ra:
+
+{
+  id:"",
+  platform:"",
+  title:"",
+  description:"",
+  hashtags:[],
+  thumbnail:"",
+  video:"",
+  status:"draft"
+}
+
+==================================================
+3. PLATFORM PROFILES
+==================================================
+
+Tạo profile cho:
+
+YouTube
+TikTok
+Instagram Reels
+Facebook Reels
+LinkedIn
+X
+
+Schema:
+
+{
+  platform:"",
+  maxTitleLength:0,
+  maxDescriptionLength:0,
+  recommendedAspectRatio:"",
+  hashtagLimit:0
+}
+
+==================================================
+4. PUBLISHING DASHBOARD
+==================================================
+
+Tạo tab:
+
+Publishing
+
+Hiển thị:
+
+- nền tảng
+- trạng thái
+- lịch đăng
+- thumbnail
+- tiêu đề
+- mô tả
+
+==================================================
+5. CONTENT VALIDATOR
+==================================================
+
+Kiểm tra:
+
+- title quá dài
+- hashtag quá nhiều
+- sai tỷ lệ video
+- thiếu thumbnail
+- thiếu CTA
+
+Output:
+
+{
+  passed:true,
+  warnings:[]
+}
+
+==================================================
+6. AI PLATFORM OPTIMIZER
+==================================================
+
+Tự động tối ưu:
+
+YouTube
+TikTok
+Instagram
+LinkedIn
+
+Ví dụ:
+
+YouTube:
+- tiêu đề dài hơn
+- SEO hơn
+
+TikTok:
+- hook mạnh hơn
+- caption ngắn hơn
+
+==================================================
+7. SCHEDULE SYSTEM
+==================================================
+
+Cho phép:
+
+- chọn ngày
+- chọn giờ
+- chọn nền tảng
+
+Schema:
+
+{
+  contentId:"",
+  publishAt:"",
+  platform:""
+}
+
+==================================================
+8. PUBLISH QUEUE
+==================================================
+
+Trạng thái:
+
+Draft
+Ready
+Scheduled
+Published
+Failed
+
+==================================================
+9. BULK OPERATIONS
+==================================================
+
+Cho phép:
+
+- schedule nhiều nội dung
+- validate nhiều nội dung
+- export nhiều nội dung
+
+==================================================
+10. APPROVAL WORKFLOW
+==================================================
+
+Nội dung phải được duyệt trước.
+
+Workflow:
+
+Draft
+↓
+Review
+↓
+Approved
+↓
+Scheduled
+
+==================================================
+11. EXPORT PACKAGE
+==================================================
+
+Xuất:
+
+ZIP
+
+Bao gồm:
+
+/youtube
+/tiktok
+/reels
+/linkedin
+/x
+
+Mỗi thư mục:
+
+video
+thumbnail
+metadata.json
+
+==================================================
+12. AI COPILOT INTEGRATION
+==================================================
+
+Lệnh mới:
+
+"Tối ưu cho TikTok"
+
+"Tối ưu cho YouTube"
+
+"Lên lịch tuần tới"
+
+"Kiểm tra lỗi publish"
+
+==================================================
+13. ACTION ENGINE
+==================================================
+
+Thêm actions:
+
+optimize_platform
+validate_content
+schedule_content
+prepare_publish_package
+
+==================================================
+14. KHÔNG ĐƯỢC PHÁ VỠ
+==================================================
+
+Không làm hỏng:
+
+- Auto Content Factory
+- Brand Clone System
+- Export Engine
+- Save/Load
+- Viral Intelligence
+
+==================================================
+15. KIẾN TRÚC TƯƠNG LAI
+==================================================
+
+Thiết kế để sau này có thể tích hợp:
+
+- YouTube API
+- TikTok API
+- Meta API
+- LinkedIn API
+
+Nhưng KHÔNG triển khai publish thật ở phase này.
+
+==================================================
+16. BÁO CÁO
+==================================================
+
+Sau khi hoàn thành cung cấp:
+
+1. File tạo mới
+2. File chỉnh sửa
+3. Publishing schema
+4. Dashboard UI
+5. Validation workflow
+6. Scheduling workflow
+7. Platform optimization logic
+8. Export package structure
+9. Future API integration plan
+10. Hạn chế hiện tại
+
+==================================================
+YÊU CẦU QUAN TRỌNG
+==================================================
+
+Không kết nối API mạng xã hội thật.
+
+Không tự động đăng bài.
+
+Chỉ xây Publishing Operating Layer hoàn chỉnh để chuẩn bị cho Phase 4.2.

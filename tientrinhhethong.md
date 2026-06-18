@@ -10,6 +10,36 @@
 
 > Cập nhật mỗi khi hoàn thành một tính năng. Chức năng mới nhất ở **đầu danh sách**.
 
+### Phase 4.0 — Auto Content Factory ✅
+- [x] F112 — AI Copilot Commands: "Chạy factory", "Tạo toàn bộ nội dung", "Xuất factory package"
+- [x] F111 — Export Package JSON: cấu trúc /youtube /shorts /tiktok /reels /blog /newsletter /social
+- [x] F110 — Publishing Manager Integration: tự động push các outputs vào PublishingManager sau khi tạo xong
+- [x] F109 — Bulk Export: manifest JSON đầy đủ theo platform structure
+- [x] F108 — Social Posts Generator: `/cfactory/social` → 20 posts, 20 captions, 30 hashtags từ transcript thật
+- [x] F107 — Newsletter Generator: `/cfactory/newsletter` → subject, preheader, body, CTA tiếng Việt
+- [x] F106 — Blog Generator: `/cfactory/blog` → Markdown, summary từ transcript thật
+- [x] F105 — Title/Hook/CTA Generator: `/cfactory/titles` → 5 tiêu đề + 5 hooks + 5 CTAs mỗi content piece
+- [x] F104 — AI Content Planner: `/cfactory/plan` → contentPlan array từ transcript + viral + brand
+- [x] F103 — Factory Pipeline: Transcript → Viral → Brand → Plan → Generate → Publishing → Export
+- [x] F102 — Factory Dashboard (`js/content_factory.js`): tab Pipeline/Kết quả/Loại nội dung/Lịch sử
+- [x] F101 — Content Types: 12 loại (youtube_long, youtube_short, tiktok, instagram_reel, facebook_reel, linkedin, x_post, blog_md, newsletter, social_post, caption, hashtags)
+- [x] F100 — ContentFactoryManager: CRUD runs + outputs, localStorage cc_cfactory_runs + cc_cfactory_current
+- [x] F99 — Server Endpoints: /cfactory/plan · /cfactory/titles · /cfactory/blog · /cfactory/newsletter · /cfactory/social
+- [x] F98 — Action Engine Phase 4.0: `generate_content_factory`, `export_factory`
+
+### Phase 4.1 — AI Publishing System ✅
+- [x] F97 — AI Copilot Commands: "Tối ưu cho TikTok/YouTube", "Lên lịch tuần tới", "Kiểm tra lỗi publish", "Xuất package"
+- [x] F96 — Export Package System: xuất manifest JSON với cấu trúc /youtube /tiktok /instagram /facebook /linkedin /x
+- [x] F95 — Approval Workflow: Draft → Review → Approved → Scheduled → Published/Failed
+- [x] F94 — Bulk Operations: validate hàng loạt, AI tối ưu hàng loạt, lên lịch hàng loạt, export package
+- [x] F93 — Schedule System: chọn ngày giờ đăng, cancel lịch, hiển thị lịch đã lên
+- [x] F92 — Publish Queue: 6 trạng thái Draft/Review/Approved/Scheduled/Published/Failed với badge màu
+- [x] F91 — AI Platform Optimizer: tự động tối ưu title/description/hashtag theo YouTube/TikTok/Instagram/Facebook/LinkedIn/X
+- [x] F90 — Content Validator: kiểm tra title length, hashtag count, thumbnail, CTA, aspect ratio
+- [x] F89 — Publishing Dashboard: tab Queue/Lịch/Platforms/Bulk với stats row và action buttons
+- [x] F88 — Platform Profiles: 6 nền tảng với maxTitle, maxDesc, ratio, hashtagLimit, posting tips
+- [x] F87 — PublishingManager (`js/publishing.js`): CRUD packages, localStorage cc_publish_packages/schedules/settings, Action Engine 4 actions mới
+
 ### Phase 5.1 — System Health Monitor & Logger ✅
 - [x] F86 — System Logger (`js/logger.js`): Ring buffer structured logging, bắt lỗi JS toàn cục
 - [x] F85 — Health Score tự động: tính điểm 0–100 trừ điểm theo từng vấn đề
@@ -168,7 +198,7 @@
 | Ngôn ngữ UI | Tiếng Việt |
 | Hệ thống Undo | Stack thực, tối đa 50 bước |
 | AI Backend | Replit OpenAI Integration (không cần API key) |
-| Module JS | 18 files (actions, ai, agent, analytics, brand, export, factory, health, logger, media, memory, project, shorts, subtitle_pro, subtitles, transcript, viral) |
+| Module JS | 20 files (actions, ai, agent, analytics, brand, content_factory, export, factory, health, logger, media, memory, project, publishing, shorts, subtitle_pro, subtitles, transcript, viral) |
 
 ---
 

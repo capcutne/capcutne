@@ -281,16 +281,24 @@
   }
 
   const ACTION_LABELS = {
-    cut_clip:           'Cut Clip',
-    delete_clip:        'Delete Clip',
-    split_clip:         'Split Clip',
-    add_subtitle:       'Add Subtitle',
-    remove_silence:     'Remove Silence',
-    create_short:       'Create Short',
-    apply_style:        'Apply Style',
-    generate_subtitles: 'Generate Subtitles',
-    restyle_subtitles:  'Restyle Subtitles',
-    highlight_keywords: 'Highlight Keywords',
+    cut_clip:                'Cut Clip',
+    delete_clip:             'Delete Clip',
+    split_clip:              'Split Clip',
+    add_subtitle:            'Add Subtitle',
+    remove_silence:          'Remove Silence',
+    create_short:            'Create Short',
+    apply_style:             'Apply Style',
+    generate_subtitles:      'Generate Subtitles',
+    restyle_subtitles:       'Restyle Subtitles',
+    highlight_keywords:      'Highlight Keywords',
+    // Phase 4.0 — Auto Content Factory
+    generate_content_factory: '🏭 Chạy Content Factory',
+    export_factory:           '📦 Xuất Factory Package',
+    // Phase 4.1 — AI Publishing
+    optimize_platform:       '✨ Tối ưu cho nền tảng',
+    validate_content:        '✓ Kiểm tra nội dung',
+    schedule_content:        '📅 Lên lịch đăng',
+    prepare_publish_package: '📦 Chuẩn bị Export Package',
   };
 
   function _actionDesc(action) {
@@ -316,6 +324,18 @@
         return `Apply "${p.style || 'tiktok'}" template to all subtitles`;
       case 'highlight_keywords':
         return p.keywords?.length ? `Highlight: ${p.keywords.join(', ')}` : 'Auto-detect & highlight keywords';
+      case 'generate_content_factory':
+        return `Chạy factory cho: ${(p.types||['tất cả loại nội dung']).join(', ')}`;
+      case 'export_factory':
+        return 'Xuất Factory Export Package JSON';
+      case 'optimize_platform':
+        return `Tối ưu AI cho ${p.platform || 'tất cả nền tảng'}${p.id ? ' · pkg ' + p.id : ''}`;
+      case 'validate_content':
+        return p.id ? `Kiểm tra package ${p.id}` : 'Kiểm tra toàn bộ content packages';
+      case 'schedule_content':
+        return `Lên lịch đăng lúc ${p.publishAt ? new Date(p.publishAt).toLocaleString('vi-VN') : '?'}${p.platform ? ' → ' + p.platform : ''}`;
+      case 'prepare_publish_package':
+        return 'Xuất Export Package JSON cho tất cả nền tảng';
       default:
         return JSON.stringify(p);
     }

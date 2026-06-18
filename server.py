@@ -38,6 +38,9 @@ AI_PATHS = {
     "/ai/upload-media", "/ai/transcribe-real",
     "/ai/auto-style",
     "/brand/train", "/brand/compare",
+    # Phase 4.0 — Auto Content Factory
+    "/cfactory/plan", "/cfactory/titles", "/cfactory/blog",
+    "/cfactory/newsletter", "/cfactory/social",
 }
 
 # ── Export job store ──────────────────────────────────────────────────────────
@@ -765,6 +768,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 result = handle_brand_train(body)
             elif self.path == "/brand/compare":
                 result = handle_brand_compare(body)
+            # Phase 4.0 — Auto Content Factory
+            elif self.path == "/cfactory/plan":
+                result = handle_cfactory_plan(body)
+            elif self.path == "/cfactory/titles":
+                result = handle_cfactory_titles(body)
+            elif self.path == "/cfactory/blog":
+                result = handle_cfactory_blog(body)
+            elif self.path == "/cfactory/newsletter":
+                result = handle_cfactory_newsletter(body)
+            elif self.path == "/cfactory/social":
+                result = handle_cfactory_social(body)
             else:
                 result = {"error": "Unknown endpoint"}
 
@@ -1105,13 +1119,14 @@ def handle_editor_command(body):
     timeline_text = "\n".join(clips_summary) if clips_summary else "  (empty timeline)"
     subs_text     = "\n".join(subs_summary)  if subs_summary  else "  (no subtitles)"
     playhead      = state.get("playhead", 0)
-    system_prompt = """You are an AI video editing assistant.
+    system_prompt = """You are an AI video editing assistant for a CapCut-style editor (Vietnamese UI).
 The user tells you what they want to do with their video project.
 You must respond with ONLY a JSON object containing an "actions" array.
 
 Each action has a "type" and a "params" object.
 Supported action types and their params:
 
+TIMELINE EDITING:
 cut_clip      — { "clipId"?: str, "newStart"?: number, "newEnd"?: number }
 delete_clip   — { "clipId"?: str }
 split_clip    — { "time"?: number, "clipId"?: str }
@@ -1120,15 +1135,36 @@ remove_silence— { "threshold"?: number (0-1) }
 create_short  — { "duration"?: number (seconds, default 30) }
 apply_style   — { "style": str, "clipId"?: str }
 
+AI PUBLISHING SYSTEM (Phase 4.1):
+optimize_platform       — { "platform"?: "youtube"|"tiktok"|"instagram"|"facebook"|"linkedin"|"x", "id"?: str }
+  Use when user says: "tối ưu cho TikTok", "optimize for YouTube", "tối ưu cho Instagram", etc.
+validate_content        — { "id"?: str }
+  Use when user says: "kiểm tra lỗi publish", "check content", "validate", "kiểm tra nội dung"
+schedule_content        — { "publishAt": "ISO datetime", "platform"?: str, "id"?: str, "ids"?: [str] }
+  Use when user says: "lên lịch tuần tới", "đăng vào thứ Hai", "schedule next week", etc.
+  For "tuần tới" use next Monday 09:00 Vietnam time (+07:00). For "ngày mai" use tomorrow 09:00.
+prepare_publish_package — { "ids"?: [str] }
+  Use when user says: "xuất package", "export", "chuẩn bị publish", "prepare package"
+
 Rules:
 - Return ONLY a JSON object like: {"actions": [...]}
 - Do NOT modify the timeline directly — only return actions.
 - Omit params you don't need; the engine has sensible defaults.
 - For add_subtitle, generate realistic subtitle text based on clip labels.
 - For create_short without a specified duration, default to 30 seconds.
+- For schedule_content with relative dates ("tuần tới", "ngày mai"), compute an ISO datetime string.
 - If the request is ambiguous, pick the most reasonable interpretation.
 - If the request cannot map to any action, return {"actions": []} with a brief
   "message" field explaining why.
+- Vietnamese publishing commands: "tối ưu cho X" = optimize_platform for platform X.
+  "kiểm tra lỗi" = validate_content. "lên lịch" = schedule_content. "xuất package" = prepare_publish_package.
+
+AUTO CONTENT FACTORY (Phase 4.0):
+generate_content_factory — { "types"?: ["youtube_long","tiktok","blog_md",...] }
+  Use when user says: "chạy factory", "tạo toàn bộ nội dung", "tạo blog newsletter social", "auto content", "tạo hệ sinh thái nội dung"
+  types can be: youtube_long, youtube_short, tiktok, instagram_reel, facebook_reel, linkedin, x_post, blog_md, newsletter, social_post, caption, hashtags
+export_factory — {}
+  Use when user says: "xuất factory", "export factory package", "tải xuống nội dung factory"
 """
     user_message = f"""Current editor state:
 Playhead: {playhead}s
@@ -1728,6 +1764,213 @@ def project_delete(pid):
     path = PROJECTS_DIR / (pid + ".json")
     if path.exists():
         path.unlink()
+
+
+# ── Phase 4.0: Auto Content Factory Handlers ──────────────────────────────────
+
+def handle_cfactory_plan(body):
+    """AI lên kế hoạch nội dung từ transcript, viral segments và brand profile."""
+    if not client:
+        return {"error": "OpenAI not configured"}
+
+    transcript    = (body.get("transcript") or "")[:3000]
+    project_name  = body.get("projectName", "Video")
+    duration      = body.get("duration", 300)
+    viral_segs    = body.get("viralSegments", [])[:5]
+    brand_profile = body.get("brandProfile") or {}
+    content_types = body.get("contentTypes") or list(body.get("types", []))
+
+    brand_voice = brand_profile.get("voice", "") or brand_profile.get("tone", "")
+    seg_desc    = "; ".join([f"{s.get('start',0):.0f}s-{s.get('end',0):.0f}s (score {s.get('score',0.7):.1f})" for s in viral_segs]) or "no viral data"
+
+    prompt = f"""You are an AI content strategist. Create a content plan for a video.
+
+Project: "{project_name}" (duration: {duration}s)
+Brand voice: {brand_voice or 'engaging and informative'}
+Viral segments: {seg_desc}
+Transcript excerpt: {transcript[:1500]}
+Content types requested: {', '.join(content_types) if content_types else 'all'}
+
+Return a JSON object with "contentPlan" array. Each item:
+{{
+  "type": "<one of: youtube_long|youtube_short|tiktok|instagram_reel|facebook_reel|linkedin|x_post|blog_md|newsletter|social_post|caption|hashtags>",
+  "title": "<specific, compelling Vietnamese title>",
+  "sourceRange": [<start_seconds>, <end_seconds>],
+  "description": "<brief description of this content piece in Vietnamese>"
+}}
+
+Create 3-5 items per type requested (max 30 total). Return only the JSON."""
+
+    resp = client.chat.completions.create(
+        model=MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+        max_completion_tokens=2000,
+    )
+    return json.loads(resp.choices[0].message.content)
+
+
+def handle_cfactory_titles(body):
+    """Tạo 5 tiêu đề, 5 hook, 5 CTA cho một loại nội dung cụ thể."""
+    if not client:
+        return {"error": "OpenAI not configured"}
+
+    content_type  = body.get("type", "youtube_long")
+    title         = body.get("title", "")
+    transcript    = (body.get("transcript") or "")[:1500]
+    brand_profile = body.get("brandProfile") or {}
+    language      = body.get("language", "vi")
+
+    brand_voice = brand_profile.get("voice", "") or brand_profile.get("tone", "engaging")
+
+    platform_tips = {
+        "youtube_long":   "SEO-optimized, 60-70 chars, curiosity-driven",
+        "youtube_short":  "punchy, max 60 chars, strong hook first",
+        "tiktok":         "trending, hook within 3 seconds, max 50 chars",
+        "instagram_reel": "visually descriptive, emoji-friendly",
+        "facebook_reel":  "community-focused, shareable",
+        "linkedin":       "professional, value-driven, thought leadership",
+        "x_post":         "under 280 chars total including hashtags",
+    }.get(content_type, "engaging and shareable")
+
+    lang_note = "Respond in Vietnamese (tiếng Việt)" if language == "vi" else "Respond in English"
+
+    prompt = f"""You are a viral content copywriter.
+{lang_note}. Brand voice: {brand_voice}.
+Platform: {content_type} ({platform_tips})
+
+Content topic: {title}
+Transcript: {transcript[:800]}
+
+Return JSON with:
+{{
+  "titles": ["<5 compelling titles>"],
+  "hooks": ["<5 strong opening hooks/lines>"],
+  "ctas": ["<5 call-to-action phrases>"],
+  "hashtags": ["<10 relevant hashtags without #>"],
+  "description": "<2-3 sentence platform-optimized description>"
+}}"""
+
+    resp = client.chat.completions.create(
+        model=MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+        max_completion_tokens=1000,
+    )
+    return json.loads(resp.choices[0].message.content)
+
+
+def handle_cfactory_blog(body):
+    """Tạo blog post đầy đủ từ transcript — Markdown, HTML và Plain Text."""
+    if not client:
+        return {"error": "OpenAI not configured"}
+
+    transcript    = (body.get("transcript") or "")[:4000]
+    title         = body.get("title", "Blog Post")
+    brand_profile = body.get("brandProfile") or {}
+    language      = body.get("language", "vi")
+
+    brand_voice = brand_profile.get("voice", "") or "professional and engaging"
+    lang_note   = "Viết bằng tiếng Việt" if language == "vi" else "Write in English"
+
+    prompt = f"""Bạn là chuyên gia viết blog nội dung video. {lang_note}.
+Phong cách thương hiệu: {brand_voice}
+
+Dựa vào transcript video bên dưới, viết một bài blog hoàn chỉnh.
+
+Tiêu đề: {title}
+Transcript: {transcript}
+
+Trả về JSON:
+{{
+  "markdown": "<bài blog đầy đủ định dạng Markdown với headings, bullet points>",
+  "summary": "<tóm tắt 2-3 câu>",
+  "wordCount": <số từ>
+}}"""
+
+    resp = client.chat.completions.create(
+        model=MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+        max_completion_tokens=2000,
+    )
+    return json.loads(resp.choices[0].message.content)
+
+
+def handle_cfactory_newsletter(body):
+    """Tạo email newsletter hoàn chỉnh từ transcript."""
+    if not client:
+        return {"error": "OpenAI not configured"}
+
+    transcript    = (body.get("transcript") or "")[:3000]
+    title         = body.get("title", "Newsletter")
+    brand_profile = body.get("brandProfile") or {}
+
+    brand_voice = brand_profile.get("voice", "") or "friendly and informative"
+    brand_name  = brand_profile.get("name",  "") or "Kênh của chúng tôi"
+
+    prompt = f"""Bạn là chuyên gia email marketing. Viết bằng tiếng Việt.
+Thương hiệu: {brand_name} — giọng văn: {brand_voice}
+
+Từ transcript video bên dưới, tạo email newsletter hoàn chỉnh.
+
+Tiêu đề video: {title}
+Transcript: {transcript}
+
+Trả về JSON:
+{{
+  "subject": "<dòng tiêu đề email hấp dẫn>",
+  "preheader": "<preview text 90 ký tự>",
+  "body": "<nội dung email hoàn chỉnh, thân thiện, có CTA rõ ràng>",
+  "ctaText": "<nút CTA>",
+  "ctaLink": "#"
+}}"""
+
+    resp = client.chat.completions.create(
+        model=MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+        max_completion_tokens=1500,
+    )
+    return json.loads(resp.choices[0].message.content)
+
+
+def handle_cfactory_social(body):
+    """Tạo social posts, captions và hashtag sets hàng loạt."""
+    if not client:
+        return {"error": "OpenAI not configured"}
+
+    transcript    = (body.get("transcript") or "")[:3000]
+    project_name  = body.get("projectName", "Video")
+    brand_profile = body.get("brandProfile") or {}
+    count         = min(int(body.get("count", 10)), 20)
+    language      = body.get("language", "vi")
+
+    brand_voice = brand_profile.get("voice", "") or "engaging"
+    brand_name  = brand_profile.get("name",  "") or ""
+    lang_note   = "Viết bằng tiếng Việt" if language == "vi" else "Write in English"
+
+    prompt = f"""Bạn là chuyên gia social media. {lang_note}.
+{f'Thương hiệu: {brand_name}.' if brand_name else ''} Phong cách: {brand_voice}.
+
+Từ transcript video "{project_name}", tạo nội dung social media đa dạng.
+
+Transcript: {transcript[:2000]}
+
+Trả về JSON:
+{{
+  "posts": ["<{count} bài đăng social media hoàn chỉnh, mỗi bài khác nhau, có emoji và hashtag>"],
+  "captions": ["<20 caption ngắn (50-150 ký tự) cho Reels/Shorts>"],
+  "hashtags": ["<30 hashtag tiếng Việt và tiếng Anh liên quan, không có dấu #>"]
+}}"""
+
+    resp = client.chat.completions.create(
+        model=MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+        max_completion_tokens=3000,
+    )
+    return json.loads(resp.choices[0].message.content)
 
 
 # ── Entry ─────────────────────────────────────────────────────────────────────

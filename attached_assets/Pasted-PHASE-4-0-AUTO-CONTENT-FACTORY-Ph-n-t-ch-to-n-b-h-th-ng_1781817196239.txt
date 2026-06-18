@@ -1,0 +1,242 @@
+PHASE 4.0 - AUTO CONTENT FACTORY
+
+Phân tích toàn bộ hệ thống hiện tại trước khi thực hiện.
+
+Các module hiện có:
+
+- AI Copilot
+- Action Engine
+- Transcript Engine
+- Viral Intelligence
+- Auto Subtitle Pro
+- Shorts Generator
+- Batch Shorts Factory
+- Export Engine
+- Personal Editing Memory
+- Brand Clone System
+
+==================================================
+MỤC TIÊU
+==================================================
+
+Biến 1 video dài thành hệ sinh thái nội dung hoàn chỉnh.
+
+Người dùng upload:
+
+1 video dài
+
+Hệ thống tự động tạo:
+
+- YouTube Video
+- 10 Shorts
+- 10 TikTok
+- 10 Reels
+- 1 Blog
+- 1 Newsletter
+- 20 Social Posts
+- 20 Captions
+- Hashtags
+
+==================================================
+1. CONTENT FACTORY MANAGER
+==================================================
+
+Tạo:
+
+ContentFactoryManager
+
+Schema:
+
+{
+  id:"",
+  projectId:"",
+  createdAt:"",
+  status:"",
+  outputs:[]
+}
+
+==================================================
+2. FACTORY PIPELINE
+==================================================
+
+Video
+↓
+Transcript
+↓
+Viral Analysis
+↓
+Brand Clone
+↓
+Content Planning
+↓
+Content Generation
+↓
+Export Package
+
+==================================================
+3. CONTENT TYPES
+==================================================
+
+Hỗ trợ:
+
+YouTube Longform
+
+YouTube Shorts
+
+TikTok
+
+Instagram Reels
+
+Facebook Reels
+
+LinkedIn Post
+
+X Post
+
+Blog
+
+Newsletter
+
+==================================================
+4. AI CONTENT PLANNER
+==================================================
+
+Tạo:
+
+POST /factory/plan
+
+Output:
+
+{
+  contentPlan:[
+    {
+      type:"",
+      title:"",
+      sourceRange:[]
+    }
+  ]
+}
+
+==================================================
+5. TITLE GENERATION
+==================================================
+
+Mỗi nội dung:
+
+- 5 tiêu đề
+- 5 hook
+- 5 CTA
+
+==================================================
+6. CAPTION GENERATION
+==================================================
+
+Tự động:
+
+- Caption
+- Hashtags
+- Description
+
+==================================================
+7. BLOG GENERATOR
+==================================================
+
+Từ transcript.
+
+Sinh:
+
+Markdown
+
+HTML
+
+Plain Text
+
+==================================================
+8. NEWSLETTER GENERATOR
+==================================================
+
+Tạo email newsletter hoàn chỉnh.
+
+==================================================
+9. BRAND CLONE INTEGRATION
+==================================================
+
+Mọi nội dung phải:
+
+- theo phong cách thương hiệu
+- theo CTA thương hiệu
+- theo giọng văn thương hiệu
+
+==================================================
+10. FACTORY DASHBOARD
+==================================================
+
+Hiển thị:
+
+- trạng thái
+- tiến độ
+- số nội dung đã tạo
+- số nội dung lỗi
+
+==================================================
+11. BULK EXPORT
+==================================================
+
+Export:
+
+ZIP package
+
+Cấu trúc:
+
+/youtube
+/shorts
+/reels
+/blog
+/social
+
+==================================================
+12. ACTION ENGINE
+==================================================
+
+Thêm:
+
+generate_content_factory
+export_factory
+publish_factory
+
+==================================================
+13. KHÔNG ĐƯỢC PHÁ VỠ
+==================================================
+
+Không làm hỏng:
+
+- Export Engine
+- Batch Shorts Factory
+- Brand Clone
+- Viral Intelligence
+- Save/Load
+
+==================================================
+14. BÁO CÁO
+==================================================
+
+Sau khi hoàn thành cung cấp:
+
+1. File tạo mới
+2. File chỉnh sửa
+3. Factory workflow
+4. Content schema
+5. Dashboard UI
+6. Export package structure
+7. Brand integration workflow
+8. Hạn chế hiện tại
+
+==================================================
+YÊU CẦU
+==================================================
+
+Ưu tiên kiến trúc mở rộng.
+
+Mọi loại nội dung phải được sinh từ transcript thật và dữ liệu dự án thật.
+
+Không hardcode.
