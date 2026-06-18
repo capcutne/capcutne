@@ -43,6 +43,10 @@ AI_PATHS = {
 # job_id → { status, progress, message, output_path, filename, format, quality }
 export_jobs: dict = {}
 
+# ── Batch Shorts Factory job store ────────────────────────────────────────────
+# batch_id → { status, progress, stage, shorts[], subtitle_template, ... }
+factory_batches: dict = {}
+
 QUALITY_MAP = {
     "480p":  {"w": 854,   "h": 480,  "vbr": "1000k"},
     "720p":  {"w": 1280,  "h": 720,  "vbr": "2000k"},
@@ -168,6 +172,149 @@ def _load_export_history():
                 export_jobs[r["id"]] = r
     except Exception:
         pass
+
+
+# ── Batch Shorts Factory worker ───────────────────────────────────────────────
+
+def _run_factory_batch(batch_id: str, editor_state: dict, max_shorts: int, subtitle_template: str):
+    """Full pipeline: AI segment detection → viral scoring → metadata generation."""
+    batch = factory_batches[batch_id]
+    try:
+        total_dur = float(editor_state.get("totalDuration", 30))
+        clips_lines = []
+        for tr in editor_state.get("tracks", []):
+            for c in tr.get("clips", []):
+                s   = float(c.get("start", 0))
+                dur = float(c.get("dur", 0))
+                clips_lines.append(
+                    f'  [{tr.get("type","?")}] "{c.get("label","")}"  {s:.1f}s→{s+dur:.1f}s ({dur:.1f}s)'
+                )
+        subs_lines = [
+            f'  {float(s.get("start",0)):.1f}s: "{s.get("text","")}"'
+            for s in editor_state.get("subtitles", [])[:30]
+        ]
+        timeline_text = "\n".join(clips_lines) or "  (empty timeline)"
+        subs_text     = "\n".join(subs_lines)  or "  (none)"
+
+        # ── Stage 1: Generate viral short candidates ───────────────────────────
+        batch.update({"status": "analyzing", "progress": 5,
+                       "stage": "Detecting viral segments…"})
+
+        prompt1 = f"""You are a viral content strategist. Analyze this video timeline and find the TOP {max_shorts} most viral-worthy short clips.
+
+VIDEO TIMELINE (total: {total_dur:.1f}s):
+{timeline_text}
+
+SUBTITLES:
+{subs_text}
+
+Score each candidate on 4 dimensions (0.0–1.0 each):
+- hook_score:      How grabbing are the first 3 seconds?
+- retention_score: Does it hold attention throughout?
+- emotional_score: Emotional highs — humor, shock, inspiration?
+- overall_score:   Composite viral potential
+
+Return ONLY valid JSON:
+{{
+  "shorts": [
+    {{
+      "id": "short_01",
+      "title": "Catchy 6-word viral title",
+      "start": <number>,
+      "end": <number>,
+      "hook_score": <float 0.0-1.0>,
+      "retention_score": <float 0.0-1.0>,
+      "emotional_score": <float 0.0-1.0>,
+      "overall_score": <float 0.0-1.0>,
+      "hook_line": "Why the first 3 seconds grab attention (1 sentence)",
+      "reason": "Overall viral potential (1 sentence)"
+    }}
+  ]
+}}
+
+Rules:
+- Up to {max_shorts} shorts, sorted overall_score DESC
+- Each short 15–60 seconds long (clamp to timeline bounds)
+- All start/end values within 0 and {total_dur:.1f}
+- If timeline is empty, generate 3 demo shorts within 30s
+- Shorts may overlap — pick best windows
+"""
+
+        resp1 = client.chat.completions.create(
+            model=MODEL,
+            messages=[{"role": "user", "content": prompt1}],
+            response_format={"type": "json_object"},
+            max_completion_tokens=2048,
+        )
+        shorts_data = json.loads(resp1.choices[0].message.content)
+        shorts = shorts_data.get("shorts", [])[:max_shorts]
+
+        # Normalize IDs and attach template info
+        for i, s in enumerate(shorts):
+            s["id"]                = f"short_{i+1:02d}"
+            s["subtitle_template"] = subtitle_template
+            s["status"]            = "ready"
+            s["duration"]          = round(float(s.get("end", 0)) - float(s.get("start", 0)), 2)
+
+        batch.update({"progress": 45, "stage": "Generating titles, descriptions & hashtags…"})
+
+        # ── Stage 2: Batch metadata for all shorts (single AI call) ───────────
+        shorts_summary = "\n".join(
+            f'Short {s["id"]}: "{s["title"]}" '
+            f'({s.get("start",0):.1f}s–{s.get("end",0):.1f}s) | '
+            f'hook: {s.get("hook_line","")[:60]}'
+            for s in shorts
+        )
+
+        prompt2 = f"""You are a social media content writer. Generate publishing metadata for each short video below.
+
+SHORTS:
+{shorts_summary}
+
+Return ONLY valid JSON:
+{{
+  "metadata": [
+    {{
+      "id": "short_01",
+      "titles": ["Title A (6–8 words)", "Title B (punchy variant)", "Title C (question format?)"],
+      "description": "Compelling 2-sentence description with hook.",
+      "cta": "Call-to-action (e.g. Follow for more!)",
+      "hashtags": ["#viral", "#shorts", "#trending", "#fyp", "#content"],
+      "thumbnail_text": "3–4 word bold thumbnail text"
+    }}
+  ]
+}}
+"""
+
+        resp2 = client.chat.completions.create(
+            model=MODEL,
+            messages=[{"role": "user", "content": prompt2}],
+            response_format={"type": "json_object"},
+            max_completion_tokens=2048,
+        )
+        meta_data = json.loads(resp2.choices[0].message.content)
+        meta_map  = {m["id"]: m for m in meta_data.get("metadata", [])}
+
+        for s in shorts:
+            m = meta_map.get(s["id"], {})
+            s["titles"]         = m.get("titles", [s["title"]])
+            s["description"]    = m.get("description", "")
+            s["cta"]            = m.get("cta", "Follow for more!")
+            s["hashtags"]       = m.get("hashtags", ["#shorts", "#viral"])
+            s["thumbnail_text"] = m.get("thumbnail_text", s["title"][:20])
+
+        batch.update({
+            "status":       "ready",
+            "progress":     100,
+            "stage":        f"Factory complete — {len(shorts)} shorts ready",
+            "shorts":       shorts,
+            "completed_at": time.time(),
+        })
+        print(f"[factory] ✅ {batch_id} — {len(shorts)} shorts", flush=True)
+
+    except Exception as exc:
+        print(f"[factory] ERROR {batch_id}: {exc}", flush=True)
+        factory_batches[batch_id].update({"status": "error", "stage": str(exc), "progress": 0})
 
 
 # ── FFmpeg background worker ──────────────────────────────────────────────────
@@ -404,6 +551,34 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return self.send_json(data)
             return self.send_json({"error": "Not found"}, 404)
 
+        # Factory status
+        if self.path.startswith("/factory/status"):
+            from urllib.parse import urlparse, parse_qs
+            qs  = parse_qs(urlparse(self.path).query)
+            bid = (qs.get("id") or [""])[0]
+            b   = factory_batches.get(bid)
+            if not b:
+                return self.send_json({"error": "Batch not found"}, 404)
+            safe = {k: v for k, v in b.items() if k != "shorts"}
+            safe["shorts"] = b.get("shorts", []) if b.get("status") == "ready" else []
+            return self.send_json(safe)
+
+        # Factory results
+        if self.path.startswith("/factory/results"):
+            from urllib.parse import urlparse, parse_qs
+            qs  = parse_qs(urlparse(self.path).query)
+            bid = (qs.get("id") or [""])[0]
+            b   = factory_batches.get(bid)
+            if not b:
+                return self.send_json({"error": "Batch not found"}, 404)
+            return self.send_json({
+                "batch_id": bid,
+                "status":   b.get("status"),
+                "shorts":   b.get("shorts", []),
+                "subtitle_template": b.get("subtitle_template", "tiktok"),
+                "completed_at": b.get("completed_at"),
+            })
+
         # Export history
         if self.path == "/export/history":
             records = [
@@ -469,9 +644,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             project_delete(pid)
 
     def do_POST(self):
-        EXPORT_START  = "/export/start"
-        EXPORT_CANCEL = "/export/cancel"
-        ALLOWED_PATHS = AI_PATHS | {"/project/save", EXPORT_START, EXPORT_CANCEL}
+        EXPORT_START    = "/export/start"
+        EXPORT_CANCEL   = "/export/cancel"
+        FACTORY_GENERATE = "/factory/generate"
+        ALLOWED_PATHS = AI_PATHS | {"/project/save", EXPORT_START, EXPORT_CANCEL, FACTORY_GENERATE}
         if self.path not in ALLOWED_PATHS:
             self.send_json({"error": "Not found"}, 404)
             return
@@ -513,6 +689,29 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 )
                 t.start()
                 return self.send_json({"ok": True, "job_id": jid})
+
+            # Factory generate
+            if self.path == FACTORY_GENERATE:
+                bid              = "fac_" + uuid.uuid4().hex[:12]
+                editor_state     = body.get("editorState", {})
+                max_shorts       = int(body.get("maxShorts", 10))
+                subtitle_template = str(body.get("subtitleTemplate", "tiktok"))
+                factory_batches[bid] = {
+                    "id":               bid,
+                    "status":           "queued",
+                    "progress":         0,
+                    "stage":            "Queued…",
+                    "shorts":           [],
+                    "subtitle_template": subtitle_template,
+                    "created_at":       time.time(),
+                }
+                t = threading.Thread(
+                    target=_run_factory_batch,
+                    args=(bid, editor_state, max_shorts, subtitle_template),
+                    daemon=True,
+                )
+                t.start()
+                return self.send_json({"ok": True, "batch_id": bid})
 
             # Export cancel
             if self.path == EXPORT_CANCEL:

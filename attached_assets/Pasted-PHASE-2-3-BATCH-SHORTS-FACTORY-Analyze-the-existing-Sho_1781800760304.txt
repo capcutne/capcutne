@@ -1,0 +1,261 @@
+PHASE 2.3 - BATCH SHORTS FACTORY
+
+Analyze the existing:
+
+* Shorts Generator
+* Export Engine
+* Transcript Engine
+* Subtitle Pro
+* Viral Intelligence
+
+before implementation.
+
+Goal:
+
+Turn one long video into multiple ready-to-publish short videos automatically.
+
+==================================================
+
+1. FACTORY PIPELINE
+   ==================================================
+
+Long Video
+
+↓
+
+Transcript
+
+↓
+
+Viral Analysis
+
+↓
+
+Top Shorts Selection
+
+↓
+
+Auto Subtitle
+
+↓
+
+Auto Styling
+
+↓
+
+Batch Export
+
+↓
+
+Ready Files
+
+==================================================
+2. FACTORY API
+==============
+
+POST /factory/generate
+
+Request:
+
+{
+projectId:"",
+maxShorts:20
+}
+
+Response:
+
+{
+batchId:""
+}
+
+---
+
+GET /factory/status/:batchId
+
+---
+
+GET /factory/results/:batchId
+
+==================================================
+3. SHORT GENERATION
+===================
+
+Generate:
+
+5
+10
+20
+
+shorts.
+
+Each short:
+
+{
+id:"",
+title:"",
+start:0,
+end:0,
+score:0
+}
+
+==================================================
+4. AUTO SUBTITLE
+================
+
+Apply:
+
+Subtitle Pro
+
+automatically.
+
+User selects template:
+
+TikTok
+MrBeast
+Podcast
+Netflix
+
+==================================================
+5. AUTO VIRAL SCORING
+=====================
+
+Each short receives:
+
+Hook Score
+Retention Score
+Emotional Score
+Overall Score
+
+==================================================
+6. AUTO TITLE GENERATION
+========================
+
+Generate:
+
+3 titles per short.
+
+Example:
+
+Short #1
+
+Title A
+Title B
+Title C
+
+==================================================
+7. AUTO DESCRIPTION
+===================
+
+Generate:
+
+* Description
+* CTA
+* Hashtags
+
+==================================================
+8. AUTO THUMBNAIL
+=================
+
+Generate thumbnail candidates.
+
+Store:
+
+{
+thumbnail:"",
+score:0
+}
+
+==================================================
+9. FACTORY DASHBOARD
+====================
+
+Show:
+
+Short #
+Duration
+Score
+Status
+
+Buttons:
+
+Preview
+Export
+Delete
+
+==================================================
+10. BATCH EXPORT
+================
+
+Export:
+
+Selected Shorts
+
+or
+
+Export All
+
+==================================================
+11. EXPORT STRUCTURE
+====================
+
+Output:
+
+/exports
+/batch_001
+short_01.mp4
+short_02.mp4
+short_03.mp4
+
+```
+  metadata.json
+```
+
+==================================================
+12. METADATA PACKAGE
+====================
+
+For every short:
+
+{
+title:"",
+description:"",
+hashtags:[]
+}
+
+==================================================
+13. ACTION ENGINE
+=================
+
+New actions:
+
+generate_batch
+export_batch
+preview_short
+
+==================================================
+14. NON-BREAKING REQUIREMENT
+============================
+
+Do not break:
+
+* Export Engine
+* Shorts Generator
+* Transcript Engine
+* Subtitle Pro
+* Viral Intelligence
+* Save/Load
+
+==================================================
+15. DELIVERABLE
+===============
+
+Provide:
+
+1. files created
+2. files modified
+3. factory workflow
+4. dashboard design
+5. export structure
+6. metadata schema
+7. scoring workflow
+8. limitations

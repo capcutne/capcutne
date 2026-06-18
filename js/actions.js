@@ -16,6 +16,9 @@ const ActionTypes = {
   GENERATE_SUBTITLES:  'generate_subtitles',
   RESTYLE_SUBTITLES:   'restyle_subtitles',
   HIGHLIGHT_KEYWORDS:  'highlight_keywords',
+  GENERATE_BATCH:      'generate_batch',
+  EXPORT_BATCH:        'export_batch',
+  PREVIEW_SHORT:       'preview_short',
 };
 
 /* ── Public API ─────────────────────────────────────────── */
@@ -35,6 +38,9 @@ function executeAction(action) {
       case ActionTypes.GENERATE_SUBTITLES:  return _actGenerateSubtitles(params);
       case ActionTypes.RESTYLE_SUBTITLES:   return _actRestyleSubtitles(params);
       case ActionTypes.HIGHLIGHT_KEYWORDS:  return _actHighlightKeywords(params);
+      case ActionTypes.GENERATE_BATCH:   return _actGenerateBatch(params);
+      case ActionTypes.EXPORT_BATCH:     return _actExportBatch(params);
+      case ActionTypes.PREVIEW_SHORT:    return _actPreviewShort(params);
       default:
         return { ok: false, error: 'Unknown action: ' + action.type };
     }
@@ -301,6 +307,37 @@ function _actHighlightKeywords(params) {
     return { ok: true, auto: true };
   }
   return { ok: false, error: 'SubtitlePro not loaded' };
+}
+
+/* generate_batch — open the Batch Shorts Factory panel */
+function _actGenerateBatch(params) {
+  if (window.BatchFactory) {
+    window.BatchFactory.open();
+    if (params.maxShorts || params.template) {
+      window.BatchFactory.run(params.maxShorts || 10, params.template || 'tiktok');
+    }
+    return { ok: true };
+  }
+  return { ok: false, error: 'BatchFactory not loaded' };
+}
+
+/* export_batch — export all ready shorts in current factory batch */
+function _actExportBatch(params) {
+  if (window.BatchFactory) {
+    window.BatchFactory.exportAll();
+    return { ok: true };
+  }
+  return { ok: false, error: 'BatchFactory not loaded' };
+}
+
+/* preview_short — apply a specific short to the main timeline */
+function _actPreviewShort(params) {
+  const id = params.shortId || params.id;
+  if (window.BatchFactory && id) {
+    window.BatchFactory.previewShort(id);
+    return { ok: true };
+  }
+  return { ok: false, error: 'BatchFactory not loaded or shortId missing' };
 }
 
 /* apply_style — apply a named filter/style to clip(s)
