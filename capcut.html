@@ -1110,6 +1110,7 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 <script src="/js/actions.js"></script>
 <script src="/js/ai.js" defer></script>
 <script src="/js/subtitles.js" defer></script>
+<script src="/js/subtitle_pro.js" defer></script>
 <script src="/js/shorts.js" defer></script>
 <script src="/js/project.js" defer></script>
 <script src="/js/media.js" defer></script>
@@ -3538,6 +3539,14 @@ const TPL_SUBTITLE = `
       <div class="sub-tpl-item tpl-gaming" onclick="window.SubEngine&&SubEngine.applyTemplate('gaming',this)" title="Neon cyan glow, top position">
         <div class="sub-tpl-preview">GG WP!</div>
         <div class="sub-tpl-name">🎮 Gaming</div>
+      </div>
+      <div class="sub-tpl-item tpl-minimal" onclick="window.SubEngine&&SubEngine.applyTemplate('minimal',this)" title="Clean transparent, thin weight">
+        <div class="sub-tpl-preview">Minimal</div>
+        <div class="sub-tpl-name">✏️ Minimal</div>
+      </div>
+      <div class="sub-tpl-item tpl-documentary" onclick="window.SubEngine&&SubEngine.applyTemplate('documentary',this)" title="Cinematic gold italic style">
+        <div class="sub-tpl-preview">Docs</div>
+        <div class="sub-tpl-name">🎞 Docu</div>
       </div>
     </div>
   </div>

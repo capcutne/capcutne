@@ -162,6 +162,8 @@
     <button class="acp-ex-chip" data-prompt="Remove silence from audio">🔇 Remove silence</button>
     <button class="acp-ex-chip" data-prompt="Create a 30 second short">✂️ Create 30s short</button>
     <button class="acp-ex-chip" data-prompt="Generate subtitles for all video clips">💬 Generate subtitles</button>
+    <button class="acp-ex-chip" data-prompt="Make subtitles look like MrBeast">👑 MrBeast subtitles</button>
+    <button class="acp-ex-chip" data-prompt="Highlight important words and keywords in subtitles">🔑 Highlight keywords</button>
     <button class="acp-ex-chip" data-prompt="Split the video clip at the current playhead position">✂ Split at playhead</button>
     <button class="acp-ex-chip" data-prompt="Apply sunset style to selected clip">🎨 Apply sunset style</button>
     <button class="acp-ex-chip" data-prompt="Delete the selected clip">🗑 Delete selected clip</button>
@@ -279,13 +281,16 @@
   }
 
   const ACTION_LABELS = {
-    cut_clip:       'Cut Clip',
-    delete_clip:    'Delete Clip',
-    split_clip:     'Split Clip',
-    add_subtitle:   'Add Subtitle',
-    remove_silence: 'Remove Silence',
-    create_short:   'Create Short',
-    apply_style:    'Apply Style'
+    cut_clip:           'Cut Clip',
+    delete_clip:        'Delete Clip',
+    split_clip:         'Split Clip',
+    add_subtitle:       'Add Subtitle',
+    remove_silence:     'Remove Silence',
+    create_short:       'Create Short',
+    apply_style:        'Apply Style',
+    generate_subtitles: 'Generate Subtitles',
+    restyle_subtitles:  'Restyle Subtitles',
+    highlight_keywords: 'Highlight Keywords',
   };
 
   function _actionDesc(action) {
@@ -305,6 +310,12 @@
         return `Trim to ${p.duration ?? 30}s short`;
       case 'apply_style':
         return `Style "${p.style || 'none'}" → ${p.clipId ? 'clip ' + p.clipId : 'selected clips'}`;
+      case 'generate_subtitles':
+        return `Generate subtitles from clips${p.style ? ' → ' + p.style + ' style' : ''}`;
+      case 'restyle_subtitles':
+        return `Apply "${p.style || 'tiktok'}" template to all subtitles`;
+      case 'highlight_keywords':
+        return p.keywords?.length ? `Highlight: ${p.keywords.join(', ')}` : 'Auto-detect & highlight keywords';
       default:
         return JSON.stringify(p);
     }

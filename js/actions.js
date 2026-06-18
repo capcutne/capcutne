@@ -6,13 +6,16 @@
    ============================================================ */
 
 const ActionTypes = {
-  CUT_CLIP:       'cut_clip',
-  DELETE_CLIP:    'delete_clip',
-  SPLIT_CLIP:     'split_clip',
-  ADD_SUBTITLE:   'add_subtitle',
-  REMOVE_SILENCE: 'remove_silence',
-  CREATE_SHORT:   'create_short',
-  APPLY_STYLE:    'apply_style'
+  CUT_CLIP:            'cut_clip',
+  DELETE_CLIP:         'delete_clip',
+  SPLIT_CLIP:          'split_clip',
+  ADD_SUBTITLE:        'add_subtitle',
+  REMOVE_SILENCE:      'remove_silence',
+  CREATE_SHORT:        'create_short',
+  APPLY_STYLE:         'apply_style',
+  GENERATE_SUBTITLES:  'generate_subtitles',
+  RESTYLE_SUBTITLES:   'restyle_subtitles',
+  HIGHLIGHT_KEYWORDS:  'highlight_keywords',
 };
 
 /* ── Public API ─────────────────────────────────────────── */
@@ -28,7 +31,10 @@ function executeAction(action) {
       case ActionTypes.ADD_SUBTITLE:   return _actAddSubtitle(params);
       case ActionTypes.REMOVE_SILENCE: return _actRemoveSilence(params);
       case ActionTypes.CREATE_SHORT:   return _actCreateShort(params);
-      case ActionTypes.APPLY_STYLE:    return _actApplyStyle(params);
+      case ActionTypes.APPLY_STYLE:          return _actApplyStyle(params);
+      case ActionTypes.GENERATE_SUBTITLES:  return _actGenerateSubtitles(params);
+      case ActionTypes.RESTYLE_SUBTITLES:   return _actRestyleSubtitles(params);
+      case ActionTypes.HIGHLIGHT_KEYWORDS:  return _actHighlightKeywords(params);
       default:
         return { ok: false, error: 'Unknown action: ' + action.type };
     }
@@ -233,6 +239,68 @@ function _actCreateShort(params) {
 
   _toast('🎬 Short ' + maxDur + 's — đã cắt ' + trimmed + ' clip');
   return { ok: true, duration: maxDur, trimmed };
+}
+
+/* generate_subtitles — create subtitles from timeline clips
+   params: { style? }  — optional template key */
+function _actGenerateSubtitles(params) {
+  if (typeof subtitles === 'undefined')
+    return { ok: false, error: 'subtitles not initialised' };
+  if (typeof tracks === 'undefined' || !tracks.length)
+    return { ok: false, error: 'No tracks to generate from' };
+
+  _saveHistory();
+  subtitles.length = 0;
+  let count = 0;
+  tracks.forEach(tr => {
+    (tr.clips || []).forEach(c => {
+      const id = 'sub_act_' + (typeof nextSubId !== 'undefined' ? nextSubId++ : Date.now() + count);
+      subtitles.push({ id, start: c.start, dur: c.dur || 3, text: c.label || 'Subtitle' });
+      count++;
+    });
+  });
+
+  if (window.SubEngine) window.SubEngine.upgradeAll();
+  if (params.style && window.SubEngine) {
+    window.SubEngine.applyTemplate(params.style, null);
+  }
+  if (typeof _renderSubList === 'function') _renderSubList();
+  _toast(`💬 Generated ${count} subtitles`);
+  return { ok: true, count };
+}
+
+/* restyle_subtitles — apply a template to all existing subtitles
+   params: { style } */
+function _actRestyleSubtitles(params) {
+  if (typeof subtitles === 'undefined' || !subtitles.length)
+    return { ok: false, error: 'No subtitles to restyle' };
+  const style = params.style || 'tiktok';
+  if (window.SubtitlePro) {
+    window.SubtitlePro.bulkRestyle(style);
+    return { ok: true, style, count: subtitles.length };
+  }
+  if (window.SubEngine) {
+    subtitles.forEach(s => { s.style = style; });
+    window.SubEngine.applyTemplate(style, null);
+  }
+  _toast(`🎨 Restyled ${subtitles.length} subtitles → ${style}`);
+  return { ok: true, style, count: subtitles.length };
+}
+
+/* highlight_keywords — auto-detect and highlight keywords
+   params: { keywords?: string[] }  — omit for auto-detection */
+function _actHighlightKeywords(params) {
+  const manual = params.keywords;
+  if (manual && manual.length && window.SubEngine) {
+    manual.forEach(k => window.SubEngine.addKeyword(k));
+    _toast(`🔑 Added ${manual.length} keywords`);
+    return { ok: true, keywords: manual };
+  }
+  if (window.SubtitlePro) {
+    window.SubtitlePro.autoDetectKeywords();
+    return { ok: true, auto: true };
+  }
+  return { ok: false, error: 'SubtitlePro not loaded' };
 }
 
 /* apply_style — apply a named filter/style to clip(s)

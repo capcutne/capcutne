@@ -25,27 +25,35 @@
 /* ── Template definitions ──────────────────────────────── */
 const TEMPLATES = {
   tiktok: {
-    name: 'TikTok',  icon: '📱', css: 'pv-sub-tiktok',
+    name: 'TikTok',       icon: '📱', css: 'pv-sub-tiktok',
     wordByWord: true, fontSize: 20, position: 'center',
     maxChars: 35, highlightActive: true
   },
   mrbeast: {
-    name: 'MrBeast', icon: '👑', css: 'pv-sub-mrbeast',
+    name: 'MrBeast',      icon: '👑', css: 'pv-sub-mrbeast',
     wordByWord: true, fontSize: 22, position: 'center',
     maxChars: 28, allCaps: true, highlightActive: true
   },
   podcast: {
-    name: 'Podcast', icon: '🎙', css: 'pv-sub-podcast',
+    name: 'Podcast',      icon: '🎙', css: 'pv-sub-podcast',
     wordByWord: false, fontSize: 13, position: 'bottom', maxChars: 60
   },
   netflix: {
-    name: 'Netflix', icon: '🎬', css: 'pv-sub-netflix',
+    name: 'Netflix',      icon: '🎬', css: 'pv-sub-netflix',
     wordByWord: false, fontSize: 16, position: 'bottom', maxChars: 42
   },
   gaming: {
-    name: 'Gaming',  icon: '🎮', css: 'pv-sub-gaming',
+    name: 'Gaming',       icon: '🎮', css: 'pv-sub-gaming',
     wordByWord: true, fontSize: 18, position: 'top',
     maxChars: 40, highlightActive: true
+  },
+  minimal: {
+    name: 'Minimal',      icon: '✏️', css: 'pv-sub-minimal',
+    wordByWord: false, fontSize: 14, position: 'bottom', maxChars: 50
+  },
+  documentary: {
+    name: 'Documentary',  icon: '🎞', css: 'pv-sub-documentary',
+    wordByWord: false, fontSize: 15, position: 'bottom', maxChars: 42
   }
 };
 

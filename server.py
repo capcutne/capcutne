@@ -36,6 +36,7 @@ AI_PATHS = {
     "/ai/translate", "/ai/editor-command", "/ai/generate-shorts",
     "/ai/viral-analysis", "/ai/transcribe",
     "/ai/upload-media", "/ai/transcribe-real",
+    "/ai/auto-style",
 }
 
 # ── Export job store ──────────────────────────────────────────────────────────
@@ -386,6 +387,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 result = handle_transcribe(body)
             elif self.path == "/ai/transcribe-real":
                 result = handle_transcribe_real(body)
+            elif self.path == "/ai/auto-style":
+                result = handle_auto_style(body)
             else:
                 result = {"error": "Unknown endpoint"}
 
@@ -838,6 +841,43 @@ def _cleanup(*paths):
                 Path(p).unlink()
         except Exception:
             pass
+
+
+def handle_auto_style(body):
+    """AI analyzes subtitle text and recommends the best template."""
+    _require_client()
+    text = body.get("text", "").strip()
+    if not text:
+        return {"error": "No text provided"}
+
+    prompt = f"""You are a subtitle design expert. Analyze the following subtitle text and recommend the best visual template.
+
+Available templates:
+- tiktok: Bold, word-by-word, high energy, social media
+- mrbeast: ALL CAPS, dramatic outline, viral content
+- podcast: Clean, readable, conversational
+- netflix: Professional black box, narrative content
+- gaming: Neon glow, fast-paced, gaming/action
+- minimal: Transparent, thin weight, elegant/educational
+- documentary: Gold italic, cinematic, serious/informational
+
+Subtitle text sample:
+"{text[:400]}"
+
+Respond with ONLY a JSON object:
+{{"template": "<template_key>", "reason": "<one short sentence why>"}}"""
+
+    resp = client.chat.completions.create(
+        model=MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+        max_completion_tokens=128,
+    )
+    result = json.loads(resp.choices[0].message.content)
+    valid = {"tiktok", "mrbeast", "podcast", "netflix", "gaming", "minimal", "documentary"}
+    if result.get("template") not in valid:
+        result["template"] = "tiktok"
+    return result
 
 
 def handle_transcribe(body):
