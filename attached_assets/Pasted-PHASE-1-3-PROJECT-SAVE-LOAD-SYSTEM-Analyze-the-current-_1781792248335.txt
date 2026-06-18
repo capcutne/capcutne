@@ -1,0 +1,187 @@
+PHASE 1.3 - PROJECT SAVE / LOAD SYSTEM
+
+Analyze the current codebase first.
+
+Goal:
+Implement a complete project persistence system for the editor.
+
+Requirements:
+
+==================================================
+1. PROJECT DATA MODEL
+==================================================
+
+Create a project schema:
+
+{
+  id: string,
+  name: string,
+  createdAt: string,
+  updatedAt: string,
+  version: number,
+  editorState: {
+    tracks: [],
+    clips: [],
+    subtitles: [],
+    effects: [],
+    settings: {}
+  }
+}
+
+All timeline data must be serializable.
+
+==================================================
+2. PROJECT SERVICE
+==================================================
+
+Create:
+
+saveProject()
+loadProject()
+createProject()
+deleteProject()
+listProjects()
+renameProject()
+
+Store projects in localStorage initially.
+
+Storage key:
+
+capcut_projects
+
+Current project key:
+
+capcut_current_project
+
+==================================================
+3. AUTO SAVE
+==================================================
+
+Implement:
+
+- Auto save every 30 seconds
+- Auto save after major edits
+- Auto save before page unload
+- Auto restore last opened project
+
+Do not interrupt editing.
+
+==================================================
+4. PROJECT MANAGER UI
+==================================================
+
+Create a Project Manager modal.
+
+Features:
+
+- New Project
+- Open Project
+- Rename Project
+- Delete Project
+- Duplicate Project
+- Last Modified date
+
+Show project list sorted by updatedAt.
+
+==================================================
+5. HEADER INTEGRATION
+==================================================
+
+Add controls:
+
+[New]
+[Save]
+[Open]
+
+Display:
+
+Project Name
+Save Status
+
+Examples:
+
+● Unsaved Changes
+
+✓ Saved
+
+Saving...
+
+==================================================
+6. VERSION HISTORY
+==================================================
+
+Create lightweight version history.
+
+Keep last 20 snapshots.
+
+Project structure:
+
+versions: [
+ {
+   timestamp:"",
+   editorState:{}
+ }
+]
+
+Allow:
+
+Restore Version
+
+==================================================
+7. API PREPARATION
+==================================================
+
+Abstract storage layer.
+
+Create:
+
+ProjectStorage.save()
+ProjectStorage.load()
+
+Current implementation:
+localStorage
+
+Future:
+Backend database
+
+The rest of the application should not care where data is stored.
+
+==================================================
+8. ERROR HANDLING
+==================================================
+
+Handle:
+
+- Corrupted project
+- Missing project
+- Invalid JSON
+- Storage quota exceeded
+
+Show user-friendly messages.
+
+==================================================
+9. NON-BREAKING REQUIREMENT
+==================================================
+
+Do not break:
+
+- Timeline
+- AI Copilot
+- Action Engine
+- Undo / Redo
+- Existing editor functionality
+
+==================================================
+10. DELIVERABLE
+==================================================
+
+After implementation provide:
+
+1. Files created
+2. Files modified
+3. Data schema
+4. UI changes
+5. Save workflow
+6. Load workflow
+7. Auto-save workflow
+8. Remaining limitations
