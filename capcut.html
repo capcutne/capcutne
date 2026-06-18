@@ -1211,6 +1211,14 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
   display:flex;flex-direction:column;z-index:110;overflow:hidden
 }
 #agent-panel.hidden{display:none}
+
+/* ─── PHASE 5.1: HEALTH MONITOR PANEL ───────────────── */
+#health-panel{
+  position:absolute;left:68px;top:0;height:100%;width:300px;
+  background:var(--bg1);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;z-index:110;overflow:hidden
+}
+#health-panel.hidden{display:none}
 .bc-brand-name{font-size:15px;font-weight:700;color:var(--t1)}
 .bc-brand-meta{font-size:10px;color:var(--t3)}
 .bc-profile-sel{
@@ -1285,8 +1293,10 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 <script src="/js/transcript.js" defer></script>
 <script src="/js/memory.js" defer></script>
 <script src="/js/brand.js" defer></script>
+<script src="/js/logger.js" defer></script>
 <script src="/js/analytics.js" defer></script>
 <script src="/js/agent.js" defer></script>
+<script src="/js/health.js" defer></script>
 </head>
 <body>
 <div id="app">
@@ -1452,6 +1462,10 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
     <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/><circle cx="20" cy="8" r="2"/><circle cx="4" cy="8" r="2"/></svg>
     <span>Agent</span>
   </button>
+  <button class="tb" id="tb-health" onclick="setTool(this,'health')" title="System Health — giám sát trạng thái hệ thống, bộ nhớ và logs">
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>Health</span>
+  </button>
 </div>
 
 <!-- MY STYLE PANEL (Phase 3.0) -->
@@ -1465,6 +1479,9 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 
 <!-- AGENT CENTER PANEL (Phase 5.0) -->
 <div id="agent-panel" class="hidden"></div>
+
+<!-- SYSTEM HEALTH PANEL (Phase 5.1) -->
+<div id="health-panel" class="hidden"></div>
 
 <!-- MEDIA PANEL -->
 <div id="media-panel">
@@ -3885,6 +3902,7 @@ function setTool(el,name){
   const bcPanel = document.getElementById('brand-panel');
   const apPanel = document.getElementById('analytics-panel');
   const agPanel = document.getElementById('agent-panel');
+  const hlPanel = document.getElementById('health-panel');
   if(name==='mystyle'){
     if(msPanel){ msPanel.classList.remove('hidden'); if(window.StyleMemory) StyleMemory.renderDashboard(); }
     if(bcPanel) bcPanel.classList.add('hidden');
@@ -3908,12 +3926,22 @@ function setTool(el,name){
     if(msPanel) msPanel.classList.add('hidden');
     if(bcPanel) bcPanel.classList.add('hidden');
     if(apPanel) apPanel.classList.add('hidden');
+    if(hlPanel){ hlPanel.classList.add('hidden'); if(window.HealthMonitor) HealthMonitor.stopAutoRefresh(); }
+    return;
+  }
+  if(name==='health'){
+    if(hlPanel){ hlPanel.classList.remove('hidden'); if(window.HealthMonitor){ HealthMonitor.renderDashboard(); HealthMonitor.startAutoRefresh(); } }
+    if(msPanel) msPanel.classList.add('hidden');
+    if(bcPanel) bcPanel.classList.add('hidden');
+    if(apPanel) apPanel.classList.add('hidden');
+    if(agPanel) agPanel.classList.add('hidden');
     return;
   }
   if(msPanel) msPanel.classList.add('hidden');
   if(bcPanel) bcPanel.classList.add('hidden');
   if(apPanel) apPanel.classList.add('hidden');
   if(agPanel) agPanel.classList.add('hidden');
+  if(hlPanel){ hlPanel.classList.add('hidden'); if(window.HealthMonitor) HealthMonitor.stopAutoRefresh(); }
   if(name==='export'){ switchTab('export'); return; }
   if(name==='subtitle'){ switchTab('trans'); return; }
   switchTab('edit');

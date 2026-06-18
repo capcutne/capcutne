@@ -483,6 +483,11 @@ const SCORE_COLOR = s => s >= 70 ? '#27ae60' : s >= 45 ? '#D4A017' : '#c0392b';
 const PLAT_COLORS = { youtube:'#ff4444', tiktok:'#69c9d0', instagram:'#e1306c', facebook:'#1877f2', other:'#888' };
 const PLAT_ICONS  = { youtube:'▶', tiktok:'♪', instagram:'◉', facebook:'f', other:'◈' };
 
+/* XSS guard — escape all user-controllable strings before innerHTML injection */
+function _esc(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;');
+}
+
 function _scoreRing(score, size) {
   size = size || 44;
   const r = size/2 - 4; const c = 2*Math.PI*r;
@@ -584,10 +589,10 @@ function _tabRecommendations() {
   if (!recs.length) return `<div style="color:var(--t3);font-size:11px;text-align:center;padding:20px">Chạy Agent để nhận gợi ý</div>`;
   return recs.map(r=>`
 <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:7px;padding:10px 12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start">
-  <span style="font-size:18px;flex-shrink:0">${r.icon}</span>
+  <span style="font-size:18px;flex-shrink:0">${_esc(r.icon)}</span>
   <div>
-    <div style="font-size:11.5px;color:var(--t1);line-height:1.4">${r.text}</div>
-    <div style="font-size:10px;color:var(--t3);margin-top:3px;text-transform:uppercase">${r.type}</div>
+    <div style="font-size:11.5px;color:var(--t1);line-height:1.4">${_esc(r.text)}</div>
+    <div style="font-size:10px;color:var(--t3);margin-top:3px;text-transform:uppercase">${_esc(r.type)}</div>
   </div>
 </div>`).join('');
 }
@@ -607,41 +612,41 @@ ${[...inProg, ...pending].map(t=>`
 <div style="background:var(--bg2);border:1px solid var(--border);border-left:3px solid ${PRIORITY_COLORS[t.priority]||'#888'};border-radius:6px;padding:9px 11px;margin-bottom:7px">
   <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px">
     <div style="flex:1">
-      <div style="font-size:12px;color:var(--t1);line-height:1.3">${t.title}</div>
-      ${t.reason ? `<div style="font-size:10px;color:var(--t3);margin-top:3px">${t.reason}</div>` : ''}
+      <div style="font-size:12px;color:var(--t1);line-height:1.3">${_esc(t.title)}</div>
+      ${t.reason ? `<div style="font-size:10px;color:var(--t3);margin-top:3px">${_esc(t.reason)}</div>` : ''}
     </div>
     <div style="display:flex;gap:4px;flex-shrink:0">
-      <button onclick="ContentAgent._taskStatus('${t.id}','done')" style="background:rgba(39,174,96,.2);border:1px solid #27ae60;border-radius:4px;color:#27ae60;padding:2px 6px;font-size:9px;cursor:pointer">✓ Done</button>
-      <button onclick="ContentAgent._taskStatus('${t.id}','dismissed')" style="background:none;border:1px solid var(--border2);border-radius:4px;color:var(--t3);padding:2px 6px;font-size:9px;cursor:pointer">✕</button>
+      <button onclick="ContentAgent._taskStatus('${_esc(t.id)}','done')" style="background:rgba(39,174,96,.2);border:1px solid #27ae60;border-radius:4px;color:#27ae60;padding:2px 6px;font-size:9px;cursor:pointer">✓ Done</button>
+      <button onclick="ContentAgent._taskStatus('${_esc(t.id)}','dismissed')" style="background:none;border:1px solid var(--border2);border-radius:4px;color:var(--t3);padding:2px 6px;font-size:9px;cursor:pointer">✕</button>
     </div>
   </div>
   <div style="margin-top:6px;display:flex;gap:6px">
-    <span style="font-size:9px;background:${PRIORITY_COLORS[t.priority]||'#888'}22;color:${PRIORITY_COLORS[t.priority]||'#888'};padding:1px 6px;border-radius:10px;text-transform:uppercase">${t.priority}</span>
-    <span style="font-size:9px;color:var(--t3)">${t.type}</span>
+    <span style="font-size:9px;background:${PRIORITY_COLORS[t.priority]||'#888'}22;color:${PRIORITY_COLORS[t.priority]||'#888'};padding:1px 6px;border-radius:10px;text-transform:uppercase">${_esc(t.priority)}</span>
+    <span style="font-size:9px;color:var(--t3)">${_esc(t.type)}</span>
   </div>
 </div>`).join('')}
 ${done.length ? `<div style="font-size:10px;color:var(--t3);margin:10px 0 6px;font-weight:600;text-transform:uppercase;letter-spacing:.6px">✅ Hoàn thành</div>
-${done.map(t=>`<div style="padding:6px 10px;background:var(--bg2);border-radius:5px;margin-bottom:4px;font-size:11px;color:var(--t3);text-decoration:line-through">${t.title}</div>`).join('')}` : ''}`;
+${done.map(t=>`<div style="padding:6px 10px;background:var(--bg2);border-radius:5px;margin-bottom:4px;font-size:11px;color:var(--t3);text-decoration:line-through">${_esc(t.title)}</div>`).join('')}` : ''}`;
 }
 
 function _tabOpportunities() {
   const mem  = _state.memory;
   if (!mem || !mem.timestamp) return _notRun();
   const opps = detectOpportunities(mem);
-  return opps.map(opp => `
+  return opps.map((opp,oi) => `
 <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:7px;padding:10px 12px;margin-bottom:8px">
   <div style="display:flex;align-items:flex-start;gap:9px">
-    <span style="font-size:20px;flex-shrink:0">${opp.icon}</span>
+    <span style="font-size:20px;flex-shrink:0">${_esc(opp.icon)}</span>
     <div style="flex:1">
-      <div style="font-size:12px;color:var(--t1);font-weight:600">${opp.title}</div>
-      <div style="font-size:11px;color:var(--t3);margin-top:2px;line-height:1.35">${opp.reason}</div>
+      <div style="font-size:12px;color:var(--t1);font-weight:600">${_esc(opp.title)}</div>
+      <div style="font-size:11px;color:var(--t3);margin-top:2px;line-height:1.35">${_esc(opp.reason)}</div>
       <div style="margin-top:6px;display:flex;align-items:center;justify-content:space-between">
-        <span style="font-size:11px;color:#27ae60;font-weight:600">${opp.expectedGain}</span>
-        <span style="font-size:9px;background:${PRIORITY_COLORS[opp.priority]||'#888'}22;color:${PRIORITY_COLORS[opp.priority]||'#888'};padding:2px 7px;border-radius:10px;text-transform:uppercase">${opp.priority}</span>
+        <span style="font-size:11px;color:#27ae60;font-weight:600">${_esc(opp.expectedGain)}</span>
+        <span style="font-size:9px;background:${PRIORITY_COLORS[opp.priority]||'#888'}22;color:${PRIORITY_COLORS[opp.priority]||'#888'};padding:2px 7px;border-radius:10px;text-transform:uppercase">${_esc(opp.priority)}</span>
       </div>
     </div>
   </div>
-  <button onclick="ContentAgent._oppToTask('${opp.type}','${opp.title.replace(/'/g,"\\'")}','${opp.priority}','${opp.reason.replace(/'/g,"\\'")}')}" style="width:100%;margin-top:8px;padding:5px;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--t2);font-size:11px;cursor:pointer">→ Tạo Task</button>
+  <button onclick="ContentAgent._oppToTask_idx(${oi})" style="width:100%;margin-top:8px;padding:5px;background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--t2);font-size:11px;cursor:pointer">→ Tạo Task</button>
 </div>`).join('');
 }
 
@@ -795,6 +800,16 @@ function _oppToTask(type, title, priority, reason) {
   if (typeof toast === 'function') toast('✅ Đã tạo task từ cơ hội');
 }
 
+/* Index-based version — avoids string interpolation of user-controllable data into onclick */
+function _oppToTask_idx(idx) {
+  const mem  = _state.memory;
+  if (!mem || !mem.timestamp) return;
+  const opps = detectOpportunities(mem);
+  const opp  = opps[idx];
+  if (!opp) return;
+  _oppToTask(opp.type, opp.title, opp.priority, opp.reason);
+}
+
 function _openAddTask() {
   const modal = document.createElement('div');
   modal.id = 'ag-task-modal';
@@ -836,6 +851,11 @@ function _doAddTask() {
    PUBLIC API
    ══════════════════════════════════════════════════════════ */
 
+/* ── CCLogger integration — log agent lifecycle events ── */
+function _logInfo(msg, data)  { if (window.CCLogger) CCLogger.info ('ContentAgent', msg, data); }
+function _logWarn(msg, data)  { if (window.CCLogger) CCLogger.warn ('ContentAgent', msg, data); }
+function _logError(msg, data) { if (window.CCLogger) CCLogger.error('ContentAgent', msg, data); }
+
 window.ContentAgent = {
   /* state */
   _activeTab: 'insights',
@@ -853,7 +873,7 @@ window.ContentAgent = {
 
   /* internal ui (called from inline html) */
   _runAgent, _tab, _genCal, _refreshIdeas,
-  _approveIdea, _rejectIdea, _taskStatus, _oppToTask,
+  _approveIdea, _rejectIdea, _taskStatus, _oppToTask, _oppToTask_idx,
   _openAddTask, _doAddTask,
 };
 

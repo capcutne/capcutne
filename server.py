@@ -531,6 +531,18 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    # ── Phase 5.1: Standardized response helpers ─────────────────────────────
+    # New endpoints should use these. Existing endpoints keep backward-compat shape.
+    # Schema: { "success": bool, "data": any, "error": str|null }
+    def send_ok(self, data=None, status=200):
+        """Return a standardized success response."""
+        self.send_json({"success": True,  "data": data, "error": None}, status)
+
+    def send_err(self, message, status=400):
+        """Return a standardized error response."""
+        self.send_json({"success": False, "data": None, "error": str(message)}, status)
+        print(f"[server] {status} {self.path}: {message}", flush=True)
+
     def do_OPTIONS(self):
         self.send_response(204)
         self._cors()
