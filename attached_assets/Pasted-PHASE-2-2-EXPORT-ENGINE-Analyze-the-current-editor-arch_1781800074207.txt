@@ -1,0 +1,237 @@
+PHASE 2.2 - EXPORT ENGINE
+
+Analyze the current editor architecture first.
+
+Goal:
+
+Render real videos from timeline data.
+
+This is a production-grade export system.
+
+==================================================
+
+1. EXPORT PIPELINE
+   ==================================================
+
+Timeline
+→ Timeline Compiler
+→ Render Plan
+→ FFmpeg Commands
+→ Final Video
+
+Create:
+
+ExportEngine
+
+==================================================
+2. EXPORT API
+=============
+
+POST /export/start
+
+Request:
+
+{
+projectId:"",
+exportSettings:{}
+}
+
+Response:
+
+{
+jobId:""
+}
+
+---
+
+GET /export/status/:jobId
+
+Response:
+
+{
+progress:0.65,
+stage:"rendering"
+}
+
+---
+
+GET /export/download/:jobId
+
+==================================================
+3. SUPPORTED FORMATS
+====================
+
+MP4 (required)
+
+WebM
+
+GIF
+
+==================================================
+4. QUALITY OPTIONS
+==================
+
+480p
+
+720p
+
+1080p
+
+1440p
+
+4K
+
+==================================================
+5. FRAME RATE
+=============
+
+24 FPS
+
+30 FPS
+
+60 FPS
+
+==================================================
+6. TIMELINE COMPILER
+====================
+
+Convert:
+
+tracks
+clips
+subtitles
+audio
+
+into a render graph.
+
+Output:
+
+RenderPlan
+
+Example:
+
+[
+{
+type:"video",
+src:"",
+start:0,
+end:10
+}
+]
+
+==================================================
+7. SUBTITLE BURN-IN
+===================
+
+Option:
+
+Burn subtitles into video.
+
+or
+
+Export separately.
+
+==================================================
+8. AUDIO MIXING
+===============
+
+Support:
+
+voice
+music
+sfx
+
+Volume controls.
+
+==================================================
+9. EXPORT QUEUE
+===============
+
+Multiple exports allowed.
+
+Job Queue:
+
+Pending
+Rendering
+Completed
+Failed
+
+==================================================
+10. EXPORT PANEL
+================
+
+UI:
+
+Format
+Resolution
+FPS
+Quality
+
+Progress bar
+
+ETA
+
+==================================================
+11. BACKGROUND RENDERING
+========================
+
+Export should continue even if user keeps editing.
+
+Use export snapshot.
+
+==================================================
+12. ERROR RECOVERY
+==================
+
+Handle:
+
+missing assets
+failed ffmpeg
+corrupt media
+
+Show meaningful errors.
+
+==================================================
+13. STORAGE
+===========
+
+Store export history.
+
+Schema:
+
+{
+id:"",
+projectId:"",
+createdAt:"",
+format:"",
+resolution:"",
+status:""
+}
+
+==================================================
+14. NON-BREAKING REQUIREMENT
+============================
+
+Do not break:
+
+* Save/Load
+* Media Manager
+* Transcript Engine
+* Shorts Generator
+* Subtitle Pro
+* Viral Intelligence
+
+==================================================
+15. DELIVERABLE
+===============
+
+Provide:
+
+1. files created
+2. files modified
+3. export architecture
+4. ffmpeg workflow
+5. queue workflow
+6. render plan schema
+7. export settings schema
+8. limitations

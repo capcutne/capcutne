@@ -44,135 +44,272 @@ AI_PATHS = {
 export_jobs: dict = {}
 
 QUALITY_MAP = {
+    "480p":  {"w": 854,   "h": 480,  "vbr": "1000k"},
     "720p":  {"w": 1280,  "h": 720,  "vbr": "2000k"},
     "1080p": {"w": 1920,  "h": 1080, "vbr": "4000k"},
     "1440p": {"w": 2560,  "h": 1440, "vbr": "8000k"},
     "4k":    {"w": 3840,  "h": 2160, "vbr": "15000k"},
 }
 
+EXPORT_HISTORY_FILE = EXPORTS_DIR / "history.json"
+
+
+def _esc_dt(text: str) -> str:
+    """Escape a string for use inside FFmpeg drawtext=text='...'."""
+    text = text.replace("\\", "\\\\")
+    text = text.replace("'",  "\\'")
+    text = text.replace(":",  r"\:")
+    text = text.replace("[",  r"\[")
+    text = text.replace("]",  r"\]")
+    text = text.replace(",",  r"\,")
+    return text
+
+
+def _compile_timeline(project: dict, burn_subtitles: bool = True) -> dict:
+    """
+    Convert editor tracks/clips/subtitles into a structured RenderPlan.
+
+    RenderPlan schema:
+    {
+        "duration": float,
+        "title": str,
+        "segments": [{"type", "src", "start", "end", "label"}],
+        "subtitle_cues": [{"text", "start", "end"}],
+        "audio_mix": {"voice": float, "music": float, "sfx": float},
+        "burn_subtitles": bool,
+    }
+    """
+    plan: dict = {
+        "duration": 10.0,
+        "title": str(project.get("name", "CapCut Export"))[:40].replace("'", "").replace("\\", ""),
+        "segments": [],
+        "subtitle_cues": [],
+        "audio_mix": project.get("audioMix", {"voice": 1.0, "music": 0.5, "sfx": 0.8}),
+        "burn_subtitles": burn_subtitles,
+    }
+
+    dur = 10.0
+    for track in project.get("tracks", []):
+        track_type = track.get("type", "video")
+        for clip in track.get("clips", []):
+            start    = float(clip.get("start", 0))
+            clip_dur = float(clip.get("dur",   5))
+            end      = start + clip_dur
+            dur      = max(dur, end)
+            plan["segments"].append({
+                "type":  track_type,
+                "src":   clip.get("src", ""),
+                "start": round(start, 3),
+                "end":   round(end, 3),
+                "label": str(clip.get("label", ""))[:40].replace("'", "").replace("\\", ""),
+            })
+
+    plan["duration"] = min(dur, 600)
+
+    if burn_subtitles:
+        for sub in project.get("subtitles", []):
+            start    = float(sub.get("start", 0))
+            sub_dur  = float(sub.get("dur",   2))
+            raw_text = str(sub.get("text", "")).strip()
+            if raw_text:
+                plan["subtitle_cues"].append({
+                    "text":  raw_text,
+                    "start": round(start, 3),
+                    "end":   round(start + sub_dur, 3),
+                })
+
+    return plan
+
+
+def _build_subtitle_drawtext(subtitle_cues: list, w: int, h: int) -> list:
+    """Generate FFmpeg drawtext filters for subtitle burn-in."""
+    parts = []
+    fs    = max(16, h // 28)
+    pad   = max(10, h // 80)
+
+    for cue in subtitle_cues[:200]:
+        text    = _esc_dt(cue["text"])
+        t_start = cue["start"]
+        t_end   = cue["end"]
+        # Shadow
+        parts.append(
+            f"drawtext=text='{text}':fontcolor=black@0.75:fontsize={fs}:"
+            f"x=(w-tw)/2+2:y=h-th-{pad+2}:"
+            f"enable='between(t\\,{t_start:.3f}\\,{t_end:.3f})'"
+        )
+        # Main text
+        parts.append(
+            f"drawtext=text='{text}':fontcolor=white:fontsize={fs}:"
+            f"x=(w-tw)/2:y=h-th-{pad}:"
+            f"enable='between(t\\,{t_start:.3f}\\,{t_end:.3f})'"
+        )
+    return parts
+
+
+def _save_export_history():
+    """Persist recent export records to disk."""
+    records = [j for j in export_jobs.values() if j.get("status") in ("done", "error")]
+    try:
+        with open(EXPORT_HISTORY_FILE, "w") as f:
+            json.dump(records[-50:], f, indent=2)
+    except Exception:
+        pass
+
+
+def _load_export_history():
+    """Load persisted export history on startup."""
+    if not EXPORT_HISTORY_FILE.exists():
+        return
+    try:
+        with open(EXPORT_HISTORY_FILE) as f:
+            records = json.load(f)
+        for r in records:
+            if r.get("id") and r["id"] not in export_jobs:
+                export_jobs[r["id"]] = r
+    except Exception:
+        pass
+
 
 # ── FFmpeg background worker ──────────────────────────────────────────────────
 
-def _run_export(job_id: str, project: dict, fmt: str, quality: str, fps: int):
+def _run_export(job_id: str, project: dict, fmt: str, quality: str, fps: int, settings: dict):
     job = export_jobs[job_id]
     try:
         q   = QUALITY_MAP.get(quality, QUALITY_MAP["1080p"])
         w, h, vbr = q["w"], q["h"], q["vbr"]
 
-        # Derive total duration from timeline
-        dur = 10.0
-        segment_labels = []
-        for track in project.get("tracks", []):
-            for clip in track.get("clips", []):
-                end = float(clip.get("start", 0)) + float(clip.get("dur", 5))
-                if end > dur:
-                    dur = end
-                lbl = str(clip.get("label", ""))[:28].replace("'", "").replace("\\", "")
-                start = float(clip.get("start", 0))
-                segment_labels.append((start, float(clip.get("dur", 5)), lbl))
+        burn_subs = settings.get("burnSubtitles", True)
+        job.update({"status": "running", "progress": 3, "message": "Compiling timeline…"})
 
-        dur     = min(dur, 600)   # cap 10 min
-        title   = str(project.get("name", "CapCut Export"))[:40].replace("'", "").replace("\\", "")
-        ext     = "gif" if fmt == "gif" else ("webm" if fmt == "webm" else "mp4")
+        # ── Phase 1: Compile timeline → RenderPlan ────────────────────────────
+        plan = _compile_timeline(project, burn_subtitles=burn_subs)
+        dur  = plan["duration"]
+        title = plan["title"]
+
+        job.update({"progress": 6, "message": "Building filter graph…",
+                    "render_plan": {
+                        "duration":       dur,
+                        "segments":       len(plan["segments"]),
+                        "subtitle_cues":  len(plan["subtitle_cues"]),
+                        "burn_subtitles": burn_subs,
+                    }})
+
+        ext      = "gif" if fmt == "gif" else ("webm" if fmt == "webm" else "mp4")
         out_path = str(EXPORTS_DIR / f"{job_id}.{ext}")
 
-        job.update({"status": "running", "progress": 3, "message": "Building filter graph…"})
+        # ── Phase 2: Build FFmpeg filter graph ────────────────────────────────
+        # Legacy segment labels for the visualization
+        segment_labels = [(s["start"], s["end"] - s["start"], s["label"])
+                          for s in plan["segments"]]
 
-        # ── Build lavfi filter_complex for timeline visualization ──────────────
         if fmt == "gif":
-            # GIF: shorter, lower-res
             gw, gh = min(w, 480), min(h, 270)
-            drawtext_filters = []
-            for i, (start, sdur, lbl) in enumerate(segment_labels[:12]):
+            dt = []
+            for i, (st, sdur, lbl) in enumerate(segment_labels[:12]):
                 if lbl:
-                    escaped = lbl.replace(":", r"\:").replace("[", r"\[").replace("]", r"\]")
-                    t_start = start
-                    t_end   = start + sdur
-                    drawtext_filters.append(
-                        f"drawtext=text='{escaped}':fontcolor=white:fontsize={max(9, gh//30)}:"
-                        f"x=(w-tw)/2:y=h-th-10:enable='between(t\\,{t_start:.1f}\\,{t_end:.1f})'"
+                    dt.append(
+                        f"drawtext=text='{_esc_dt(lbl)}':fontcolor=white:"
+                        f"fontsize={max(9, gh//30)}:x=(w-tw)/2:y=h-th-10:"
+                        f"enable='between(t\\,{st:.2f}\\,{st+sdur:.2f})'"
                     )
-            vf = ",".join(["scale=%d:%d" % (gw, gh)] + drawtext_filters +
-                          ["fps=12,split[s0][s1];[s0]palettegen=max_colors=64[p];[s1][p]paletteuse"])
+            if burn_subs:
+                dt += _build_subtitle_drawtext(plan["subtitle_cues"], gw, gh)
+            vf = ",".join(
+                [f"scale={gw}:{gh}"] + dt +
+                ["fps=12,split[s0][s1];[s0]palettegen=max_colors=64[p];[s1][p]paletteuse"]
+            )
             cmd = [
                 "ffmpeg", "-y",
                 "-f", "lavfi", "-i",
                 f"color=c=#1a1a2e:size={gw}x{gh}:rate=12:duration={dur}",
-                "-vf", vf,
-                "-t", str(min(dur, 15)),
-                out_path,
-            ]
-        elif fmt == "webm":
-            dt_parts = _build_drawtext(segment_labels, title, w, h)
-            vf = ",".join(dt_parts) if dt_parts else "null"
-            cmd = [
-                "ffmpeg", "-y",
-                "-f", "lavfi", "-i",
-                f"color=c=#0d1117:size={w}x{h}:rate={fps}:duration={dur}",
-                "-f", "lavfi", "-i", f"sine=frequency=0:duration={dur}",
-                "-filter_complex",
-                f"[0:v]{vf}[vout]",
-                "-map", "[vout]", "-map", "1:a",
-                "-c:v", "libvpx-vp9", "-b:v", vbr, "-crf", "30",
-                "-c:a", "libopus", "-b:a", "96k",
-                "-t", str(dur),
-                out_path,
-            ]
-        else:  # mp4
-            dt_parts = _build_drawtext(segment_labels, title, w, h)
-            vf = ",".join(dt_parts) if dt_parts else "null"
-            cmd = [
-                "ffmpeg", "-y",
-                "-f", "lavfi", "-i",
-                f"color=c=#0d1117:size={w}x{h}:rate={fps}:duration={dur}",
-                "-f", "lavfi", "-i", f"sine=frequency=0:duration={dur}",
-                "-filter_complex",
-                f"[0:v]{vf}[vout]",
-                "-map", "[vout]", "-map", "1:a",
-                "-c:v", "libx264", "-preset", "fast", "-b:v", vbr,
-                "-c:a", "aac", "-b:a", "128k",
-                "-t", str(dur),
-                "-movflags", "+faststart",
-                out_path,
+                "-vf", vf, "-t", str(min(dur, 15)), out_path,
             ]
 
-        job.update({"progress": 8, "message": "Starting FFmpeg…"})
+        else:
+            dt_parts = _build_drawtext(segment_labels, title, w, h)
+            if burn_subs:
+                dt_parts += _build_subtitle_drawtext(plan["subtitle_cues"], w, h)
+            vf = ",".join(dt_parts) if dt_parts else "null"
+
+            if fmt == "webm":
+                cmd = [
+                    "ffmpeg", "-y",
+                    "-f", "lavfi", "-i",
+                    f"color=c=#0d1117:size={w}x{h}:rate={fps}:duration={dur}",
+                    "-f", "lavfi", "-i", f"sine=frequency=0:duration={dur}",
+                    "-filter_complex", f"[0:v]{vf}[vout]",
+                    "-map", "[vout]", "-map", "1:a",
+                    "-c:v", "libvpx-vp9", "-b:v", vbr, "-crf", "30",
+                    "-c:a", "libopus", "-b:a", "96k",
+                    "-t", str(dur), out_path,
+                ]
+            else:  # mp4
+                cmd = [
+                    "ffmpeg", "-y",
+                    "-f", "lavfi", "-i",
+                    f"color=c=#0d1117:size={w}x{h}:rate={fps}:duration={dur}",
+                    "-f", "lavfi", "-i", f"sine=frequency=0:duration={dur}",
+                    "-filter_complex", f"[0:v]{vf}[vout]",
+                    "-map", "[vout]", "-map", "1:a",
+                    "-c:v", "libx264", "-preset", "fast", "-b:v", vbr,
+                    "-c:a", "aac", "-b:a", "128k",
+                    "-t", str(dur), "-movflags", "+faststart", out_path,
+                ]
+
+        # ── Phase 3: Run FFmpeg with progress tracking ────────────────────────
+        job.update({"progress": 8, "message": "Starting FFmpeg…", "started_at": time.time()})
         proc = subprocess.Popen(cmd, stderr=subprocess.PIPE, text=True, bufsize=1)
 
         for line in proc.stderr:
+            if job.get("status") == "cancelled":
+                proc.kill()
+                break
             if "time=" in line:
                 try:
                     t_str = line.split("time=")[1].split(" ")[0]
                     parts = t_str.split(":")
                     t = float(parts[0]) * 3600 + float(parts[1]) * 60 + float(parts[2])
                     pct = min(95, int(t / dur * 87) + 8)
+                    elapsed = time.time() - job.get("started_at", time.time())
+                    eta_s   = int(elapsed / max(t, 0.1) * (dur - t)) if t > 0 else 0
+                    eta_str = f" · ETA {eta_s}s" if eta_s > 0 else ""
                     job.update({
                         "progress": pct,
-                        "message":  f"Encoding {int(t)}/{int(dur)}s…",
+                        "message":  f"Encoding {int(t)}/{int(dur)}s{eta_str}",
+                        "eta":      eta_s,
                     })
                 except Exception:
                     pass
 
         proc.wait()
 
+        if job.get("status") == "cancelled":
+            if os.path.exists(out_path):
+                os.unlink(out_path)
+            return
+
         if proc.returncode == 0:
             fsize = os.path.getsize(out_path)
             job.update({
-                "status":      "done",
-                "progress":    100,
-                "message":     "Export complete",
-                "output_path": out_path,
-                "filename":    f"capcut_{quality}.{ext}",
-                "filesize":    fsize,
+                "status":       "done",
+                "progress":     100,
+                "message":      "Export complete",
+                "output_path":  out_path,
+                "filename":     f"capcut_{quality}.{ext}",
+                "filesize":     fsize,
                 "completed_at": time.time(),
+                "eta":          0,
             })
             print(f"[export] ✅ {job_id} → {out_path} ({fsize//1024} KB)", flush=True)
+            _save_export_history()
         else:
             job.update({"status": "error", "message": "FFmpeg encoding failed (code %d)" % proc.returncode})
+            _save_export_history()
 
     except Exception as exc:
         print(f"[export] ERROR {job_id}: {exc}", flush=True)
         export_jobs[job_id].update({"status": "error", "message": str(exc)})
+        _save_export_history()
 
 
 def _build_drawtext(segment_labels, title, w, h):
@@ -267,6 +404,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return self.send_json(data)
             return self.send_json({"error": "Not found"}, 404)
 
+        # Export history
+        if self.path == "/export/history":
+            records = [
+                {k: v for k, v in j.items() if k != "output_path"}
+                for j in export_jobs.values()
+                if j.get("status") in ("done", "error", "cancelled")
+            ]
+            records.sort(key=lambda r: r.get("completed_at") or r.get("created_at", 0), reverse=True)
+            return self.send_json({"history": records[:50]})
+
         # Export status
         if self.path.startswith("/export/status"):
             from urllib.parse import urlparse, parse_qs
@@ -322,8 +469,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             project_delete(pid)
 
     def do_POST(self):
-        EXPORT_START = "/export/start"
-        ALLOWED_PATHS = AI_PATHS | {"/project/save", EXPORT_START}
+        EXPORT_START  = "/export/start"
+        EXPORT_CANCEL = "/export/cancel"
+        ALLOWED_PATHS = AI_PATHS | {"/project/save", EXPORT_START, EXPORT_CANCEL}
         if self.path not in ALLOWED_PATHS:
             self.send_json({"error": "Not found"}, 404)
             return
@@ -341,28 +489,40 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         try:
             # Export start
             if self.path == EXPORT_START:
-                jid     = "exp_" + uuid.uuid4().hex[:12]
-                fmt     = body.get("format",  "mp4").lower()
-                quality = body.get("quality", "1080p").lower()
-                fps     = int(body.get("fps", 30))
-                project = body.get("project", {})
+                jid      = "exp_" + uuid.uuid4().hex[:12]
+                fmt      = body.get("format",  "mp4").lower()
+                quality  = body.get("quality", "1080p").lower()
+                fps      = int(body.get("fps", 30))
+                project  = body.get("project", {})
+                settings = body.get("settings", {})
                 export_jobs[jid] = {
-                    "id":       jid,
-                    "status":   "queued",
-                    "progress": 0,
-                    "message":  "Queued…",
-                    "format":   fmt,
-                    "quality":  quality,
-                    "fps":      fps,
-                    "created_at": time.time(),
+                    "id":           jid,
+                    "status":       "queued",
+                    "progress":     0,
+                    "message":      "Queued…",
+                    "format":       fmt,
+                    "quality":      quality,
+                    "fps":          fps,
+                    "burn_subs":    settings.get("burnSubtitles", True),
+                    "created_at":   time.time(),
                 }
                 t = threading.Thread(
                     target=_run_export,
-                    args=(jid, project, fmt, quality, fps),
+                    args=(jid, project, fmt, quality, fps, settings),
                     daemon=True,
                 )
                 t.start()
                 return self.send_json({"ok": True, "job_id": jid})
+
+            # Export cancel
+            if self.path == EXPORT_CANCEL:
+                jid = body.get("job_id", "")
+                job = export_jobs.get(jid)
+                if job and job.get("status") in ("queued", "running"):
+                    job.update({"status": "cancelled", "message": "Cancelled by user"})
+                    _save_export_history()
+                    return self.send_json({"ok": True})
+                return self.send_json({"error": "Job not found or already finished"}, 404)
 
             # Project save
             if self.path == "/project/save":
@@ -1154,6 +1314,7 @@ def project_delete(pid):
 # ── Entry ─────────────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
+    _load_export_history()
     PORT = 5000
     socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(("0.0.0.0", PORT), Handler) as httpd:

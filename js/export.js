@@ -1,12 +1,13 @@
 /* ============================================================
-   EXPORT ENGINE — js/export.js
-   Phase 1.5: FFmpeg-based export with queue + progress UI
+   EXPORT ENGINE v2.2 — js/export.js
+   Phase 2.2: Timeline Compiler, subtitle burn-in, audio mixing,
+              ETA, 480p, history persistence, server-side cancel
    ============================================================ */
 
 (function () {
 
 /* ── State ───────────────────────────────────────────────── */
-let _queue    = [];   // [{job_id, format, quality, fps, status, progress, message}]
+let _queue     = [];
 let _pollTimer = null;
 let _modalOpen = false;
 
@@ -19,20 +20,28 @@ function _fmtSize (bytes) {
 function _timeAgo (ts) {
   if (!ts) return '';
   const s = Math.floor((Date.now() / 1000) - ts);
-  if (s < 60)  return s + 's ago';
+  if (s < 60)   return s + 's ago';
   if (s < 3600) return Math.floor(s / 60) + 'm ago';
   return Math.floor(s / 3600) + 'h ago';
 }
+function _fmtEta (sec) {
+  if (!sec || sec <= 0) return '';
+  if (sec < 60)  return sec + 's';
+  return Math.floor(sec / 60) + 'm ' + (sec % 60) + 's';
+}
+function _esc (s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 function _getProjectState () {
-  // Collect timeline state from the main app
   const state = {};
-  if (typeof tracks !== 'undefined')    state.tracks = tracks;
+  if (typeof tracks    !== 'undefined') state.tracks    = tracks;
   if (typeof subtitles !== 'undefined') state.subtitles = subtitles;
-  if (typeof playhead !== 'undefined')  state.playhead = playhead;
-  // Get title
+  if (typeof playhead  !== 'undefined') state.playhead  = playhead;
   const tb = document.querySelector('.tb-name input');
   state.name = tb ? tb.value : 'CapCut Export';
-  // Total duration
   let dur = 0;
   if (typeof tracks !== 'undefined') {
     tracks.forEach(tr => tr.clips.forEach(c => { dur = Math.max(dur, c.start + c.dur); }));
@@ -42,9 +51,38 @@ function _getProjectState () {
 }
 
 /* ══════════════════════════════════════════════════════════
+   CLIENT-SIDE TIMELINE COMPILER
+   Produces a RenderPlan summary displayed in the UI before export.
+   ══════════════════════════════════════════════════════════ */
+function _compileTimeline (project) {
+  const plan = {
+    duration: 0,
+    segments: [],
+    subtitleCues: 0,
+    videoTracks: 0,
+    audioTracks: 0,
+    textTracks: 0,
+  };
+
+  (project.tracks || []).forEach(tr => {
+    const type = tr.type || 'video';
+    if (type === 'video') plan.videoTracks++;
+    else if (type === 'audio' || type === '音楽' || type === 'NHẠC') plan.audioTracks++;
+    else if (type === 'text' || type === 'VĂN BẢN') plan.textTracks++;
+    (tr.clips || []).forEach(c => {
+      const end = (c.start || 0) + (c.dur || 0);
+      plan.duration = Math.max(plan.duration, end);
+      plan.segments.push({ type, label: c.label || '', start: c.start || 0, dur: c.dur || 0 });
+    });
+  });
+
+  plan.subtitleCues = (project.subtitles || []).filter(s => s.text && s.text.trim()).length;
+  return plan;
+}
+
+/* ══════════════════════════════════════════════════════════
    MODAL
    ══════════════════════════════════════════════════════════ */
-
 function _buildModal () {
   if (document.getElementById('exp-modal')) return;
 
@@ -57,8 +95,15 @@ function _buildModal () {
     <button class="exp-close" id="exp-close">✕</button>
   </div>
 
-  <!-- Settings section -->
+  <!-- Settings -->
   <div class="exp-section" id="exp-settings-section">
+
+    <!-- Render plan preview -->
+    <div class="exp-plan-card" id="exp-plan-card" style="display:none">
+      <div class="exp-plan-title">📋 Render Plan</div>
+      <div class="exp-plan-body" id="exp-plan-body"></div>
+    </div>
+
     <div class="exp-row">
       <div class="exp-col">
         <div class="exp-label">Format</div>
@@ -78,8 +123,12 @@ function _buildModal () {
       </div>
     </div>
 
-    <div class="exp-label" style="margin-top:14px">Quality</div>
+    <div class="exp-label" style="margin-top:14px">Quality / Resolution</div>
     <div class="exp-quality-grid" id="exp-quality">
+      <div class="exp-quality-card" data-q="480p">
+        <div class="exp-quality-name">480p</div>
+        <div class="exp-quality-sub">SD · ~1 Mbps</div>
+      </div>
       <div class="exp-quality-card" data-q="720p">
         <div class="exp-quality-name">720p</div>
         <div class="exp-quality-sub">HD · ~2 Mbps</div>
@@ -95,6 +144,36 @@ function _buildModal () {
       <div class="exp-quality-card" data-q="4k">
         <div class="exp-quality-name">4K</div>
         <div class="exp-quality-sub">Ultra HD · ~15 Mbps</div>
+      </div>
+    </div>
+
+    <!-- Subtitle burn-in toggle -->
+    <div class="exp-toggle-row" style="margin-top:14px">
+      <label class="exp-toggle-label">
+        <input type="checkbox" id="exp-burn-subs" checked>
+        <span class="exp-toggle-track"><span class="exp-toggle-thumb"></span></span>
+        <span class="exp-toggle-text">🔤 Burn subtitles into video</span>
+      </label>
+      <span class="exp-toggle-hint" id="exp-burn-hint"></span>
+    </div>
+
+    <!-- Audio mixing -->
+    <div class="exp-audio-section">
+      <div class="exp-label" style="margin-bottom:10px">🎚 Audio Mix</div>
+      <div class="exp-mix-row">
+        <span class="exp-mix-label">🎙 Voice</span>
+        <input type="range" class="exp-mix-slider" id="exp-mix-voice" min="0" max="100" value="100">
+        <span class="exp-mix-val" id="exp-mix-voice-val">100%</span>
+      </div>
+      <div class="exp-mix-row">
+        <span class="exp-mix-label">🎵 Music</span>
+        <input type="range" class="exp-mix-slider" id="exp-mix-music" min="0" max="100" value="50">
+        <span class="exp-mix-val" id="exp-mix-music-val">50%</span>
+      </div>
+      <div class="exp-mix-row">
+        <span class="exp-mix-label">🔊 SFX</span>
+        <input type="range" class="exp-mix-slider" id="exp-mix-sfx" min="0" max="100" value="80">
+        <span class="exp-mix-val" id="exp-mix-sfx-val">80%</span>
       </div>
     </div>
 
@@ -115,21 +194,34 @@ function _buildModal () {
           <div class="exp-job-name" id="exp-active-name">Rendering…</div>
           <div class="exp-job-meta" id="exp-active-meta">Initializing…</div>
         </div>
-        <div class="exp-job-pct" id="exp-active-pct">0%</div>
+        <div class="exp-job-right-col">
+          <div class="exp-job-pct" id="exp-active-pct">0%</div>
+          <div class="exp-job-eta" id="exp-active-eta"></div>
+        </div>
       </div>
       <div class="exp-prog-track">
         <div class="exp-prog-fill" id="exp-active-fill" style="width:0%"></div>
         <div class="exp-prog-glow" id="exp-active-glow" style="width:0%"></div>
       </div>
+      <div class="exp-stage-row" id="exp-stage-row">
+        <span class="exp-stage-dot active" id="exp-stage-compile" title="Compile timeline">1</span>
+        <span class="exp-stage-line"></span>
+        <span class="exp-stage-dot" id="exp-stage-ffmpeg" title="FFmpeg encode">2</span>
+        <span class="exp-stage-line"></span>
+        <span class="exp-stage-dot" id="exp-stage-done" title="Done">3</span>
+        <span class="exp-stage-labels">
+          <span>Compile</span><span>Encode</span><span>Done</span>
+        </span>
+      </div>
       <div class="exp-cancel-row">
-        <button class="exp-cancel-btn" id="exp-cancel-btn">Cancel</button>
+        <button class="exp-cancel-btn" id="exp-cancel-btn">Cancel Export</button>
       </div>
     </div>
   </div>
 
   <!-- Queue / history -->
   <div class="exp-section" id="exp-queue-section">
-    <div class="exp-label">Queue</div>
+    <div class="exp-label">Export History</div>
     <div class="exp-queue-list" id="exp-queue-list">
       <div class="exp-queue-empty">No exports yet</div>
     </div>
@@ -138,23 +230,25 @@ function _buildModal () {
 
   document.body.appendChild(el);
 
-  // Backdrop close
   el.addEventListener('click', e => { if (e.target === el) ExportEngine.close(); });
   document.getElementById('exp-close').addEventListener('click', ExportEngine.close);
 
-  // Format radio styling
+  // Format radio
   el.querySelectorAll('input[name="exp-fmt"]').forEach(r => {
     r.addEventListener('change', () => {
-      el.querySelectorAll('.exp-radio[for],.exp-radio').forEach(l => l.classList.remove('on'));
+      el.querySelectorAll('.exp-radio').forEach(l => {
+        if (l.querySelector('input[name="exp-fmt"]')) l.classList.remove('on');
+      });
       r.closest('.exp-radio')?.classList.add('on');
-      // GIF: disable FPS (fixed at 12)
       const fps = document.getElementById('exp-fps');
       if (fps) fps.style.opacity = r.value === 'gif' ? '0.4' : '1';
     });
   });
   el.querySelectorAll('input[name="exp-fps"]').forEach(r => {
     r.addEventListener('change', () => {
-      el.querySelectorAll('.exp-radio').forEach(l => { if (l.querySelector('input[name="exp-fps"]')) l.classList.remove('on'); });
+      el.querySelectorAll('.exp-radio').forEach(l => {
+        if (l.querySelector('input[name="exp-fps"]')) l.classList.remove('on');
+      });
       r.closest('.exp-radio')?.classList.add('on');
     });
   });
@@ -167,7 +261,30 @@ function _buildModal () {
     });
   });
 
-  // Start button
+  // Audio mix sliders
+  ['voice','music','sfx'].forEach(ch => {
+    const sl = document.getElementById('exp-mix-' + ch);
+    const vl = document.getElementById('exp-mix-' + ch + '-val');
+    if (sl && vl) {
+      sl.addEventListener('input', () => { vl.textContent = sl.value + '%'; });
+    }
+  });
+
+  // Burn subs toggle → update hint
+  const burnCb = document.getElementById('exp-burn-subs');
+  const burnHint = document.getElementById('exp-burn-hint');
+  function _updateBurnHint () {
+    const project = _getProjectState();
+    const cues = (project.subtitles || []).filter(s => s.text && s.text.trim()).length;
+    if (burnHint) {
+      burnHint.textContent = cues > 0
+        ? `${cues} subtitle${cues === 1 ? '' : 's'} will be rendered`
+        : 'No subtitles in timeline';
+    }
+  }
+  if (burnCb) burnCb.addEventListener('change', _updateBurnHint);
+
+  // Start / cancel
   document.getElementById('exp-start-btn').addEventListener('click', _startExport);
   document.getElementById('exp-cancel-btn').addEventListener('click', _cancelActive);
 }
@@ -177,7 +294,8 @@ function open () {
   _buildModal();
   document.getElementById('exp-modal').classList.add('open');
   _modalOpen = true;
-  _renderQueue();
+  _loadHistory();
+  _refreshRenderPlan();
   _startPolling();
 }
 function close () {
@@ -186,12 +304,78 @@ function close () {
   _modalOpen = false;
 }
 
+/* ── Render plan preview ──────────────────────────────────── */
+function _refreshRenderPlan () {
+  const card = document.getElementById('exp-plan-card');
+  const body = document.getElementById('exp-plan-body');
+  if (!card || !body) return;
+
+  const project = _getProjectState();
+  const plan    = _compileTimeline(project);
+
+  if (!plan.duration) { card.style.display = 'none'; return; }
+  card.style.display = '';
+
+  const durStr = plan.duration >= 60
+    ? Math.floor(plan.duration / 60) + 'm ' + Math.round(plan.duration % 60) + 's'
+    : plan.duration.toFixed(1) + 's';
+
+  body.innerHTML = `
+    <div class="exp-plan-item"><span>⏱ Duration</span><strong>${_esc(durStr)}</strong></div>
+    <div class="exp-plan-item"><span>🎞 Segments</span><strong>${plan.segments.length}</strong></div>
+    <div class="exp-plan-item"><span>🔤 Subtitle cues</span><strong>${plan.subtitleCues}</strong></div>
+    <div class="exp-plan-item"><span>📹 Video tracks</span><strong>${plan.videoTracks}</strong></div>
+    <div class="exp-plan-item"><span>🎵 Audio tracks</span><strong>${plan.audioTracks}</strong></div>
+  `;
+
+  // Update burn-in hint
+  const burnHint = document.getElementById('exp-burn-hint');
+  if (burnHint) {
+    burnHint.textContent = plan.subtitleCues > 0
+      ? `${plan.subtitleCues} subtitle${plan.subtitleCues === 1 ? '' : 's'} will be rendered`
+      : 'No subtitles in timeline';
+  }
+}
+
+/* ── Load persisted history from server ───────────────────── */
+function _loadHistory () {
+  fetch('/export/history')
+    .then(r => r.json())
+    .then(data => {
+      if (!Array.isArray(data.history)) return;
+      data.history.forEach(rec => {
+        if (!_queue.find(j => j.job_id === rec.id)) {
+          _queue.push({
+            job_id:       rec.id,
+            format:       rec.format   || 'mp4',
+            quality:      rec.quality  || '1080p',
+            fps:          rec.fps      || 30,
+            status:       rec.status,
+            progress:     rec.progress || 100,
+            message:      rec.message  || '',
+            name:         rec.name     || 'Export',
+            dur:          rec.duration || 0,
+            filename:     rec.filename,
+            filesize:     rec.filesize,
+            completed_at: rec.completed_at,
+          });
+        }
+      });
+      _renderQueue();
+    })
+    .catch(() => {});
+}
+
 /* ── Start export ────────────────────────────────────────── */
 function _startExport () {
   const fmt     = document.querySelector('input[name="exp-fmt"]:checked')?.value  || 'mp4';
   const quality = document.querySelector('.exp-quality-card.on')?.dataset.q       || '1080p';
   const fps     = fmt === 'gif' ? 12
     : parseInt(document.querySelector('input[name="exp-fps"]:checked')?.value || '30');
+  const burnSubs = document.getElementById('exp-burn-subs')?.checked !== false;
+  const voiceVol = parseInt(document.getElementById('exp-mix-voice')?.value || '100') / 100;
+  const musicVol = parseInt(document.getElementById('exp-mix-music')?.value || '50')  / 100;
+  const sfxVol   = parseInt(document.getElementById('exp-mix-sfx')?.value   || '80')  / 100;
 
   const project = _getProjectState();
   const dur     = project.totalDuration || 0;
@@ -207,7 +391,16 @@ function _startExport () {
   fetch('/export/start', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ format: fmt, quality, fps, project }),
+    body: JSON.stringify({
+      format: fmt,
+      quality,
+      fps,
+      project,
+      settings: {
+        burnSubtitles: burnSubs,
+        audioMix: { voice: voiceVol, music: musicVol, sfx: sfxVol },
+      },
+    }),
   })
     .then(r => r.json())
     .then(data => {
@@ -221,7 +414,9 @@ function _startExport () {
         progress: 0,
         message:  'Queued…',
         name:     project.name || 'Export',
-        dur:      dur,
+        dur,
+        burn_subs: burnSubs,
+        started:  Date.now(),
       };
       _queue.unshift(job);
       _renderQueue();
@@ -233,13 +428,23 @@ function _startExport () {
       if (typeof toast === 'function') toast('❌ Export failed: ' + e.message);
     })
     .finally(() => {
-      if (btn) { btn.disabled = false; btn.textContent = ''; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right:6px"><path d="M6 3l15 9-15 9V3z"/></svg>Start Export'; }
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="margin-right:6px"><path d="M6 3l15 9-15 9V3z"/></svg>Start Export';
+      }
     });
 }
 
 function _cancelActive () {
   const activeJob = _queue.find(j => j.status === 'running' || j.status === 'queued');
   if (!activeJob) return;
+
+  fetch('/export/cancel', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ job_id: activeJob.job_id }),
+  }).catch(() => {});
+
   activeJob.status  = 'cancelled';
   activeJob.message = 'Cancelled by user';
   _renderQueue();
@@ -258,10 +463,8 @@ function _stopPolling () {
 
 function _poll () {
   const active = _queue.filter(j => j.status === 'queued' || j.status === 'running');
-  if (!active.length) {
-    _stopPolling();
-    return;
-  }
+  if (!active.length) { _stopPolling(); return; }
+
   active.forEach(job => {
     fetch('/export/status?id=' + job.job_id)
       .then(r => r.json())
@@ -272,10 +475,14 @@ function _poll () {
         job.message  = data.message  || '';
         job.filename = data.filename;
         job.filesize = data.filesize;
-        job.completed_at = data.completed_at;
+        job.eta      = data.eta || 0;
+        job.completed_at  = data.completed_at;
+        job.render_plan   = data.render_plan;
         _renderQueue();
+
         if (job.status === 'running' || job.status === 'queued') {
           _updateActiveJob(job);
+          _updateStageIndicator(job);
         }
         if (job.status === 'done') {
           _hideActiveJob();
@@ -304,18 +511,32 @@ function _hideActiveJob () {
   if (sect) sect.style.display = 'none';
 }
 function _updateActiveJob (job) {
-  const nm  = document.getElementById('exp-active-name');
-  const mt  = document.getElementById('exp-active-meta');
-  const pct = document.getElementById('exp-active-pct');
-  const fill= document.getElementById('exp-active-fill');
-  const glow= document.getElementById('exp-active-glow');
+  const nm   = document.getElementById('exp-active-name');
+  const mt   = document.getElementById('exp-active-meta');
+  const pct  = document.getElementById('exp-active-pct');
+  const fill = document.getElementById('exp-active-fill');
+  const glow = document.getElementById('exp-active-glow');
+  const eta  = document.getElementById('exp-active-eta');
   if (!nm) return;
-  nm.textContent  = job.name + ' · ' + job.format.toUpperCase() + ' ' + job.quality;
+
+  nm.textContent  = (job.name || 'Export') + ' · ' + job.format.toUpperCase() + ' ' + job.quality;
   mt.textContent  = job.message || 'Processing…';
   pct.textContent = job.progress + '%';
   const w = job.progress + '%';
   if (fill) fill.style.width = w;
   if (glow) glow.style.width = w;
+  if (eta)  eta.textContent  = job.eta > 0 ? 'ETA ' + _fmtEta(job.eta) : '';
+}
+
+function _updateStageIndicator (job) {
+  const s1 = document.getElementById('exp-stage-compile');
+  const s2 = document.getElementById('exp-stage-ffmpeg');
+  const s3 = document.getElementById('exp-stage-done');
+  if (!s1) return;
+  const pct = job.progress || 0;
+  s1.className = 'exp-stage-dot ' + (pct >= 6  ? 'done' : 'active');
+  s2.className = 'exp-stage-dot ' + (pct >= 95 ? 'done' : pct >= 8 ? 'active' : '');
+  s3.className = 'exp-stage-dot ' + (job.status === 'done' ? 'done' : '');
 }
 
 /* ── Queue render ────────────────────────────────────────── */
@@ -326,7 +547,7 @@ function _renderQueue () {
     list.innerHTML = '<div class="exp-queue-empty">No exports yet</div>';
     return;
   }
-  list.innerHTML = _queue.slice(0, 20).map(job => {
+  list.innerHTML = _queue.slice(0, 30).map(job => {
     const isDone      = job.status === 'done';
     const isErr       = job.status === 'error';
     const isRunning   = job.status === 'running' || job.status === 'queued';
@@ -346,14 +567,16 @@ function _renderQueue () {
 
     const sizeStr = job.filesize ? _fmtSize(job.filesize) : '';
     const timeStr = job.completed_at ? _timeAgo(job.completed_at) : '';
+    const burnStr = job.burn_subs === false ? '' : '🔤';
 
     return `
 <div class="exp-queue-item ${isDone ? 'done' : isErr ? 'err' : ''}">
   <div class="exp-qi-icon">${icon}</div>
   <div class="exp-qi-info">
-    <div class="exp-qi-name">${_esc(job.name || 'Export')}</div>
+    <div class="exp-qi-name">${_esc(job.name || 'Export')} ${burnStr}</div>
     <div class="exp-qi-meta">${job.format.toUpperCase()} · ${job.quality}${sizeStr ? ' · ' + sizeStr : ''}${timeStr ? ' · ' + timeStr : ''}</div>
     ${isRunning ? `<div class="exp-qi-prog-track"><div class="exp-qi-prog-fill" style="width:${job.progress}%"></div></div>` : ''}
+    ${isErr     ? `<div class="exp-qi-error">${_esc(job.message || 'Unknown error')}</div>` : ''}
   </div>
   <div class="exp-qi-right">${badge}${dlBtn}</div>
 </div>`;
@@ -374,19 +597,20 @@ function _injectStyles () {
   const st = document.createElement('style');
   st.id = 'exp-styles';
   st.textContent = `
-/* Export modal */
+/* ── Modal shell ── */
 #exp-modal{
-  display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);
+  display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);
   z-index:700;align-items:center;justify-content:center;
 }
 #exp-modal.open{display:flex}
 #exp-box{
   background:var(--bg1);border:1px solid var(--border2);border-radius:14px;
-  width:480px;max-width:95vw;max-height:92vh;overflow-y:auto;
-  box-shadow:0 24px 80px rgba(0,0,0,.8);
+  width:500px;max-width:96vw;max-height:94vh;overflow-y:auto;
+  box-shadow:0 24px 80px rgba(0,0,0,.85);
 }
 #exp-box::-webkit-scrollbar{width:3px}
 #exp-box::-webkit-scrollbar-thumb{background:var(--bg5)}
+
 .exp-header{
   display:flex;align-items:center;justify-content:space-between;
   padding:16px 20px;border-bottom:1px solid var(--border2);background:var(--bg2);
@@ -404,6 +628,19 @@ function _injectStyles () {
 .exp-row{display:flex;gap:20px}
 .exp-col{flex:1}
 
+/* Render plan card */
+.exp-plan-card{
+  background:var(--bg2);border:1px solid var(--border2);border-radius:8px;
+  padding:10px 12px;margin-bottom:14px;
+}
+.exp-plan-title{font-size:10px;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.exp-plan-body{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.exp-plan-item{
+  display:flex;flex-direction:column;gap:1px;font-size:10px;color:var(--t3);
+  background:var(--bg3);border-radius:5px;padding:4px 6px;
+}
+.exp-plan-item strong{color:var(--t1);font-size:12px;font-weight:700}
+
 /* Format / FPS radios */
 .exp-radio-group{display:flex;gap:6px}
 .exp-radio{
@@ -416,22 +653,56 @@ function _injectStyles () {
 .exp-radio.on{border-color:var(--accent);color:var(--accent2);background:var(--accentdim)}
 .exp-radio:hover:not(.on){border-color:var(--border2);color:var(--t2)}
 
-/* Quality cards */
-.exp-quality-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+/* Quality cards — 5 cols */
+.exp-quality-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
 .exp-quality-card{
-  border:1.5px solid var(--border2);border-radius:8px;padding:8px 6px;
-  text-align:center;cursor:pointer;background:var(--bg2);
-  transition:border-color .12s;
+  border:1.5px solid var(--border2);border-radius:8px;padding:8px 4px;
+  text-align:center;cursor:pointer;background:var(--bg2);transition:border-color .12s;
 }
-.exp-quality-card:hover{border-color:var(--border2);background:var(--bg3)}
+.exp-quality-card:hover{background:var(--bg3)}
 .exp-quality-card.on{border-color:var(--accent);background:var(--accentdim)}
-.exp-quality-name{font-size:13px;font-weight:700;color:var(--t1)}
-.exp-quality-sub{font-size:9px;color:var(--t4);margin-top:2px}
+.exp-quality-name{font-size:12px;font-weight:700;color:var(--t1)}
+.exp-quality-sub{font-size:8px;color:var(--t4);margin-top:2px}
 .exp-quality-card.on .exp-quality-name{color:var(--accent2)}
+
+/* Burn-in toggle */
+.exp-toggle-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.exp-toggle-label{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none}
+.exp-toggle-label input{display:none}
+.exp-toggle-track{
+  width:32px;height:18px;background:var(--bg4);border-radius:9px;
+  position:relative;flex-shrink:0;transition:background .15s;
+}
+.exp-toggle-label input:checked ~ .exp-toggle-track{background:var(--accent)}
+.exp-toggle-thumb{
+  position:absolute;top:2px;left:2px;width:14px;height:14px;
+  background:#fff;border-radius:50%;transition:transform .15s;
+}
+.exp-toggle-label input:checked ~ .exp-toggle-track .exp-toggle-thumb{transform:translateX(14px)}
+.exp-toggle-text{font-size:12px;font-weight:600;color:var(--t2)}
+.exp-toggle-hint{font-size:10px;color:var(--t4);margin-left:auto}
+
+/* Audio mix */
+.exp-audio-section{
+  background:var(--bg2);border-radius:8px;padding:10px 12px;
+  margin-bottom:14px;border:1px solid var(--border);
+}
+.exp-mix-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.exp-mix-row:last-child{margin-bottom:0}
+.exp-mix-label{font-size:11px;color:var(--t3);width:64px;flex-shrink:0}
+.exp-mix-slider{
+  flex:1;-webkit-appearance:none;height:4px;
+  background:var(--bg4);border-radius:2px;outline:none;cursor:pointer;
+}
+.exp-mix-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;width:13px;height:13px;
+  background:var(--accent);border-radius:50%;
+}
+.exp-mix-val{font-size:10px;font-weight:700;color:var(--t3);min-width:30px;text-align:right}
 
 /* Start button */
 .exp-start-btn{
-  width:100%;margin-top:16px;padding:11px;background:var(--accent);
+  width:100%;margin-top:4px;padding:11px;background:var(--accent);
   color:#000;border:none;border-radius:9px;font-size:13px;font-weight:700;
   cursor:pointer;display:flex;align-items:center;justify-content:center;
   transition:background .12s;
@@ -446,24 +717,46 @@ function _injectStyles () {
 .exp-job-info{flex:1;min-width:0}
 .exp-job-name{font-size:12px;font-weight:600;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .exp-job-meta{font-size:10.5px;color:var(--t3);margin-top:2px}
-.exp-job-pct{font-size:15px;font-weight:700;color:var(--accent);flex-shrink:0;min-width:36px;text-align:right}
+.exp-job-right-col{display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0}
+.exp-job-pct{font-size:15px;font-weight:700;color:var(--accent)}
+.exp-job-eta{font-size:9.5px;color:var(--t4);margin-top:2px}
 
 /* Progress bar */
 .exp-prog-track{height:6px;background:var(--bg4);border-radius:3px;overflow:hidden;position:relative}
-.exp-prog-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .5s ease;position:relative;z-index:2}
+.exp-prog-fill{height:100%;background:var(--accent);border-radius:3px;transition:width .5s ease;z-index:2;position:relative}
 .exp-prog-glow{
   position:absolute;top:0;left:0;height:100%;background:var(--accent2);
   border-radius:3px;opacity:.35;filter:blur(4px);transition:width .5s ease;z-index:1;
 }
-.exp-cancel-row{margin-top:8px;text-align:right}
+
+/* Stage indicator */
+.exp-stage-row{
+  display:flex;align-items:center;margin-top:10px;position:relative;gap:0;
+}
+.exp-stage-dot{
+  width:20px;height:20px;border-radius:50%;
+  background:var(--bg4);color:var(--t4);font-size:10px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  border:2px solid var(--border2);transition:all .2s;z-index:1;
+}
+.exp-stage-dot.active{border-color:var(--accent);color:var(--accent2);background:var(--accentdim)}
+.exp-stage-dot.done{border-color:#27ae60;color:#27ae60;background:rgba(39,174,96,.15)}
+.exp-stage-line{flex:1;height:2px;background:var(--border2)}
+.exp-stage-labels{
+  display:flex;width:100%;position:absolute;top:24px;left:0;
+  justify-content:space-between;pointer-events:none;
+}
+.exp-stage-labels span{font-size:9px;color:var(--t4);padding:0 2px}
+
+.exp-cancel-row{margin-top:16px;text-align:right}
 .exp-cancel-btn{
   background:none;border:1px solid var(--border2);border-radius:6px;
-  color:var(--t4);font-size:10.5px;padding:3px 10px;cursor:pointer;
+  color:var(--t4);font-size:10.5px;padding:4px 12px;cursor:pointer;
 }
 .exp-cancel-btn:hover{border-color:#e74c3c;color:#e74c3c}
 
 /* Queue list */
-.exp-queue-list{display:flex;flex-direction:column;gap:5px;max-height:260px;overflow-y:auto}
+.exp-queue-list{display:flex;flex-direction:column;gap:5px;max-height:240px;overflow-y:auto}
 .exp-queue-list::-webkit-scrollbar{width:3px}
 .exp-queue-list::-webkit-scrollbar-thumb{background:var(--bg5)}
 .exp-queue-empty{font-size:11px;color:var(--t4);text-align:center;padding:14px 0}
@@ -471,12 +764,13 @@ function _injectStyles () {
   display:flex;align-items:center;gap:10px;padding:9px 10px;
   border:1px solid var(--border);border-radius:8px;background:var(--bg2);
 }
-.exp-queue-item.done{border-color:rgba(39,174,96,.3);background:rgba(39,174,96,.05)}
-.exp-queue-item.err{border-color:rgba(231,76,60,.3);background:rgba(231,76,60,.05)}
+.exp-queue-item.done{border-color:rgba(39,174,96,.3);background:rgba(39,174,96,.04)}
+.exp-queue-item.err{border-color:rgba(231,76,60,.3);background:rgba(231,76,60,.04)}
 .exp-qi-icon{font-size:18px;flex-shrink:0}
 .exp-qi-info{flex:1;min-width:0}
 .exp-qi-name{font-size:11px;font-weight:600;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .exp-qi-meta{font-size:10px;color:var(--t4);margin-top:1px}
+.exp-qi-error{font-size:9.5px;color:#e74c3c;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .exp-qi-prog-track{height:3px;background:var(--bg4);border-radius:2px;margin-top:5px;overflow:hidden}
 .exp-qi-prog-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s}
 .exp-qi-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
@@ -485,8 +779,8 @@ function _injectStyles () {
   font-size:9px;font-weight:700;padding:2px 7px;border-radius:8px;
   background:var(--bg4);color:var(--t3);
 }
-.exp-badge.done{background:rgba(39,174,96,.2);color:#27ae60}
-.exp-badge.err{background:rgba(231,76,60,.2);color:#e74c3c}
+.exp-badge.done{background:rgba(39,174,96,.18);color:#27ae60}
+.exp-badge.err{background:rgba(231,76,60,.18);color:#e74c3c}
 .exp-badge.running{background:var(--accentdim);color:var(--accent2)}
 .exp-badge.cancel{background:var(--bg4);color:var(--t4)}
 .exp-dl-btn{
@@ -498,27 +792,18 @@ function _injectStyles () {
   document.head.appendChild(st);
 }
 
-/* ── Helpers ─────────────────────────────────────────────── */
-function _esc (s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
 /* ── Init ────────────────────────────────────────────────── */
 function init () {
   _injectStyles();
 
-  // Override the fake auto-exp modal if present
   const fakeModal = document.getElementById('auto-exp');
   if (fakeModal) {
     fakeModal.style.cssText = 'display:none!important';
-    // Neutralize fake click interceptor by re-owning the #auto-exp element
     fakeModal.id = 'auto-exp-disabled';
   }
 
-  // Override startExport global
   window.startExport = function () { ExportEngine.open(); };
 
-  // Override topbar export button onclick directly if present
   document.querySelectorAll('.tb-export').forEach(btn => {
     btn.onclick = null;
     btn.addEventListener('click', e => {
@@ -527,7 +812,7 @@ function init () {
     }, true);
   });
 
-  console.log('[ExportEngine] Export Engine v1.5 loaded — FFmpeg ready');
+  console.log('[ExportEngine] Export Engine v2.2 loaded — Timeline Compiler, subtitle burn-in, audio mix, ETA');
 }
 
 /* ── Public API ──────────────────────────────────────────── */
