@@ -34,6 +34,11 @@ const ActionTypes = {
   COMPARE_CONTENT:      'compare_content',
   GENERATE_INSIGHTS:    'generate_insights',
   IMPROVE_BRAND:        'improve_brand',
+  // Phase 5.0 — Autonomous Content Agent
+  GENERATE_CONTENT_PLAN:'generate_content_plan',
+  ANALYZE_STRATEGY:     'analyze_strategy',
+  GENERATE_IDEAS:       'generate_ideas',
+  CREATE_TASK:          'create_task',
 };
 
 /* ── Public API ─────────────────────────────────────────── */
@@ -69,6 +74,11 @@ function executeAction(action) {
       case ActionTypes.COMPARE_CONTENT:      return _actCompareContent(params);
       case ActionTypes.GENERATE_INSIGHTS:    return _actGenerateInsights(params);
       case ActionTypes.IMPROVE_BRAND:        return _actImproveBrand(params);
+      // Phase 5.0 — Autonomous Content Agent
+      case ActionTypes.GENERATE_CONTENT_PLAN: return _actGenerateContentPlan(params);
+      case ActionTypes.ANALYZE_STRATEGY:      return _actAnalyzeStrategy(params);
+      case ActionTypes.GENERATE_IDEAS:        return _actGenerateIdeas(params);
+      case ActionTypes.CREATE_TASK:           return _actCreateTask(params);
       default:
         return { ok: false, error: 'Unknown action: ' + action.type };
     }
@@ -440,6 +450,32 @@ function _actGenerateBrandShort(params) {
   if (!window.BrandClone) return { ok: false, error: 'BrandClone not loaded' };
   window.BrandClone.generateBrandShort();
   return { ok: true };
+}
+
+/* ── Phase 5.0 — Autonomous Content Agent ── */
+
+/* generate_content_plan — build 7/30/90 day calendar */
+function _actGenerateContentPlan(params) {
+  if (!window.ContentAgent) return { ok: false, error: 'ContentAgent not loaded' };
+  return window.ContentAgent.actGenerateContentPlan(params);
+}
+
+/* analyze_strategy — full agent run: memory, opportunities, recommendations */
+function _actAnalyzeStrategy(params) {
+  if (!window.ContentAgent) return { ok: false, error: 'ContentAgent not loaded' };
+  return window.ContentAgent.actAnalyzeStrategy(params);
+}
+
+/* generate_ideas — create 10 content ideas with simulated scores */
+function _actGenerateIdeas(params) {
+  if (!window.ContentAgent) return { ok: false, error: 'ContentAgent not loaded' };
+  return window.ContentAgent.actGenerateIdeas(params);
+}
+
+/* create_task — add a task to the agent task queue */
+function _actCreateTask(params) {
+  if (!window.ContentAgent) return { ok: false, error: 'ContentAgent not loaded' };
+  return window.ContentAgent.actCreateTask(params);
 }
 
 /* ── Phase 4.2 — Performance Analytics & Learning System ── */

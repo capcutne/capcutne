@@ -1,0 +1,229 @@
+PHASE 5.0 - AUTONOMOUS CONTENT AGENT
+
+Phân tích toàn bộ codebase hiện tại trước khi thực hiện.
+
+Các module hiện có:
+
+- AI Copilot
+- Action Engine
+- Transcript Engine
+- Viral Intelligence
+- Auto Subtitle Pro
+- Export Engine
+- Batch Shorts Factory
+- Personal Editing Memory
+- Brand Clone System
+- Auto Content Factory
+- Publishing System
+- Performance Analytics & Learning System
+
+==================================================
+MỤC TIÊU
+==================================================
+
+Xây dựng AI Agent có khả năng:
+
+- lập kế hoạch nội dung
+- phân tích dữ liệu hiệu suất
+- đề xuất nội dung mới
+- tạo nội dung
+- tối ưu nội dung
+
+AI không chỉ phản hồi lệnh.
+
+AI phải chủ động hành động.
+
+==================================================
+1. CONTENT AGENT CORE
+==================================================
+
+Tạo:
+
+ContentAgent
+
+Schema:
+
+{
+  id:"",
+  name:"Content Agent",
+
+  goals:[],
+  memory:{},
+  recommendations:[],
+  actions:[]
+}
+
+==================================================
+2. AGENT MEMORY
+==================================================
+
+Tổng hợp dữ liệu từ:
+
+- Brand Clone
+- Personal Memory
+- Analytics
+- Viral Intelligence
+- Content Factory
+
+Tạo:
+
+Unified Memory Layer
+
+==================================================
+3. CONTENT OPPORTUNITY DETECTOR
+==================================================
+
+AI phân tích:
+
+- nội dung hiệu suất cao
+- nội dung hiệu suất thấp
+- chủ đề lặp lại
+- chủ đề thành công
+
+Đề xuất:
+
+10 ý tưởng mới.
+
+==================================================
+4. CONTENT CALENDAR
+==================================================
+
+Tự động tạo:
+
+7 ngày
+
+30 ngày
+
+90 ngày
+
+content plan.
+
+==================================================
+5. IDEA GENERATOR
+==================================================
+
+Cho mỗi ý tưởng:
+
+- Hook
+- CTA
+- Format
+- Platform
+- Expected Score
+
+==================================================
+6. AUTONOMOUS RECOMMENDATIONS
+==================================================
+
+Dashboard mới:
+
+Agent Center
+
+Hiển thị:
+
+"Cần thêm Shorts"
+
+"Podcast đang hiệu quả"
+
+"Hook dạng câu hỏi đang tăng CTR"
+
+==================================================
+7. TASK SYSTEM
+==================================================
+
+Agent tạo nhiệm vụ:
+
+{
+  id:"",
+  title:"",
+  priority:"",
+  reason:""
+}
+
+==================================================
+8. CONTENT SIMULATOR
+==================================================
+
+AI ước lượng:
+
+- Viral Score
+- CTR
+- Retention
+
+trước khi sản xuất.
+
+==================================================
+9. ACTION ENGINE
+==================================================
+
+Thêm:
+
+generate_content_plan
+analyze_strategy
+generate_ideas
+create_task
+
+==================================================
+10. AGENT DASHBOARD
+==================================================
+
+Hiển thị:
+
+Insights
+
+Recommendations
+
+Tasks
+
+Content Opportunities
+
+==================================================
+11. LEARNING LOOP
+==================================================
+
+Agent phải học từ:
+
+- analytics
+- content performance
+- user actions
+
+==================================================
+12. KHÔNG ĐƯỢC PHÁ VỠ
+==================================================
+
+Không làm hỏng:
+
+- Analytics
+- Brand Clone
+- Publishing
+- Content Factory
+- Export Engine
+
+==================================================
+13. BÁO CÁO
+==================================================
+
+Sau khi hoàn thành cung cấp:
+
+1. File tạo mới
+2. File chỉnh sửa
+3. Agent architecture
+4. Memory architecture
+5. Recommendation engine
+6. Task system
+7. Dashboard UI
+8. Learning workflow
+9. Limitations
+
+==================================================
+YÊU CẦU QUAN TRỌNG
+==================================================
+
+Agent không được tự publish.
+
+Agent chỉ:
+
+- phân tích
+- đề xuất
+- chuẩn bị
+
+Mọi hành động quan trọng vẫn cần người dùng xác nhận.

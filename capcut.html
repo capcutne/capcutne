@@ -1203,6 +1203,14 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
   display:flex;flex-direction:column;z-index:110;overflow:hidden
 }
 #analytics-panel.hidden{display:none}
+
+/* ─── PHASE 5.0: AGENT PANEL ────────────────────────── */
+#agent-panel{
+  position:absolute;left:68px;top:0;height:100%;width:310px;
+  background:var(--bg1);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;z-index:110;overflow:hidden
+}
+#agent-panel.hidden{display:none}
 .bc-brand-name{font-size:15px;font-weight:700;color:var(--t1)}
 .bc-brand-meta{font-size:10px;color:var(--t3)}
 .bc-profile-sel{
@@ -1278,6 +1286,7 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 <script src="/js/memory.js" defer></script>
 <script src="/js/brand.js" defer></script>
 <script src="/js/analytics.js" defer></script>
+<script src="/js/agent.js" defer></script>
 </head>
 <body>
 <div id="app">
@@ -1439,6 +1448,10 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
     <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
     <span>Analytics</span>
   </button>
+  <button class="tb" id="tb-agent" onclick="setTool(this,'agent')" title="Agent Center — AI lập kế hoạch, đề xuất và chuẩn bị nội dung tự động">
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/><circle cx="20" cy="8" r="2"/><circle cx="4" cy="8" r="2"/></svg>
+    <span>Agent</span>
+  </button>
 </div>
 
 <!-- MY STYLE PANEL (Phase 3.0) -->
@@ -1449,6 +1462,9 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 
 <!-- ANALYTICS PANEL (Phase 4.2) -->
 <div id="analytics-panel" class="hidden"></div>
+
+<!-- AGENT CENTER PANEL (Phase 5.0) -->
+<div id="agent-panel" class="hidden"></div>
 
 <!-- MEDIA PANEL -->
 <div id="media-panel">
@@ -3868,6 +3884,7 @@ function setTool(el,name){
   const msPanel = document.getElementById('mystyle-panel');
   const bcPanel = document.getElementById('brand-panel');
   const apPanel = document.getElementById('analytics-panel');
+  const agPanel = document.getElementById('agent-panel');
   if(name==='mystyle'){
     if(msPanel){ msPanel.classList.remove('hidden'); if(window.StyleMemory) StyleMemory.renderDashboard(); }
     if(bcPanel) bcPanel.classList.add('hidden');
@@ -3883,11 +3900,20 @@ function setTool(el,name){
     if(apPanel){ apPanel.classList.remove('hidden'); if(window.AnalyticsManager) AnalyticsManager.renderDashboard(); }
     if(msPanel) msPanel.classList.add('hidden');
     if(bcPanel) bcPanel.classList.add('hidden');
+    if(agPanel) agPanel.classList.add('hidden');
+    return;
+  }
+  if(name==='agent'){
+    if(agPanel){ agPanel.classList.remove('hidden'); if(window.ContentAgent) ContentAgent.renderDashboard(); }
+    if(msPanel) msPanel.classList.add('hidden');
+    if(bcPanel) bcPanel.classList.add('hidden');
+    if(apPanel) apPanel.classList.add('hidden');
     return;
   }
   if(msPanel) msPanel.classList.add('hidden');
   if(bcPanel) bcPanel.classList.add('hidden');
   if(apPanel) apPanel.classList.add('hidden');
+  if(agPanel) agPanel.classList.add('hidden');
   if(name==='export'){ switchTab('export'); return; }
   if(name==='subtitle'){ switchTab('trans'); return; }
   switchTab('edit');
