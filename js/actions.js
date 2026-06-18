@@ -19,6 +19,10 @@ const ActionTypes = {
   GENERATE_BATCH:      'generate_batch',
   EXPORT_BATCH:        'export_batch',
   PREVIEW_SHORT:       'preview_short',
+  // Phase 3.0 — Personal Editing Memory
+  APPLY_MY_STYLE:      'apply_my_style',
+  SAVE_STYLE_SNAPSHOT: 'save_style_snapshot',
+  RESTORE_STYLE:       'restore_style',
 };
 
 /* ── Public API ─────────────────────────────────────────── */
@@ -38,9 +42,12 @@ function executeAction(action) {
       case ActionTypes.GENERATE_SUBTITLES:  return _actGenerateSubtitles(params);
       case ActionTypes.RESTYLE_SUBTITLES:   return _actRestyleSubtitles(params);
       case ActionTypes.HIGHLIGHT_KEYWORDS:  return _actHighlightKeywords(params);
-      case ActionTypes.GENERATE_BATCH:   return _actGenerateBatch(params);
-      case ActionTypes.EXPORT_BATCH:     return _actExportBatch(params);
-      case ActionTypes.PREVIEW_SHORT:    return _actPreviewShort(params);
+      case ActionTypes.GENERATE_BATCH:      return _actGenerateBatch(params);
+      case ActionTypes.EXPORT_BATCH:        return _actExportBatch(params);
+      case ActionTypes.PREVIEW_SHORT:       return _actPreviewShort(params);
+      case ActionTypes.APPLY_MY_STYLE:      return _actApplyMyStyle(params);
+      case ActionTypes.SAVE_STYLE_SNAPSHOT: return _actSaveStyleSnapshot(params);
+      case ActionTypes.RESTORE_STYLE:       return _actRestoreStyle(params);
       default:
         return { ok: false, error: 'Unknown action: ' + action.type };
     }
@@ -338,6 +345,37 @@ function _actPreviewShort(params) {
     return { ok: true };
   }
   return { ok: false, error: 'BatchFactory not loaded or shortId missing' };
+}
+
+/* ── Phase 3.0 — Personal Editing Memory actions ────────── */
+
+/* apply_my_style — áp dụng phong cách đã học từ StyleMemory */
+function _actApplyMyStyle(params) {
+  if (!window.StyleMemory) return { ok: false, error: 'StyleMemory not loaded' };
+  return window.StyleMemory.applyMyStyle();
+}
+
+/* save_style_snapshot — lưu preset phong cách hiện tại
+   params: { name? } */
+function _actSaveStyleSnapshot(params) {
+  if (!window.StyleMemory) return { ok: false, error: 'StyleMemory not loaded' };
+  const name = params.name || null;
+  window.StyleMemory.saveSnapshot(name);
+  return { ok: true, name };
+}
+
+/* restore_style — áp dụng một style preset theo tên hoặc id
+   params: { id?, name? } */
+function _actRestoreStyle(params) {
+  if (!window.StyleMemory) return { ok: false, error: 'StyleMemory not loaded' };
+  const snaps = window.StyleMemory.getSnapshots();
+  let snap = null;
+  if (params.id)   snap = snaps.find(s => s.id   === params.id);
+  if (!snap && params.name) snap = snaps.find(s => s.name === params.name);
+  if (!snap && snaps.length) snap = snaps[0];
+  if (!snap) return { ok: false, error: 'Không tìm thấy preset' };
+  window.StyleMemory.applySnapshot(snap.id);
+  return { ok: true, applied: snap.name };
 }
 
 /* apply_style — apply a named filter/style to clip(s)

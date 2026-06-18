@@ -1106,6 +1106,87 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 }
 .pm-ver-del:hover{color:#e74c3c;background:rgba(231,76,60,.1)}
 
+
+/* ─── PHASE 3.0: MY STYLE PANEL ────────────────────────── */
+#mystyle-panel{
+  position:absolute;left:54px;top:0;height:100%;width:260px;
+  background:var(--bg1);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;z-index:110;overflow:hidden;
+  transition:transform .18s ease
+}
+#mystyle-panel.hidden{display:none}
+.ms-body{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:10px}
+.ms-body::-webkit-scrollbar{width:3px}
+.ms-body::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px}
+.ms-card{background:var(--bg2);border:1px solid var(--border2);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.ms-card-title{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px}
+.ms-card-title-row{display:flex;align-items:center;justify-content:space-between}
+.ms-sug-card{border-color:rgba(212,160,23,.3);background:rgba(212,160,23,.06)}
+.ms-sug-list{display:flex;flex-direction:column;gap:5px}
+.ms-sug-item{font-size:12px;color:var(--t2);background:var(--bg3);border-radius:6px;padding:6px 9px}
+.ms-sug-item b{color:var(--accent2)}
+.ms-primary-btn{
+  background:var(--accent);border:none;border-radius:7px;color:#000;
+  font-size:12px;font-weight:700;padding:7px 0;cursor:pointer;width:100%
+}
+.ms-primary-btn:hover{background:var(--accent2)}
+.ms-stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.ms-stat-item{background:var(--bg3);border-radius:7px;padding:8px;text-align:center}
+.ms-stat-val{font-size:13px;font-weight:700;color:var(--t1);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ms-stat-lbl{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.5px}
+.ms-conf-section{display:flex;flex-direction:column;gap:5px;margin-top:2px}
+.ms-conf-row{display:flex;align-items:center;gap:7px}
+.ms-conf-label{font-size:10px;color:var(--t3);width:55px;flex-shrink:0}
+.ms-conf-track{flex:1;height:4px;background:var(--bg4);border-radius:2px;overflow:hidden}
+.ms-conf-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;transition:width .4s}
+.ms-conf-pct{font-size:10px;color:var(--t2);width:28px;text-align:right;flex-shrink:0}
+.ms-fav-tags{display:flex;flex-wrap:wrap;gap:5px}
+.ms-fav-tag{background:var(--bg3);border:1px solid var(--border2);border-radius:5px;padding:3px 9px;font-size:11px;color:var(--t2)}
+.ms-activity-row{display:flex;justify-content:space-around}
+.ms-act-item{text-align:center}
+.ms-act-val{font-size:18px;font-weight:700;color:var(--accent2)}
+.ms-act-lbl{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+.ms-snap-new-btn{
+  background:var(--bg3);border:1px solid var(--border2);border-radius:6px;
+  color:var(--t2);font-size:11px;padding:4px 9px;cursor:pointer;flex-shrink:0
+}
+.ms-snap-new-btn:hover{background:var(--bg4);color:var(--t1)}
+.ms-snapshots{display:flex;flex-direction:column;gap:6px}
+.ms-snap-item{display:flex;align-items:center;gap:8px;background:var(--bg3);border-radius:7px;padding:8px}
+.ms-snap-left{flex:1;overflow:hidden}
+.ms-snap-name{font-size:12px;font-weight:600;color:var(--t1)}
+.ms-snap-meta{font-size:10px;color:var(--t3);margin-top:2px}
+.ms-snap-btns{display:flex;gap:5px;flex-shrink:0}
+.ms-snap-apply{background:var(--accentdim);border:1px solid rgba(212,160,23,.3);border-radius:5px;color:var(--accent2);font-size:11px;padding:3px 9px;cursor:pointer}
+.ms-snap-apply:hover{background:rgba(212,160,23,.25)}
+.ms-snap-del{background:transparent;border:1px solid var(--border2);border-radius:5px;color:var(--t3);font-size:11px;padding:3px 7px;cursor:pointer}
+.ms-snap-del:hover{color:var(--red);border-color:var(--red)}
+.ms-empty-card{align-items:center;text-align:center;padding:20px 12px}
+.ms-empty-icon{font-size:32px;margin-bottom:8px}
+.ms-empty-title{font-size:13px;font-weight:600;color:var(--t2);margin-bottom:6px}
+.ms-empty-desc{font-size:11px;color:var(--t3);line-height:1.5}
+.ms-empty-note{font-size:11px;color:var(--t3);font-style:italic}
+.ms-reset-row{display:flex;justify-content:center;padding-bottom:6px}
+.ms-reset-btn{background:transparent;border:1px solid var(--border2);border-radius:6px;color:var(--t3);font-size:11px;padding:5px 14px;cursor:pointer}
+.ms-reset-btn:hover{color:var(--red);border-color:var(--red)}
+/* Suggestion banner */
+#style-suggestion-banner{
+  position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
+  background:var(--bg2);border:1px solid rgba(212,160,23,.4);border-radius:12px;
+  padding:12px 16px;z-index:9000;box-shadow:0 8px 30px rgba(0,0,0,.5);
+  max-width:420px;width:90%;animation:ssb-in .3s ease
+}
+@keyframes ssb-in{from{opacity:0;transform:translateX(-50%) translateY(12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+.ssb-inner{display:flex;align-items:flex-start;gap:10px}
+.ssb-icon{font-size:22px;flex-shrink:0;margin-top:2px}
+.ssb-content{flex:1}
+.ssb-title{font-size:12px;font-weight:700;color:var(--accent2);margin-bottom:5px}
+.ssb-item{font-size:12px;color:var(--t2);margin-bottom:2px}
+.ssb-item b{color:var(--t1)}
+.ssb-apply-all{background:var(--accent);border:none;border-radius:7px;color:#000;font-size:11px;font-weight:700;padding:5px 12px;cursor:pointer;flex-shrink:0;align-self:center}
+.ssb-apply-all:hover{background:var(--accent2)}
+.ssb-close{background:transparent;border:none;color:var(--t3);font-size:14px;cursor:pointer;flex-shrink:0;padding:0 0 0 4px;line-height:1}
+.ssb-close:hover{color:var(--t1)}
 </style>
 <script src="/js/actions.js"></script>
 <script src="/js/ai.js" defer></script>
@@ -1118,6 +1199,7 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 <script src="/js/export.js" defer></script>
 <script src="/js/viral.js" defer></script>
 <script src="/js/transcript.js" defer></script>
+<script src="/js/memory.js" defer></script>
 </head>
 <body>
 <div id="app">
@@ -1266,7 +1348,15 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
     <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
     <span>Script</span>
   </button>
+  <div class="lsb-sep"></div>
+  <button class="tb" id="tb-mystyle" onclick="setTool(this,'mystyle')" title="My Style — AI ghi nhớ phong cách chỉnh sửa của bạn">
+    <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+    <span>My Style</span>
+  </button>
 </div>
+
+<!-- MY STYLE PANEL (Phase 3.0) -->
+<div id="mystyle-panel" class="hidden"></div>
 
 <!-- MEDIA PANEL -->
 <div id="media-panel">
@@ -3682,6 +3772,17 @@ function setTool(el,name){
   document.querySelectorAll('#lsb .tb').forEach(b=>b.classList.remove('on'));
   el.classList.add('on');
   activeTool=name;
+  // My Style panel toggle
+  const msPanel=document.getElementById('mystyle-panel');
+  if(name==='mystyle'){
+    if(msPanel){
+      msPanel.classList.remove('hidden');
+      if(window.StyleMemory) StyleMemory.renderDashboard();
+    }
+    return;
+  } else {
+    if(msPanel) msPanel.classList.add('hidden');
+  }
   if(name==='export'){ switchTab('export'); return; }
   if(name==='subtitle'){ switchTab('trans'); return; }
   switchTab('edit');

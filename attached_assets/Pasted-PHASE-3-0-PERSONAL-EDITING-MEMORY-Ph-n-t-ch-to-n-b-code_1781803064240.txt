@@ -1,0 +1,181 @@
+PHASE 3.0 - PERSONAL EDITING MEMORY
+
+Phân tích toàn bộ codebase hiện tại trước khi thực hiện.
+
+Các module đã tồn tại:
+
+- AI Copilot
+- Action Engine
+- Save/Load Project
+- Media Manager
+- Transcript Engine
+- AI Shorts Generator
+- Viral Intelligence
+- Auto Subtitle Pro
+- Export Engine
+- Batch Shorts Factory
+
+MỤC TIÊU
+
+Xây dựng hệ thống AI ghi nhớ phong cách chỉnh sửa của người dùng.
+
+AI phải học được:
+
+- kiểu subtitle thường dùng
+- màu sắc thường dùng
+- font thường dùng
+- tỷ lệ video thường dùng
+- cách cắt video
+- kiểu tạo shorts
+- template yêu thích
+
+Từ đó tự động áp dụng cho các dự án mới.
+
+==================================================
+1. USER STYLE PROFILE
+==================================================
+
+Tạo:
+
+StyleMemoryManager
+
+Schema:
+
+{
+  id:"",
+  profileName:"",
+
+  subtitleStyle:{},
+  exportSettings:{},
+  favoriteTemplates:[],
+  preferredAspectRatio:"",
+  editingPatterns:{},
+
+  createdAt:"",
+  updatedAt:""
+}
+
+==================================================
+2. HỌC TỪ DỰ ÁN
+==================================================
+
+Khi người dùng:
+
+- export video
+- lưu project
+- tạo shorts
+
+Hệ thống phân tích:
+
+- font được dùng
+- animation được dùng
+- màu sắc được dùng
+- kiểu subtitle được dùng
+
+và cập nhật hồ sơ phong cách.
+
+==================================================
+3. STYLE SCORE
+==================================================
+
+Tính độ tin cậy:
+
+{
+  subtitleStyleConfidence:0.92,
+  exportConfidence:0.87,
+  templateConfidence:0.95
+}
+
+==================================================
+4. AI COPILOT TÍCH HỢP
+==================================================
+
+Cho phép:
+
+"Áp dụng phong cách quen thuộc"
+
+"Khôi phục phong cách trước đây"
+
+"Tạo shorts theo phong cách của tôi"
+
+==================================================
+5. GỢI Ý TỰ ĐỘNG
+==================================================
+
+Khi mở project mới:
+
+Hiển thị:
+
+"Bạn thường dùng template TikTok"
+
+"Bạn thường export 1080p"
+
+"Bạn thường highlight từ khóa"
+
+Cho phép áp dụng 1 lần bấm.
+
+==================================================
+6. STYLE SNAPSHOT
+==================================================
+
+Cho phép lưu:
+
+Style Preset
+
+Ví dụ:
+
+Creator Style
+Podcast Style
+TikTok Style
+
+==================================================
+7. DASHBOARD
+==================================================
+
+Tạo tab:
+
+My Style
+
+Hiển thị:
+
+- Template yêu thích
+- Font hay dùng
+- Màu hay dùng
+- Export hay dùng
+- Tỷ lệ video hay dùng
+
+==================================================
+8. ACTION ENGINE
+==================================================
+
+Thêm:
+
+apply_my_style
+save_style_snapshot
+restore_style
+
+==================================================
+9. KHÔNG ĐƯỢC PHÁ VỠ
+==================================================
+
+Không làm hỏng:
+
+- Save/Load
+- Export Engine
+- Subtitle Pro
+- Batch Shorts Factory
+- Viral Intelligence
+
+==================================================
+10. BÁO CÁO
+==================================================
+
+Sau khi hoàn thành cung cấp:
+
+1. File tạo mới
+2. File chỉnh sửa
+3. Style schema
+4. Learning workflow
+5. Dashboard UI
+6. Action Engine integration
+7. Hạn chế hiện tại

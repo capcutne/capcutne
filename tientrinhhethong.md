@@ -1,6 +1,6 @@
 # TIẾN TRÌNH DỰ ÁN — CapCut Video Editor Clone
 
-**Cập nhật lần cuối:** 18/06/2026 — 17:10
+**Cập nhật lần cuối:** 18/06/2026 — 17:45
 **Trạng thái:** Đang phát triển tích cực  
 **File chính:** `capcut.html` · **Server:** Python HTTP cổng 5000 · **UI:** Tiếng Việt
 
@@ -203,6 +203,19 @@
 | ID | Tính năng | Chi tiết | Ngày |
 |----|-----------|----------|------|
 | F39 | Gộp nhiều clip thành 1 | Chọn nhiều clip cùng track → Ctrl+G để gộp thành 1 clip liên tiếp | 17/06/2026 |
+
+### Nhóm 7 — Phase 3.0: Personal Editing Memory
+
+| ID | Tính năng | Chi tiết | Ngày & Giờ |
+|----|-----------|----------|------------|
+| F44 | StyleMemoryManager | Module `js/memory.js` — hồ sơ phong cách người dùng lưu trong localStorage (`cc_style_profile`, `cc_style_snaps`) · Schema đầy đủ: subtitleStyle, exportSettings, favoriteTemplates, preferredAspectRatio, editingPatterns, confidence | 18/06/2026 — 17:45 |
+| F45 | Học từ hành động người dùng | Auto-hook vào SubEngine.applyTemplate, ProjectManager.quickSave, SubtitlePro.setAnimation · Click listener trên ratio-btn, sub-tpl-item, exp-start-btn, factory-run-btn · Ghi lại: template, animation, export quality/format, aspect ratio, số lần save/export/shorts | 18/06/2026 — 17:45 |
+| F46 | Style Score (Confidence) | Tính độ tin cậy 0–1 cho 3 chiều: subtitleStyleConfidence, exportConfidence, templateConfidence · Dùng tỉ lệ top/total · Hiển thị dưới dạng progress bar trong dashboard | 18/06/2026 — 17:45 |
+| F47 | Áp dụng phong cách (Apply My Style) | Nút "✨ Áp dụng tất cả" — tự động áp template top, animation top, tỷ lệ video top của người dùng · Tích hợp Action Engine: `apply_my_style` | 18/06/2026 — 17:45 |
+| F48 | Style Presets (Snapshots) | Lưu tối đa 10 preset phong cách · Đặt tên tùy ý · Áp dụng / xóa preset · Tích hợp Action Engine: `save_style_snapshot`, `restore_style` · AI Copilot có thể gọi qua lệnh text | 18/06/2026 — 17:45 |
+| F49 | Dashboard "My Style" | Tab mới trên sidebar trái (⭐ My Style) · Hiển thị: gợi ý phong cách, thống kê (template/animation/quality/tỷ lệ), template yêu thích top 3, hoạt động (export/save/shorts count), danh sách presets, nút xóa dữ liệu | 18/06/2026 — 17:45 |
+| F50 | Gợi ý tự động (Suggestion Banner) | Banner nổi xuất hiện sau 3s khi mở app (nếu đủ ≥2 lần hoạt động) · Hiển thị template và export hay dùng · Nút "Áp dụng" 1-click · Tự đóng sau 9s | 18/06/2026 — 17:45 |
+| F51 | Action Engine Phase 3.0 | Thêm 3 ActionType mới: `apply_my_style`, `save_style_snapshot`, `restore_style` · AI Copilot có thể ra lệnh bằng tiếng Việt như "Áp dụng phong cách quen thuộc", "Lưu preset" | 18/06/2026 — 17:45 |
 
 ---
 
