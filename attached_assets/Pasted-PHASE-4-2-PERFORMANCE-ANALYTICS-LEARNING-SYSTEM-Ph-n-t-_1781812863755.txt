@@ -1,0 +1,251 @@
+PHASE 4.2 - PERFORMANCE ANALYTICS & LEARNING SYSTEM
+
+Phân tích toàn bộ codebase hiện tại trước khi thực hiện.
+
+Các module hiện có:
+
+- AI Copilot
+- Brand Clone
+- Personal Editing Memory
+- Viral Intelligence
+- Auto Subtitle Pro
+- Export Engine
+- Batch Shorts Factory
+- Auto Content Factory
+- Publishing System
+
+==================================================
+MỤC TIÊU
+==================================================
+
+Xây dựng hệ thống phân tích hiệu suất nội dung.
+
+AI phải học từ kết quả thực tế.
+
+Ví dụ:
+
+Video A:
+100.000 views
+
+Video B:
+5.000 views
+
+AI phải hiểu:
+
+- tại sao A tốt hơn B
+- hook nào hiệu quả hơn
+- subtitle nào hiệu quả hơn
+- CTA nào hiệu quả hơn
+
+==================================================
+1. ANALYTICS MANAGER
+==================================================
+
+Tạo:
+
+AnalyticsManager
+
+Schema:
+
+{
+  id:"",
+  contentId:"",
+  platform:"",
+  metrics:{},
+  createdAt:""
+}
+
+==================================================
+2. PERFORMANCE METRICS
+==================================================
+
+Hỗ trợ:
+
+Views
+
+Likes
+
+Comments
+
+Shares
+
+Watch Time
+
+CTR
+
+Retention
+
+Followers Gained
+
+==================================================
+3. CONTENT PERFORMANCE PROFILE
+==================================================
+
+Schema:
+
+{
+  contentId:"",
+  title:"",
+  platform:"",
+  metrics:{},
+  score:0
+}
+
+==================================================
+4. MANUAL DATA IMPORT
+==================================================
+
+Cho phép nhập:
+
+CSV
+JSON
+
+Ví dụ:
+
+YouTube Analytics Export
+
+TikTok Analytics Export
+
+==================================================
+5. PERFORMANCE DASHBOARD
+==================================================
+
+Hiển thị:
+
+Top Content
+
+Worst Content
+
+Top Hooks
+
+Top CTA
+
+Top Subtitle Styles
+
+==================================================
+6. AI LEARNING ENGINE
+==================================================
+
+Phân tích:
+
+- video thành công
+- video thất bại
+
+Tìm pattern.
+
+==================================================
+7. BRAND FEEDBACK LOOP
+==================================================
+
+Brand Clone phải học từ:
+
+- video thành công
+- video thất bại
+
+Tự điều chỉnh confidence.
+
+==================================================
+8. VIRAL SCORE CALIBRATION
+==================================================
+
+So sánh:
+
+Predicted Score
+
+VS
+
+Actual Performance
+
+Hiển thị sai số.
+
+==================================================
+9. RECOMMENDATION ENGINE
+==================================================
+
+Ví dụ:
+
+"Hook dạng câu hỏi đang hiệu quả hơn 22%"
+
+"CTA cuối video đang yếu"
+
+"Subtitle màu vàng có CTR cao hơn"
+
+==================================================
+10. CONTENT RANKING
+==================================================
+
+Xếp hạng:
+
+Top 10
+
+Top 50
+
+Top 100
+
+==================================================
+11. DASHBOARD TAB
+==================================================
+
+Analytics
+
+Insights
+
+Performance
+
+==================================================
+12. ACTION ENGINE
+==================================================
+
+Thêm:
+
+analyze_performance
+compare_content
+generate_insights
+improve_brand
+
+==================================================
+13. KHÔNG ĐƯỢC PHÁ VỠ
+==================================================
+
+Không làm hỏng:
+
+- Brand Clone
+- Publishing System
+- Content Factory
+- Export Engine
+
+==================================================
+14. CHUẨN BỊ CHO PHASE 5
+==================================================
+
+Thiết kế để AI có thể dùng dữ liệu analytics
+làm dữ liệu huấn luyện nội bộ.
+
+==================================================
+15. BÁO CÁO
+==================================================
+
+Sau khi hoàn thành cung cấp:
+
+1. File tạo mới
+2. File chỉnh sửa
+3. Analytics schema
+4. Import workflow
+5. Dashboard UI
+6. Learning workflow
+7. Recommendation logic
+8. Limitations
+
+==================================================
+YÊU CẦU QUAN TRỌNG
+==================================================
+
+Không gọi API thật.
+
+Sử dụng import dữ liệu thủ công trước.
+
+Thiết kế sẵn kiến trúc để sau này kết nối:
+
+- YouTube Analytics API
+- TikTok Analytics API
+- Meta Insights API
