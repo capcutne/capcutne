@@ -1,0 +1,3 @@
+- [Phase 5.5B export pipeline](export-pipeline.md) — real FFmpeg export uses _build_real_export_cmd(); blank-canvas fallback when no files uploaded
+- [Asset registry pattern](asset-registry.md) — uploads auto-register in data/asset_registry.json; look up disk path with _asset_path_by_id(fileId)
+- [Server architecture](server-architecture.md) — pure http.server (no Flask); JSON files for all persistence; MODEL="gpt-5-mini"; port 5000

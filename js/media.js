@@ -15,19 +15,42 @@ let _assets  = [];   // full objects including objUrl (session)
 let _tab     = 'all';
 let _query   = '';
 
-/* ── Persistence (metadata only, no blob URLs) ───────────── */
+/* ── Persistence (metadata + serverUrl survive reload) ───── */
 function _loadStored () {
   try {
     const stored = JSON.parse(localStorage.getItem(KEY_ASSETS) || '[]');
-    _assets = stored.map(a => ({ ...a, objUrl: null, offline: true }));
+    _assets = stored.map(a => ({
+      ...a,
+      objUrl:  a.serverUrl || null,  // use permanent URL if available
+      offline: !a.serverUrl,         // not offline if we have a server URL
+    }));
   } catch {}
 }
 function _saveMeta () {
   try {
-    const meta = _assets.map(({ id, name, type, duration, size, thumbnail }) =>
-      ({ id, name, type, duration, size, thumbnail }));
+    const meta = _assets.map(({ id, name, type, duration, size, thumbnail, fileId, serverUrl }) =>
+      ({ id, name, type, duration, size, thumbnail, fileId, serverUrl }));
     localStorage.setItem(KEY_ASSETS, JSON.stringify(meta));
   } catch (e) { console.warn('[MediaManager] localStorage write failed:', e.message); }
+}
+
+/* ── Server upload for permanent URLs ──────────────────────
+   Uploads the raw File to /ai/upload-media.
+   Returns { fileId, serverUrl } or null on failure.           */
+async function _serverUpload (file) {
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    const r = await fetch('/ai/upload-media', { method: 'POST', body: fd });
+    if (!r.ok) return null;
+    const d = await r.json();
+    if (d.ok && d.fileId) {
+      return { fileId: d.fileId, serverUrl: d.serverUrl || `/uploads/${d.fileId}${d.ext}` };
+    }
+  } catch (e) {
+    console.warn('[MediaManager] server upload failed:', e.message);
+  }
+  return null;
 }
 
 /* ── ID generator ────────────────────────────────────────── */
@@ -331,24 +354,63 @@ function _processVideo (f) {
   vid.preload  = 'metadata';
   vid.muted    = true;
   vid.onloadedmetadata = () => { vid.currentTime = Math.min(0.5, vid.duration / 2); };
-  vid.onseeked = () => {
+  vid.onseeked = async () => {
     let thumb = null;
     try {
       const cv = document.createElement('canvas'); cv.width = 160; cv.height = 90;
       cv.getContext('2d').drawImage(vid, 0, 0, 160, 90);
       thumb = cv.toDataURL('image/jpeg', 0.7);
     } catch {}
-    registerAsset({ id: _uid(), name: f.name, type: 'video',
-      duration: Math.round(vid.duration * 10) / 10,
-      size: f.size, thumbnail: thumb, objUrl });
-    // also dispatch to legacy capcut.html upload flow for timeline add
-    _legacyVideoFinalize(f.name, Math.round(vid.duration * 10) / 10, thumb, objUrl);
+    const dur = Math.round(vid.duration * 10) / 10;
+    // Register locally first so user sees it immediately
+    const assetId = _uid();
+    registerAsset({ id: assetId, name: f.name, type: 'video',
+      duration: dur, size: f.size, thumbnail: thumb, objUrl,
+      fileId: null, serverUrl: null });
+    _legacyVideoFinalize(f.name, dur, thumb, objUrl);
+    // Background server upload for permanent URL
+    const srv = await _serverUpload(f);
+    if (srv) {
+      const asset = _assets.find(a => a.id === assetId);
+      if (asset) {
+        asset.fileId    = srv.fileId;
+        asset.serverUrl = srv.serverUrl;
+        asset.offline   = false;
+        _saveMeta();
+        _render();
+      }
+    }
   };
   vid.onerror = () => {
     registerAsset({ id: _uid(), name: f.name, type: 'video', duration: 5, size: f.size, thumbnail: null, objUrl });
     _legacyVideoFinalize(f.name, 5, null, objUrl);
   };
   vid.src = objUrl;
+}
+
+function _processAudioWithServerUpload (f) {
+  const objUrl = URL.createObjectURL(f);
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    const finalize = async (dur) => {
+      ac.close();
+      const assetId = _uid();
+      registerAsset({ id: assetId, name: f.name, type: 'audio', duration: dur, size: f.size, thumbnail: null, objUrl,
+        fileId: null, serverUrl: null });
+      if (typeof _legacyAudioFinalize === 'function') _legacyAudioFinalize(f, objUrl, dur);
+      const srv = await _serverUpload(f);
+      if (srv) {
+        const asset = _assets.find(a => a.id === assetId);
+        if (asset) { asset.fileId = srv.fileId; asset.serverUrl = srv.serverUrl; _saveMeta(); }
+      }
+    };
+    ac.decodeAudioData(e.target.result,
+      buf => finalize(Math.round(buf.duration * 10) / 10),
+      ()  => finalize(10)
+    );
+  };
+  reader.readAsArrayBuffer(f);
 }
 
 function _processImage (f) {
@@ -370,24 +432,7 @@ function _processImage (f) {
 }
 
 function _processAudio (f) {
-  const objUrl = URL.createObjectURL(f);
-  // Use AudioContext to get real duration
-  const reader = new FileReader();
-  reader.onload = e => {
-    const ac = new (window.AudioContext || window.webkitAudioContext)();
-    ac.decodeAudioData(e.target.result, buf => {
-      const dur = Math.round(buf.duration * 10) / 10;
-      ac.close();
-      registerAsset({ id: _uid(), name: f.name, type: 'audio', duration: dur, size: f.size, thumbnail: null, objUrl });
-      // Delegate to capcut's audio upload for waveform analysis
-      if (typeof _legacyAudioFinalize === 'function') _legacyAudioFinalize(f, objUrl, dur);
-    }, () => {
-      ac.close();
-      registerAsset({ id: _uid(), name: f.name, type: 'audio', duration: 10, size: f.size, thumbnail: null, objUrl });
-      if (typeof _legacyAudioFinalize === 'function') _legacyAudioFinalize(f, objUrl, 10);
-    });
-  };
-  reader.readAsArrayBuffer(f);
+  _processAudioWithServerUpload(f);
 }
 
 // Called by the legacy upload handlers so both systems stay in sync

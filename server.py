@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """
 server.py — Static files (port 5000) + AI API + Export Engine
+Phase 5.5B Foundation: Asset registry, job persistence, health,
+cleanup, backup/recovery, MIME validation, real export pipeline.
 """
 
 import os
@@ -8,6 +10,7 @@ import json
 import uuid
 import time
 import math
+import shutil
 import mimetypes
 import threading
 import subprocess
@@ -17,14 +20,228 @@ import tempfile
 from pathlib import Path
 from openai import OpenAI
 
-PROJECTS_DIR = Path("projects")
+PROJECTS_DIR          = Path("projects")
 PROJECTS_DIR.mkdir(exist_ok=True)
-EXPORTS_DIR  = Path("exports")
+PROJECT_VERSIONS_DIR  = Path("projects") / ".versions"
+PROJECT_VERSIONS_DIR.mkdir(parents=True, exist_ok=True)
+EXPORTS_DIR           = Path("exports")
 EXPORTS_DIR.mkdir(exist_ok=True)
-UPLOADS_DIR  = Path("uploads")
+UPLOADS_DIR           = Path("uploads")
 UPLOADS_DIR.mkdir(exist_ok=True)
-DATA_DIR     = Path("data")
+DATA_DIR              = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
+
+_server_start_time = time.time()
+
+# ── Allowed MIME types / extensions for upload ────────────────────────────────
+ALLOWED_MIME_PREFIXES  = ("video/", "audio/", "image/")
+ALLOWED_EXTENSIONS = {
+    ".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v", ".flv", ".wmv",
+    ".mp3", ".m4a", ".aac", ".ogg", ".wav", ".flac", ".opus", ".wma",
+    ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp",
+}
+MAX_UPLOAD_BYTES = 500 * 1024 * 1024   # 500 MB
+
+# ── Asset Registry ─────────────────────────────────────────────────────────────
+# Persists upload metadata across restarts.
+# fileId → {path, mime, size, name, ext, uploadedAt, serverUrl}
+ASSET_REGISTRY_FILE = DATA_DIR / "asset_registry.json"
+
+def _load_asset_registry() -> dict:
+    try:
+        if ASSET_REGISTRY_FILE.exists():
+            return json.loads(ASSET_REGISTRY_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        pass
+    return {}
+
+def _save_asset_registry():
+    try:
+        ASSET_REGISTRY_FILE.write_text(
+            json.dumps(_asset_registry, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+    except Exception as e:
+        print(f"[registry] save error: {e}", flush=True)
+
+_asset_registry: dict = _load_asset_registry()
+
+def _register_asset(file_id: str, path: str, filename: str, mime: str,
+                    size: int, ext: str):
+    _asset_registry[file_id] = {
+        "path":       path,
+        "name":       filename,
+        "mime":       mime,
+        "size":       size,
+        "ext":        ext,
+        "uploadedAt": time.time(),
+        "serverUrl":  f"/uploads/{file_id}{ext}",
+    }
+    _save_asset_registry()
+
+def _asset_path_by_id(file_id: str):
+    """Return the local filesystem path for a registered fileId, or None."""
+    rec = _asset_registry.get(file_id)
+    if rec:
+        p = Path(rec["path"])
+        if p.exists():
+            return p
+    # Fallback: scan uploads dir
+    matches = list(UPLOADS_DIR.glob(f"{file_id}.*"))
+    # Filter out temp audio files
+    matches = [m for m in matches if not m.name.endswith("_audio.wav")]
+    return matches[0] if matches else None
+
+# ── Job Persistence ────────────────────────────────────────────────────────────
+JOBS_EXPORT_FILE   = DATA_DIR / "jobs_export.json"
+JOBS_FACTORY_FILE  = DATA_DIR / "jobs_factory.json"
+
+def _persist_export_jobs():
+    try:
+        snapshot = {}
+        for jid, j in export_jobs.items():
+            safe = {k: v for k, v in j.items() if k != "output_path"}
+            safe["output_path"] = j.get("output_path", "")
+            snapshot[jid] = safe
+        JOBS_EXPORT_FILE.write_text(
+            json.dumps(snapshot, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+    except Exception as e:
+        print(f"[jobs] persist error: {e}", flush=True)
+
+def _restore_export_jobs():
+    try:
+        if not JOBS_EXPORT_FILE.exists():
+            return
+        data = json.loads(JOBS_EXPORT_FILE.read_text(encoding="utf-8"))
+        for jid, j in data.items():
+            if j.get("status") in ("running", "queued"):
+                j["status"]  = "error"
+                j["message"] = "Server restarted — job lost"
+            export_jobs[jid] = j
+    except Exception as e:
+        print(f"[jobs] restore error: {e}", flush=True)
+
+# ── Project Versioning / Backup ────────────────────────────────────────────────
+def _project_version_save(pid: str, data: dict):
+    """Save a timestamped snapshot of a project (autosave/backup)."""
+    vdir = PROJECT_VERSIONS_DIR / pid
+    vdir.mkdir(parents=True, exist_ok=True)
+    ts    = int(time.time() * 1000)
+    vpath = vdir / f"{ts}.json"
+    vpath.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    # Keep last 10 versions per project
+    versions = sorted(vdir.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    for old in versions[10:]:
+        try:
+            old.unlink()
+        except Exception:
+            pass
+
+def _project_versions_list(pid: str) -> list:
+    vdir = PROJECT_VERSIONS_DIR / pid
+    if not vdir.exists():
+        return []
+    versions = sorted(vdir.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
+    result = []
+    for v in versions[:10]:
+        try:
+            data = json.loads(v.read_text(encoding="utf-8"))
+            result.append({
+                "ts":       v.stem,
+                "name":     data.get("name", "Untitled"),
+                "duration": data.get("duration", 0),
+                "savedAt":  v.stem,
+            })
+        except Exception:
+            pass
+    return result
+
+def _project_version_restore(pid: str, ts: str):
+    vpath = PROJECT_VERSIONS_DIR / pid / f"{ts}.json"
+    if not vpath.exists():
+        return None
+    return json.loads(vpath.read_text(encoding="utf-8"))
+
+# ── File Cleanup Background Thread ────────────────────────────────────────────
+def _cleanup_worker():
+    """Hourly: remove old exports, temp audio, orphan uploads."""
+    while True:
+        time.sleep(3600)
+        _run_cleanup()
+
+def _run_cleanup():
+    now   = time.time()
+    count = 0
+    try:
+        # Exports older than 24h whose job is finished
+        for f in list(EXPORTS_DIR.iterdir()):
+            if f.suffix not in {".mp4", ".webm", ".gif"}:
+                continue
+            if (now - f.stat().st_mtime) < 86400:
+                continue
+            job = export_jobs.get(f.stem, {})
+            if job.get("status") in ("done", "error", "cancelled"):
+                f.unlink(missing_ok=True)
+                count += 1
+        # Temp WAV files older than 1h
+        for f in list(UPLOADS_DIR.iterdir()):
+            if f.name.endswith("_audio.wav") and (now - f.stat().st_mtime) > 3600:
+                f.unlink(missing_ok=True)
+                count += 1
+        # Orphan uploads: registered but file missing → prune registry
+        dead_ids = [fid for fid, r in _asset_registry.items()
+                    if not Path(r.get("path", "")).exists()
+                    and not list(UPLOADS_DIR.glob(f"{fid}.*"))]
+        for fid in dead_ids:
+            _asset_registry.pop(fid, None)
+        if dead_ids:
+            _save_asset_registry()
+            count += len(dead_ids)
+        if count:
+            print(f"[cleanup] removed {count} stale files/records", flush=True)
+    except Exception as e:
+        print(f"[cleanup] error: {e}", flush=True)
+
+# ── Health check ──────────────────────────────────────────────────────────────
+def _health_data() -> dict:
+    disk = shutil.disk_usage(".")
+    users = _load_json("users.json", []) if DATA_DIR.exists() else []
+    return {
+        "status":        "ok",
+        "version":       "5.5B",
+        "uptime_seconds": int(time.time() - _server_start_time),
+        "ai_configured":  client is not None,
+        "ffmpeg_available": _check_ffmpeg(),
+        "exports": {
+            "total":     len(export_jobs),
+            "done":      sum(1 for j in export_jobs.values() if j.get("status") == "done"),
+            "running":   sum(1 for j in export_jobs.values() if j.get("status") == "running"),
+            "error":     sum(1 for j in export_jobs.values() if j.get("status") == "error"),
+        },
+        "factory_batches": {
+            "total":  len(factory_batches),
+            "ready":  sum(1 for b in factory_batches.values() if b.get("status") == "ready"),
+        },
+        "assets":   {"registered": len(_asset_registry)},
+        "projects": {"count": len(list(PROJECTS_DIR.glob("*.json")))},
+        "users":    {"count": len(users)},
+        "disk": {
+            "total_gb": round(disk.total / 1e9, 1),
+            "used_gb":  round(disk.used  / 1e9, 1),
+            "free_gb":  round(disk.free  / 1e9, 1),
+        },
+    }
+
+_ffmpeg_ok: bool | None = None
+def _check_ffmpeg() -> bool:
+    global _ffmpeg_ok
+    if _ffmpeg_ok is None:
+        try:
+            r = subprocess.run(["ffmpeg", "-version"], capture_output=True, timeout=5)
+            _ffmpeg_ok = (r.returncode == 0)
+        except Exception:
+            _ffmpeg_ok = False
+    return _ffmpeg_ok
 
 # ── Beta data helpers ─────────────────────────────────────────────────────────
 import hashlib, re as _re
@@ -447,12 +664,20 @@ def _compile_timeline(project: dict, burn_subtitles: bool = True) -> dict:
             clip_dur = float(clip.get("dur",   5))
             end      = start + clip_dur
             dur      = max(dur, end)
+            # Resolve fileId → disk path (prefer fileId, fall back to src)
+            file_id  = clip.get("fileId") or clip.get("file_id") or ""
+            disk_path = None
+            if file_id:
+                disk_path = _asset_path_by_id(file_id)
             plan["segments"].append({
-                "type":  track_type,
-                "src":   clip.get("src", ""),
-                "start": round(start, 3),
-                "end":   round(end, 3),
-                "label": str(clip.get("label", ""))[:40].replace("'", "").replace("\\", ""),
+                "type":      track_type,
+                "src":       clip.get("src", ""),
+                "fileId":    file_id,
+                "diskPath":  disk_path,       # local FS path if available
+                "start":     round(start, 3),
+                "end":       round(end, 3),
+                "clipStart": round(float(clip.get("clipStart", 0)), 3),
+                "label":     str(clip.get("label", ""))[:40].replace("'", "").replace("\\", ""),
             })
 
     plan["duration"] = min(dur, 600)
@@ -505,6 +730,8 @@ def _save_export_history():
             json.dump(records[-50:], f, indent=2)
     except Exception:
         pass
+    # Also persist full job store for crash recovery
+    _persist_export_jobs()
 
 
 def _load_export_history():
@@ -664,6 +891,144 @@ Return ONLY valid JSON:
         factory_batches[batch_id].update({"status": "error", "stage": str(exc), "progress": 0})
 
 
+# ── Real export: FFmpeg filter_complex from actual uploaded files ──────────────
+
+def _build_real_export_cmd(video_segs, audio_segs, plan, fmt, fps, w, h, vbr,
+                            total_dur, burn_subs, out_path):
+    """
+    Build a real FFmpeg command that encodes actual uploaded media files.
+
+    Strategy:
+      • Each video segment becomes an -i input, trimmed with ss/to,
+        scaled to output resolution, placed at its timeline position via
+        a blank canvas overlay.
+      • Audio segments are mixed with amix.
+      • Falls back gracefully if streams have no video/audio tracks.
+    """
+    # Clamp total dur
+    total_dur = min(total_dur, 600)
+
+    # ── Build input list ──────────────────────────────────────────────────────
+    # Input 0: blank canvas
+    inputs = ["-f", "lavfi", "-i",
+              f"color=c=#0d1117:size={w}x{h}:rate={fps}:duration={total_dur}"]
+    # Input 1: silent audio floor
+    inputs += ["-f", "lavfi", "-i", f"sine=frequency=0:duration={total_dur}"]
+
+    # Video inputs: 2…
+    v_idx   = 2
+    v_infos = []   # (input_index, seg)
+    for seg in video_segs:
+        clip_start = seg.get("clipStart", 0)
+        seg_dur    = round(seg["end"] - seg["start"], 3)
+        inputs += [
+            "-ss", str(clip_start),
+            "-t",  str(seg_dur),
+            "-i",  seg["diskPath"],
+        ]
+        v_infos.append((v_idx, seg))
+        v_idx += 1
+
+    # Audio inputs (after video)
+    a_infos = []
+    for seg in audio_segs:
+        clip_start = seg.get("clipStart", 0)
+        seg_dur    = round(seg["end"] - seg["start"], 3)
+        inputs += [
+            "-ss", str(clip_start),
+            "-t",  str(seg_dur),
+            "-i",  seg["diskPath"],
+        ]
+        a_infos.append((v_idx, seg))
+        v_idx += 1
+
+    # ── Build filter_complex ──────────────────────────────────────────────────
+    fc_parts  = []
+    overlays  = []
+
+    # Scale + pad each video clip
+    for i, (idx, seg) in enumerate(v_infos):
+        t_start  = seg["start"]
+        seg_dur  = seg["end"] - seg["start"]
+        # Scale to fill output, preserving aspect with padding
+        fc_parts.append(
+            f"[{idx}:v]scale={w}:{h}:force_original_aspect_ratio=decrease,"
+            f"pad={w}:{h}:(ow-iw)/2:(oh-ih)/2:black,"
+            f"setpts=PTS-STARTPTS+{t_start:.3f}/TB[v{i}]"
+        )
+        overlays.append((f"[v{i}]", t_start, t_start + seg_dur))
+
+    # Build overlay chain on top of blank canvas
+    if overlays:
+        chain_in  = "[0:v]"
+        for i, (vlabel, t_start, t_end) in enumerate(overlays):
+            chain_out = f"[ov{i}]" if i < len(overlays) - 1 else "[vbase]"
+            fc_parts.append(
+                f"{chain_in}{vlabel}overlay=0:0:"
+                f"enable='between(t,{t_start:.3f},{t_end:.3f})'{chain_out}"
+            )
+            chain_in = f"[ov{i}]"
+        video_out = "[vbase]"
+    else:
+        video_out = "[0:v]"
+
+    # Subtitle burn-in drawtext on top of assembled video
+    if burn_subs and plan.get("subtitle_cues"):
+        sub_dt = _build_subtitle_drawtext(plan["subtitle_cues"], w, h)
+        if sub_dt and video_out:
+            dt_filter = ",".join(sub_dt)
+            label_in  = video_out.strip("[]")
+            fc_parts.append(f"{video_out}{dt_filter}[vfinal]")
+            video_out = "[vfinal]"
+    if video_out not in ("[vfinal]", "[0:v]"):
+        # rename to vfinal for clean mapping
+        fc_parts.append(f"{video_out}null[vfinal]")
+        video_out = "[vfinal]"
+
+    # Audio mix: amix all audio inputs + silent floor
+    if a_infos:
+        delay_parts = []
+        for i, (idx, seg) in enumerate(a_infos):
+            delay_ms = int(seg["start"] * 1000)
+            delay_parts.append(f"[{idx}:a]adelay={delay_ms}|{delay_ms}[ad{i}]")
+        fc_parts += delay_parts
+        all_a = "[1:a]" + "".join(f"[ad{i}]" for i in range(len(a_infos)))
+        n_inputs = 1 + len(a_infos)
+        fc_parts.append(f"{all_a}amix=inputs={n_inputs}:duration=longest[afinal]")
+        audio_out = "[afinal]"
+    else:
+        audio_out = "[1:a]"
+
+    fc_str = ";".join(fc_parts)
+
+    # ── Assemble final FFmpeg command ─────────────────────────────────────────
+    cmd = ["ffmpeg", "-y"] + inputs + ["-filter_complex", fc_str]
+
+    if fmt == "gif":
+        gw, gh = min(w, 480), min(h, 270)
+        cmd += [
+            "-map", video_out,
+            "-vf", f"scale={gw}:{gh},fps=12,split[s0][s1];[s0]palettegen=max_colors=64[p];[s1][p]paletteuse",
+            "-t", str(min(total_dur, 15)), out_path,
+        ]
+    elif fmt == "webm":
+        cmd += [
+            "-map", video_out, "-map", audio_out,
+            "-c:v", "libvpx-vp9", "-b:v", vbr, "-crf", "30",
+            "-c:a", "libopus", "-b:a", "96k",
+            "-t", str(total_dur), out_path,
+        ]
+    else:  # mp4
+        cmd += [
+            "-map", video_out, "-map", audio_out,
+            "-c:v", "libx264", "-preset", "fast", "-b:v", vbr,
+            "-c:a", "aac", "-b:a", "128k",
+            "-t", str(total_dur), "-movflags", "+faststart", out_path,
+        ]
+
+    return cmd
+
+
 # ── FFmpeg background worker ──────────────────────────────────────────────────
 
 def _run_export(job_id: str, project: dict, fmt: str, quality: str, fps: int, settings: dict):
@@ -691,45 +1056,58 @@ def _run_export(job_id: str, project: dict, fmt: str, quality: str, fps: int, se
         ext      = "gif" if fmt == "gif" else ("webm" if fmt == "webm" else "mp4")
         out_path = str(EXPORTS_DIR / f"{job_id}.{ext}")
 
-        # ── Phase 2: Build FFmpeg filter graph ────────────────────────────────
-        # Legacy segment labels for the visualization
+        # ── Phase 2: Build FFmpeg command ──────────────────────────────────────
+        # Collect video/audio segments that have actual files on disk
+        video_segs = [s for s in plan["segments"]
+                      if s["type"] == "video" and s.get("diskPath")
+                      and Path(s["diskPath"]).exists()]
+        audio_segs = [s for s in plan["segments"]
+                      if s["type"] == "audio" and s.get("diskPath")
+                      and Path(s["diskPath"]).exists()]
+
         segment_labels = [(s["start"], s["end"] - s["start"], s["label"])
                           for s in plan["segments"]]
 
-        if fmt == "gif":
-            gw, gh = min(w, 480), min(h, 270)
-            dt = []
-            for i, (st, sdur, lbl) in enumerate(segment_labels[:12]):
-                if lbl:
-                    dt.append(
-                        f"drawtext=text='{_esc_dt(lbl)}':fontcolor=white:"
-                        f"fontsize={max(9, gh//30)}:x=(w-tw)/2:y=h-th-10:"
-                        f"enable='between(t\\,{st:.2f}\\,{st+sdur:.2f})'"
-                    )
-            if burn_subs:
-                dt += _build_subtitle_drawtext(plan["subtitle_cues"], gw, gh)
-            vf = ",".join(
-                [f"scale={gw}:{gh}"] + dt +
-                ["fps=12,split[s0][s1];[s0]palettegen=max_colors=64[p];[s1][p]paletteuse"]
-            )
-            cmd = [
-                "ffmpeg", "-y",
-                "-f", "lavfi", "-i",
-                f"color=c=#1a1a2e:size={gw}x{gh}:rate=12:duration={dur}",
-                "-vf", vf, "-t", str(min(dur, 15)), out_path,
-            ]
+        job.update({"progress": 7, "message": f"Building filter graph ({len(video_segs)} clips)…"})
 
+        if video_segs:
+            # ── REAL EXPORT: use actual uploaded media files ───────────────
+            cmd = _build_real_export_cmd(
+                video_segs, audio_segs, plan, fmt, fps, w, h, vbr, dur,
+                burn_subs, out_path
+            )
         else:
+            # ── PREVIEW EXPORT: blank canvas with timeline annotations ─────
             dt_parts = _build_drawtext(segment_labels, title, w, h)
             if burn_subs:
                 dt_parts += _build_subtitle_drawtext(plan["subtitle_cues"], w, h)
             vf = ",".join(dt_parts) if dt_parts else "null"
 
-            if fmt == "webm":
+            if fmt == "gif":
+                gw, gh = min(w, 480), min(h, 270)
+                dt = []
+                for st, sdur, lbl in segment_labels[:12]:
+                    if lbl:
+                        dt.append(
+                            f"drawtext=text='{_esc_dt(lbl)}':fontcolor=white:"
+                            f"fontsize={max(9, gh//30)}:x=(w-tw)/2:y=h-th-10:"
+                            f"enable='between(t\\,{st:.2f}\\,{st+sdur:.2f})'"
+                        )
+                if burn_subs:
+                    dt += _build_subtitle_drawtext(plan["subtitle_cues"], gw, gh)
+                vf2 = ",".join(
+                    [f"scale={gw}:{gh}"] + dt +
+                    ["fps=12,split[s0][s1];[s0]palettegen=max_colors=64[p];[s1][p]paletteuse"]
+                )
+                cmd = [
+                    "ffmpeg", "-y", "-f", "lavfi", "-i",
+                    f"color=c=#1a1a2e:size={gw}x{gh}:rate=12:duration={dur}",
+                    "-vf", vf2, "-t", str(min(dur, 15)), out_path,
+                ]
+            elif fmt == "webm":
                 cmd = [
                     "ffmpeg", "-y",
-                    "-f", "lavfi", "-i",
-                    f"color=c=#0d1117:size={w}x{h}:rate={fps}:duration={dur}",
+                    "-f", "lavfi", "-i", f"color=c=#0d1117:size={w}x{h}:rate={fps}:duration={dur}",
                     "-f", "lavfi", "-i", f"sine=frequency=0:duration={dur}",
                     "-filter_complex", f"[0:v]{vf}[vout]",
                     "-map", "[vout]", "-map", "1:a",
@@ -737,11 +1115,10 @@ def _run_export(job_id: str, project: dict, fmt: str, quality: str, fps: int, se
                     "-c:a", "libopus", "-b:a", "96k",
                     "-t", str(dur), out_path,
                 ]
-            else:  # mp4
+            else:
                 cmd = [
                     "ffmpeg", "-y",
-                    "-f", "lavfi", "-i",
-                    f"color=c=#0d1117:size={w}x{h}:rate={fps}:duration={dur}",
+                    "-f", "lavfi", "-i", f"color=c=#0d1117:size={w}x{h}:rate={fps}:duration={dur}",
                     "-f", "lavfi", "-i", f"sine=frequency=0:duration={dur}",
                     "-filter_complex", f"[0:v]{vf}[vout]",
                     "-map", "[vout]", "-map", "1:a",
@@ -900,6 +1277,67 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.path = "/capcut.html"
             return super().do_GET()
 
+        # ── Health endpoint ───────────────────────────────────────────────────
+        if self.path == "/health":
+            return self.send_json(_health_data())
+
+        # ── Asset registry list ───────────────────────────────────────────────
+        if self.path == "/asset/list":
+            assets = []
+            for fid, rec in _asset_registry.items():
+                p = Path(rec.get("path", ""))
+                assets.append({
+                    "fileId":     fid,
+                    "name":       rec.get("name"),
+                    "mime":       rec.get("mime"),
+                    "size":       rec.get("size"),
+                    "ext":        rec.get("ext"),
+                    "uploadedAt": rec.get("uploadedAt"),
+                    "serverUrl":  rec.get("serverUrl"),
+                    "exists":     p.exists(),
+                })
+            assets.sort(key=lambda a: a.get("uploadedAt") or 0, reverse=True)
+            return self.send_json({"assets": assets, "total": len(assets)})
+
+        # ── Serve uploaded assets via permanent URL ───────────────────────────
+        if self.path.startswith("/uploads/"):
+            fname = self.path[9:].split("?")[0].lstrip("/")
+            # Security: no path traversal
+            if ".." in fname or "/" in fname or "\\" in fname:
+                return self.send_json({"error": "Invalid path"}, 400)
+            fpath = UPLOADS_DIR / fname
+            # Only serve allowed extensions
+            if Path(fname).suffix.lower() not in ALLOWED_EXTENSIONS | {".wav"}:
+                return self.send_json({"error": "Not allowed"}, 403)
+            if not fpath.exists():
+                return self.send_json({"error": "Not found"}, 404)
+            ct, _ = mimetypes.guess_type(str(fpath))
+            ct    = ct or "application/octet-stream"
+            fsize = fpath.stat().st_size
+            self.send_response(200)
+            self._cors()
+            self.send_header("Content-Type",   ct)
+            self.send_header("Content-Length", str(fsize))
+            self.send_header("Cache-Control",  "public, max-age=86400")
+            self.end_headers()
+            with open(fpath, "rb") as f:
+                while True:
+                    chunk = f.read(65536)
+                    if not chunk:
+                        break
+                    self.wfile.write(chunk)
+            return
+
+        # ── Project version list ──────────────────────────────────────────────
+        if self.path.startswith("/project/versions/"):
+            pid = self.path[len("/project/versions/"):].strip("/")
+            if not pid:
+                return self.send_json({"error": "pid required"}, 400)
+            return self.send_json({
+                "pid":      pid,
+                "versions": _project_versions_list(pid),
+            })
+
         # Project endpoints
         if self.path == "/project/list":
             return self.send_json(project_list())
@@ -1021,7 +1459,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         EXPORT_START    = "/export/start"
         EXPORT_CANCEL   = "/export/cancel"
         FACTORY_GENERATE = "/factory/generate"
-        ALLOWED_PATHS = AI_PATHS | BETA_POST_PATHS | {"/project/save", EXPORT_START, EXPORT_CANCEL, FACTORY_GENERATE}
+        FOUNDATION_PATHS = {"/project/restore", "/asset/delete", "/cleanup/run"}
+        ALLOWED_PATHS = AI_PATHS | BETA_POST_PATHS | FOUNDATION_PATHS | {"/project/save", EXPORT_START, EXPORT_CANCEL, FACTORY_GENERATE}
         if self.path not in ALLOWED_PATHS:
             self.send_json({"error": "Not found"}, 404)
             return
@@ -1129,6 +1568,36 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     _save_export_history()
                     return self.send_json({"ok": True})
                 return self.send_json({"error": "Job not found or already finished"}, 404)
+
+            # Foundation endpoints
+            if self.path == "/project/restore":
+                pid = body.get("pid", "")
+                ts  = body.get("ts", "")
+                if not pid or not ts:
+                    return self.send_json({"error": "pid and ts required"}, 400)
+                data = _project_version_restore(pid, ts)
+                if data is None:
+                    return self.send_json({"error": "Version not found"}, 404)
+                # Restore by overwriting current project file
+                project_save(data)
+                return self.send_json({"ok": True, "pid": pid, "ts": ts})
+
+            if self.path == "/asset/delete":
+                fid = body.get("fileId", "")
+                if not fid:
+                    return self.send_json({"error": "fileId required"}, 400)
+                rec = _asset_registry.pop(fid, None)
+                if rec:
+                    try:
+                        Path(rec["path"]).unlink(missing_ok=True)
+                    except Exception:
+                        pass
+                    _save_asset_registry()
+                return self.send_json({"ok": True, "deleted": fid})
+
+            if self.path == "/cleanup/run":
+                threading.Thread(target=_run_cleanup, daemon=True).start()
+                return self.send_json({"ok": True, "message": "Cleanup started"})
 
             # Project save
             if self.path == "/project/save":
@@ -1746,18 +2215,40 @@ def handle_upload_media(handler):
         raise ValueError("No 'file' field found in multipart body")
 
     filename = filename or "upload.bin"
-    file_id  = "upl_" + uuid.uuid4().hex[:14]
-    ext      = Path(filename).suffix.lower() or ".bin"
+
+    # ── Security: extension + size check ──────────────────────────────────────
+    ext = Path(filename).suffix.lower() or ".bin"
+    if ext not in ALLOWED_EXTENSIONS:
+        raise ValueError(f"File type '{ext}' not allowed. Supported: video, audio, image.")
+    if len(file_data) > MAX_UPLOAD_BYTES:
+        raise ValueError(f"File too large ({len(file_data)//1024//1024} MB). Max is 500 MB.")
+
+    # ── Detect MIME from content ────────────────────────────────────────────────
+    guessed_mime, _ = mimetypes.guess_type(filename)
+    if not guessed_mime:
+        guessed_mime = "application/octet-stream"
+    if not any(guessed_mime.startswith(p) for p in ALLOWED_MIME_PREFIXES):
+        # Be lenient — only block if it looks like something dangerous
+        if guessed_mime in ("application/x-executable", "text/html", "text/javascript",
+                            "application/javascript", "application/x-php"):
+            raise ValueError(f"MIME type '{guessed_mime}' is not allowed.")
+
+    file_id   = "upl_" + uuid.uuid4().hex[:14]
     save_path = UPLOADS_DIR / f"{file_id}{ext}"
     save_path.write_bytes(file_data)
 
+    # ── Register in asset registry for permanent URL + export lookup ────────────
+    _register_asset(file_id, str(save_path), filename, guessed_mime, len(file_data), ext)
+
     print(f"[upload] saved {filename} → {save_path} ({len(file_data)//1024} KB)", flush=True)
     return {
-        "ok":       True,
-        "fileId":   file_id,
-        "filename": filename,
-        "size":     len(file_data),
-        "ext":      ext,
+        "ok":        True,
+        "fileId":    file_id,
+        "filename":  filename,
+        "size":      len(file_data),
+        "ext":       ext,
+        "mime":      guessed_mime,
+        "serverUrl": f"/uploads/{file_id}{ext}",
     }
 
 
@@ -2154,6 +2645,11 @@ def project_save(body):
     body["id"] = pid
     path = PROJECTS_DIR / (pid + ".json")
     path.write_text(json.dumps(body, ensure_ascii=False), encoding="utf-8")
+    # Auto-version backup on every save
+    try:
+        _project_version_save(pid, body)
+    except Exception:
+        pass
     return {"ok": True, "id": pid}
 
 
@@ -2527,6 +3023,14 @@ Quy tắc:
 
 if __name__ == "__main__":
     _load_export_history()
+    _restore_export_jobs()   # Phase 5.5B: restore jobs from disk
+    # Start background cleanup thread
+    t_cleanup = threading.Thread(target=_cleanup_worker, daemon=True)
+    t_cleanup.start()
+    print(f"[server] Asset registry: {len(_asset_registry)} entries", flush=True)
+    print(f"[server] Export jobs restored: {len(export_jobs)}", flush=True)
+    print(f"[server] FFmpeg: {'✅' if _check_ffmpeg() else '❌ not found'}", flush=True)
+    print(f"[server] OpenAI: {'✅ configured' if (os.environ.get('AI_INTEGRATIONS_OPENAI_API_KEY') or os.environ.get('OPENAI_API_KEY')) else '❌ not configured'}", flush=True)
     PORT = 5000
     socketserver.TCPServer.allow_reuse_address = True
     with socketserver.TCPServer(("0.0.0.0", PORT), Handler) as httpd:

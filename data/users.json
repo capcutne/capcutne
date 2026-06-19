@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "id": "b18b9c6f854b43ce",
+    "email": "a@gmail.com",
+    "displayName": "ádasdasd",
+    "passwordHash": "acb2fd02db6e49526a8eb117c4cd9de4dfeac69fb94cc653abe531368af389f2",
+    "role": "beta_user",
+    "createdAt": 1781904024.786535,
+    "healthScore": 20,
+    "onboardingComplete": true
+  }
+]
