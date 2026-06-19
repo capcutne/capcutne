@@ -1,0 +1,256 @@
+PHASE 5.3 - VOICE EDITING COPILOT
+
+Phân tích toàn bộ hệ thống hiện tại trước khi thực hiện.
+
+Các module hiện có:
+
+- AI Copilot
+- Action Engine
+- Transcript Engine
+- Viral Intelligence
+- Auto Subtitle Pro
+- Export Engine
+- Batch Shorts Factory
+- Brand Clone
+- Content Agent
+
+==================================================
+MỤC TIÊU
+==================================================
+
+Cho phép người dùng điều khiển editor bằng giọng nói.
+
+Ví dụ:
+
+"Cắt đoạn từ phút 1 đến phút 2"
+
+"Thêm subtitle"
+
+"Tạo 10 shorts"
+
+"Zoom đoạn này"
+
+"Thêm nhạc nền"
+
+"Xuất 1080p"
+
+==================================================
+1. VOICE ENGINE
+==================================================
+
+Tạo:
+
+VoiceCopilot
+
+Files:
+
+js/voice.js
+
+Chức năng:
+
+- Start Listening
+- Stop Listening
+- Push To Talk
+
+==================================================
+2. SPEECH TO TEXT
+==================================================
+
+Tạo:
+
+Voice → Transcript
+
+Schema:
+
+{
+  text:"",
+  confidence:0
+}
+
+Ưu tiên hỗ trợ:
+
+- Tiếng Việt
+- Tiếng Anh
+
+==================================================
+3. COMMAND UNDERSTANDING
+==================================================
+
+Voice
+↓
+Transcript
+↓
+AI Copilot
+↓
+Action Engine
+↓
+Editor
+
+==================================================
+4. COMMAND TYPES
+==================================================
+
+Timeline:
+
+"Cắt đoạn này"
+
+"Di chuyển clip sang phải"
+
+"Xóa clip"
+
+--------------------------------------------------
+
+Subtitle:
+
+"Tạo subtitle"
+
+"Đổi font"
+
+"Highlight từ khóa"
+
+--------------------------------------------------
+
+Shorts:
+
+"Tạo shorts"
+
+"Chọn short tốt nhất"
+
+--------------------------------------------------
+
+Export:
+
+"Xuất 1080p"
+
+"Xuất tất cả shorts"
+
+==================================================
+5. CONTEXT AWARENESS
+==================================================
+
+AI phải hiểu:
+
+"đoạn này"
+
+"clip này"
+
+"subtitle này"
+
+dựa vào:
+
+- clip đang chọn
+- playhead hiện tại
+- panel đang mở
+
+==================================================
+6. VOICE FEEDBACK
+==================================================
+
+Hiển thị:
+
+🎤 Đang nghe...
+
+🎤 Đã hiểu:
+
+"Cắt đoạn từ 1:00 tới 2:00"
+
+==================================================
+7. CONFIRMATION MODE
+==================================================
+
+Các hành động nguy hiểm:
+
+- xóa
+- ghi đè
+- export hàng loạt
+
+phải xác nhận.
+
+Ví dụ:
+
+"Bạn có chắc muốn xóa 15 clip không?"
+
+==================================================
+8. HOTWORD
+==================================================
+
+Tùy chọn:
+
+"Hey Editor"
+
+hoặc
+
+"Hey AI"
+
+để kích hoạt.
+
+Có thể bật/tắt.
+
+==================================================
+9. VOICE COMMAND HISTORY
+==================================================
+
+Lưu:
+
+{
+  command:"",
+  action:"",
+  timestamp:""
+}
+
+==================================================
+10. ACTION ENGINE
+==================================================
+
+Tái sử dụng Action Engine hiện có.
+
+Không tạo logic chỉnh sửa mới.
+
+Voice chỉ là lớp điều khiển.
+
+==================================================
+11. COPILOT PANEL
+==================================================
+
+Hiển thị:
+
+- transcript giọng nói
+- action được nhận diện
+- kết quả thực hiện
+
+==================================================
+12. KHÔNG ĐƯỢC PHÁ VỠ
+==================================================
+
+Không làm hỏng:
+
+- Timeline
+- Copilot
+- Save/Load
+- Export
+- Shorts Factory
+
+==================================================
+13. DELIVERABLE
+==================================================
+
+1. File tạo mới
+2. File chỉnh sửa
+3. Voice architecture
+4. Command mapping
+5. Context handling
+6. Confirmation workflow
+7. History schema
+8. Limitations
+
+==================================================
+YÊU CẦU QUAN TRỌNG
+==================================================
+
+Voice phải sử dụng Action Engine hiện có.
+
+Không được tạo hệ thống chỉnh sửa riêng cho voice.
+
+Voice = lớp giao tiếp.
+
+Action Engine = lớp thực thi duy nhất.
