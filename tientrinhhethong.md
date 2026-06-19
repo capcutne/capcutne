@@ -10,6 +10,14 @@
 
 > Cập nhật mỗi khi hoàn thành một tính năng. Chức năng mới nhất ở **đầu danh sách**.
 
+### Phase 5.3 — Voice Editing Copilot ✅
+- [x] F116 — Hotword Activation: "Hey Editor" / "Này AI" kích hoạt nghe tự động
+- [x] F115 — Push-to-Talk: giữ nút mic để ra lệnh, thả để xử lý
+- [x] F114 — Destructive Action Confirmation: các lệnh nguy hiểm (xóa clip, export...) yêu cầu xác nhận trước khi thực hiện
+- [x] F113 — Voice History: lưu lịch sử 50 lệnh giọng nói vào localStorage `cc_voice_history`
+- [x] F112b — VoiceCopilot Panel: UI nổi với waveform, transcript, history, nút PTT, hotword toggle
+- [x] F112a — Voice → STT → AI Copilot → Action Engine: pipeline hoàn chỉnh Web Speech API → `/ai/editor-command` → `executeActions()` → Timeline
+
 ### Phase 4.0 — Auto Content Factory ✅
 - [x] F112 — AI Copilot Commands: "Chạy factory", "Tạo toàn bộ nội dung", "Xuất factory package"
 - [x] F111 — Export Package JSON: cấu trúc /youtube /shorts /tiktok /reels /blog /newsletter /social
