@@ -1,0 +1,234 @@
+PHASE 5.5B - FOUNDATION COMPLETION
+
+Phân tích toàn bộ codebase và đánh giá mức độ production-ready thực tế.
+
+MỤC TIÊU:
+
+Không thêm tính năng AI mới.
+
+Hoàn thiện các nền tảng bắt buộc để sản phẩm có thể phục vụ người dùng thật.
+
+==================================================
+1. AUTHENTICATION THẬT
+==================================================
+
+Nếu chưa có:
+
+- Register
+- Login
+- Logout
+- Session Management
+- Password Reset
+
+thì triển khai đầy đủ.
+
+Schema:
+
+User
+Project
+Asset
+
+liên kết bằng userId.
+
+==================================================
+2. CLOUD STORAGE
+==================================================
+
+Hiện tại localStorage không đủ.
+
+Triển khai abstraction:
+
+StorageProvider
+
+Hỗ trợ:
+
+- Local
+- S3
+- Cloudflare R2
+
+Asset phải có:
+
+{
+ id:"",
+ userId:"",
+ storageKey:"",
+ size:0,
+ mimeType:""
+}
+
+==================================================
+3. REAL ASSET PERSISTENCE
+==================================================
+
+Hiện tại blob URL không sống qua reload.
+
+Cần:
+
+Upload
+↓
+Cloud Storage
+↓
+Permanent URL
+
+Không yêu cầu re-upload sau khi load project.
+
+==================================================
+4. BACKGROUND JOB SYSTEM
+==================================================
+
+Tạo:
+
+JobManager
+
+Hỗ trợ:
+
+- transcript
+- export
+- shorts factory
+- content factory
+
+Schema:
+
+{
+ id:"",
+ type:"",
+ status:"",
+ progress:0,
+ createdAt:""
+}
+
+==================================================
+5. REAL WHISPER PIPELINE
+==================================================
+
+Kiểm tra:
+
+- ffmpeg extract audio
+- whisper transcription
+- timestamp generation
+
+Nếu đang mock hoặc demo:
+thay bằng pipeline thật.
+
+==================================================
+6. REAL EXPORT PIPELINE
+==================================================
+
+Kiểm tra:
+
+Timeline
+↓
+Compiler
+↓
+FFmpeg
+↓
+MP4
+
+Nếu export chưa render video thật:
+phải hoàn thiện.
+
+==================================================
+7. DATABASE LAYER
+==================================================
+
+Tạo abstraction:
+
+DatabaseProvider
+
+Không cho business logic gọi trực tiếp SQLite/localStorage.
+
+Chuẩn bị:
+
+SQLite
+Postgres
+
+==================================================
+8. FILE CLEANUP
+==================================================
+
+Dọn:
+
+- temp exports
+- temp audio
+- orphan assets
+- failed jobs
+
+==================================================
+9. BACKUP & RECOVERY
+==================================================
+
+Tạo:
+
+Project Recovery System
+
+Cho phép:
+
+- restore autosave
+- restore export jobs
+- restore transcript jobs
+
+==================================================
+10. OBSERVABILITY
+==================================================
+
+Tạo:
+
+Metrics
+
+Logs
+
+Health Checks
+
+==================================================
+11. PERFORMANCE BENCHMARK
+==================================================
+
+Đo:
+
+- upload time
+- transcript time
+- export time
+- memory usage
+
+==================================================
+12. SECURITY HARDENING
+==================================================
+
+Kiểm tra:
+
+- upload validation
+- file size limits
+- MIME validation
+- auth validation
+- XSS
+- CSRF
+
+==================================================
+13. BÁO CÁO CUỐI
+==================================================
+
+Cung cấp:
+
+1. Những gì đang production-ready
+2. Những gì vẫn là mock/demo
+3. Những gì còn thiếu để launch
+4. Risk assessment
+5. Architecture diagram
+6. Estimated max concurrent users
+7. Top 10 bottlenecks
+8. Launch readiness score
+
+==================================================
+YÊU CẦU QUAN TRỌNG
+==================================================
+
+Ưu tiên hoàn thiện nền tảng.
+
+Không thêm AI feature mới.
+
+Không thêm dashboard mới trừ khi cần monitoring.
+
+Mục tiêu:
+
+Từ prototype nhiều tính năng
+→ sản phẩm có thể phục vụ người dùng thật.
