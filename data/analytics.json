@@ -90,5 +90,13 @@
     "step": null,
     "ts": 1781907976967.401,
     "url": ""
+  },
+  {
+    "userId": "b18b9c6f854b43ce",
+    "event": "app_open",
+    "data": {},
+    "step": null,
+    "ts": 1781908581135,
+    "url": "/"
   }
 ]

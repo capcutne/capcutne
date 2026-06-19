@@ -3939,7 +3939,7 @@ function setTool(el,name){
   document.querySelectorAll('#lsb .tb').forEach(b=>b.classList.remove('on'));
   el.classList.add('on');
   activeTool=name;
-  // Phase 3.0/3.1 side panels
+  // Side panels (overlay + inline)
   const msPanel = document.getElementById('mystyle-panel');
   const bcPanel = document.getElementById('brand-panel');
   const apPanel = document.getElementById('analytics-panel');
@@ -3947,6 +3947,13 @@ function setTool(el,name){
   const hlPanel = document.getElementById('health-panel');
   const pbPanel = document.getElementById('publish-panel');
   const cfPanel = document.getElementById('cfactory-panel');
+
+  function _closeOverlays(except){
+    // Close slide-in overlay panels (shorts / factory / transcript)
+    if(except!=='shorts'     && window.ShortsGen)          ShortsGen.close();
+    if(except!=='factory'    && window.BatchFactory)        BatchFactory.close();
+    if(except!=='transcript' && window.TranscriptEngine)    TranscriptEngine.close();
+  }
   function _hideAll(except){
     if(except!=='mystyle'  && msPanel) msPanel.classList.add('hidden');
     if(except!=='brand'    && bcPanel) bcPanel.classList.add('hidden');
@@ -3955,6 +3962,7 @@ function setTool(el,name){
     if(except!=='publish'  && pbPanel) pbPanel.classList.add('hidden');
     if(except!=='cfactory' && cfPanel) cfPanel.classList.add('hidden');
     if(except!=='health'&&hlPanel){hlPanel.classList.add('hidden');if(window.HealthMonitor)HealthMonitor.stopAutoRefresh();}
+    _closeOverlays(except);
   }
   if(name==='mystyle'){
     _hideAll('mystyle');
@@ -3989,6 +3997,22 @@ function setTool(el,name){
   if(name==='cfactory'){
     _hideAll('cfactory');
     if(cfPanel){ cfPanel.classList.remove('hidden'); if(window.ContentFactory) ContentFactory.renderDashboard(); }
+    return;
+  }
+  // ── Overlay slide-in panels ──────────────────────────────────────────────
+  if(name==='shorts'){
+    _hideAll('shorts');
+    if(window.ShortsGen) ShortsGen.open(); else toast('Shorts generator đang tải…');
+    return;
+  }
+  if(name==='factory'){
+    _hideAll('factory');
+    if(window.BatchFactory) BatchFactory.open(); else toast('Batch Factory đang tải…');
+    return;
+  }
+  if(name==='transcript'){
+    _hideAll('transcript');
+    if(window.TranscriptEngine) TranscriptEngine.open(); else toast('Transcript engine đang tải…');
     return;
   }
   _hideAll('');
