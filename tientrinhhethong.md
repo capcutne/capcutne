@@ -10,6 +10,17 @@
 
 > Cập nhật mỗi khi hoàn thành một tính năng. Chức năng mới nhất ở **đầu danh sách**.
 
+### Phase 5.4 — Natural Language Video Editing ✅
+- [x] F123 — Conversation Memory: nhớ ngữ cảnh trong cùng phiên ("tất cả" = shorts vừa tạo, "tiếp tục" = kế hoạch trước)
+- [x] F122 — Agent Collaboration: Task Planner điều phối Viral Intelligence, Subtitle Pro, Export Engine, Brand Clone, Content Agent
+- [x] F121 — Context Awareness: AI hiểu "video này", "clip này", "đoạn đang chọn" từ trạng thái editor thực tế
+- [x] F120 — Safe Execution: yêu cầu xác nhận trước khi xóa project, export hàng loạt, ghi đè
+- [x] F119 — Preview Before Execute: hiển thị kế hoạch từng bước, người dùng xác nhận trước khi chạy
+- [x] F118 — Multi-step Planning: "Tạo 10 shorts" → [transcript → viral → generate → subtitle → export]
+- [x] F117 — Intent Understanding: 6 intent (EDIT_VIDEO, CREATE_SHORTS, GENERATE_SUBTITLE, EXPORT, ANALYZE, PUBLISH_PREP)
+- [x] F116b — AI Command Center Dashboard: panel NL Edit với context badge, examples, history, exec progress
+- [x] F116a — TaskPlanner (`js/planner.js`): Natural Language → `/ai/plan-task` → Action Engine → Timeline
+
 ### Phase 5.3 — Voice Editing Copilot ✅
 - [x] F116 — Hotword Activation: "Hey Editor" / "Này AI" kích hoạt nghe tự động
 - [x] F115 — Push-to-Talk: giữ nút mic để ra lệnh, thả để xử lý

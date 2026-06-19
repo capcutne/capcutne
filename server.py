@@ -37,7 +37,7 @@ AI_PATHS = {
     "/ai/translate", "/ai/editor-command", "/ai/generate-shorts",
     "/ai/viral-analysis", "/ai/transcribe",
     "/ai/upload-media", "/ai/transcribe-real",
-    "/ai/auto-style",
+    "/ai/auto-style", "/ai/plan-task",
     "/brand/train", "/brand/compare",
     # Phase 4.0 — Auto Content Factory
     "/cfactory/plan", "/cfactory/titles", "/cfactory/blog",
@@ -765,6 +765,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 result = handle_transcribe_real(body)
             elif self.path == "/ai/auto-style":
                 result = handle_auto_style(body)
+            # Phase 5.4 — Natural Language Video Editing
+            elif self.path == "/ai/plan-task":
+                result = handle_plan_task(body)
             elif self.path == "/brand/train":
                 result = handle_brand_train(body)
             elif self.path == "/brand/compare":
@@ -2000,6 +2003,134 @@ Trả về JSON:
         max_completion_tokens=3000,
     )
     return json.loads(resp.choices[0].message.content)
+
+
+# ── Phase 5.4 — Natural Language Video Editing ────────────────────────────────
+
+def handle_plan_task(body):
+    """Natural language request → intent + multi-step task plan + actions."""
+    _require_client()
+
+    request  = body.get("request", "").strip()
+    state    = body.get("editorState", {})
+    memory   = body.get("conversationMemory", {})
+
+    if not request:
+        return {"error": "request is required"}
+
+    clips    = state.get("clips", [])
+    subs     = state.get("subtitles", [])
+    dur      = float(state.get("totalDuration", 0))
+    selected = state.get("selectedClips", [])
+    trans    = state.get("transcriptSegments", [])
+    panel    = state.get("activePanel", "")
+    project  = state.get("projectName", "")
+
+    clips_txt = "\n".join(
+        f'  [{i+1}] "{c.get("label","")}" {float(c.get("start",0)):.1f}s→{float(c.get("start",0))+float(c.get("dur",0)):.1f}s'
+        for i, c in enumerate(clips[:20])
+    ) or "  (trống)"
+    subs_txt = "\n".join(
+        f'  {float(s.get("start",0)):.1f}s: "{s.get("text","")}"'
+        for s in subs[:10]
+    ) or "  (không có)"
+    trans_txt = "\n".join(
+        f'  {float(t.get("start",0)):.1f}s: "{t.get("text","")}"'
+        for t in trans[:20]
+    ) or "  (không có)"
+    sel_txt = ", ".join(f'"{c.get("label","")}"' for c in selected) or "không có"
+
+    mem_txt = ""
+    if memory.get("lastRequest"):
+        mem_txt = f"\nLệnh trước: \"{memory['lastRequest']}\" (intent: {memory.get('lastIntent','')})"
+
+    prompt = f"""Bạn là AI assistant cho ứng dụng chỉnh sửa video CapCut Clone (tiếng Việt).
+Người dùng ra lệnh bằng ngôn ngữ tự nhiên. Nhiệm vụ của bạn:
+1. Hiểu ý định (intent)
+2. Lập kế hoạch từng bước
+3. Sinh actions cho Action Engine
+
+TRẠNG THÁI EDITOR:
+- Project: "{project}"
+- Panel đang mở: {panel}
+- Tổng thời lượng: {dur:.1f}s
+- Clip đang chọn: {sel_txt}
+
+TIMELINE ({len(clips)} clips):
+{clips_txt}
+
+PHỤ ĐỀ ({len(subs)} cái):
+{subs_txt}
+
+TRANSCRIPT (mẫu):
+{trans_txt}
+
+BỘ NHỚ PHIÊN:
+{mem_txt or "  (phiên mới)"}
+
+YÊU CẦU NGƯỜI DÙNG: "{request}"
+
+Phân tích và trả về JSON:
+{{
+  "intent": "<EDIT_VIDEO|CREATE_SHORTS|GENERATE_SUBTITLE|EXPORT|ANALYZE|PUBLISH_PREP>",
+  "confidence": <0.0-1.0>,
+  "explanation": "<giải thích ngắn AI sẽ làm gì và tại sao, 1-2 câu tiếng Việt>",
+  "tasks": [
+    {{"step": 1, "label": "<mô tả bước tiếng Việt>", "action": "<action_type>"}},
+    ...
+  ],
+  "actions": [
+    {{"stepIndex": 0, "type": "<action_type>", "params": {{...}}}},
+    ...
+  ]
+}}
+
+Action types có thể dùng:
+- remove_silence (params: threshold)
+- generate_subtitles (params: style)
+- restyle_subtitles (params: style — tiktok/mrbeast/podcast/netflix/gaming/minimal/documentary)
+- create_short (params: duration)
+- generate_batch (params: maxShorts)
+- export_batch (params: format, quality)
+- apply_style (params: style)
+- apply_brand (params: profileId)
+- train_brand (params: )
+- generate_content_factory (params: types)
+- optimize_platform (params: platform)
+- validate_content (params: )
+- prepare_publish_package (params: )
+- generate_insights (params: )
+- highlight_keywords (params: keywords)
+
+Quy tắc:
+- tasks[]: mô tả từng bước bằng tiếng Việt, tối đa 6 bước
+- actions[]: actions tương ứng để Action Engine thực thi (stepIndex bắt đầu từ 0)
+- Với yêu cầu phức tạp ("tạo 10 shorts"), lập đủ các bước cần thiết
+- Với yêu cầu nguy hiểm (xóa, export hàng loạt), vẫn lập kế hoạch bình thường — frontend sẽ xác nhận
+- Nếu không hiểu yêu cầu, tasks = [] và giải thích trong explanation
+- Chỉ trả JSON thuần, không giải thích thêm
+"""
+
+    resp = client.chat.completions.create(
+        model=MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+        max_completion_tokens=1024,
+    )
+    result = json.loads(resp.choices[0].message.content)
+
+    # Normalize
+    valid_intents = {"EDIT_VIDEO","CREATE_SHORTS","GENERATE_SUBTITLE","EXPORT","ANALYZE","PUBLISH_PREP"}
+    if result.get("intent") not in valid_intents:
+        result["intent"] = "EDIT_VIDEO"
+    result["confidence"] = round(max(0.0, min(1.0, float(result.get("confidence", 0.8)))), 2)
+    if not isinstance(result.get("tasks"), list):
+        result["tasks"] = []
+    if not isinstance(result.get("actions"), list):
+        result["actions"] = []
+
+    print(f"[planner] intent={result['intent']} conf={result['confidence']} steps={len(result['tasks'])}", flush=True)
+    return result
 
 
 # ── Entry ─────────────────────────────────────────────────────────────────────

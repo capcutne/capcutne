@@ -1,0 +1,320 @@
+PHASE 5.4 - NATURAL LANGUAGE VIDEO EDITING
+
+Phân tích toàn bộ hệ thống hiện tại trước khi thực hiện.
+
+Các module hiện có:
+
+- Voice Editing Copilot
+- AI Copilot
+- Action Engine
+- Content Agent
+- Brand Clone
+- Personal Editing Memory
+- Viral Intelligence
+- Auto Subtitle Pro
+- Export Engine
+
+==================================================
+MỤC TIÊU
+==================================================
+
+Cho phép người dùng chỉnh sửa video bằng ngôn ngữ tự nhiên.
+
+Người dùng không cần biết lệnh.
+
+Người dùng chỉ cần mô tả mong muốn.
+
+Ví dụ:
+
+"Video này hơi dài, cắt bớt các đoạn lan man"
+
+"Tạo phiên bản TikTok nhanh hơn"
+
+"Làm video này giống các video cũ của tôi"
+
+"Tạo 5 shorts tốt nhất và xuất 1080p"
+
+==================================================
+1. TASK PLANNER
+==================================================
+
+Tạo:
+
+TaskPlanner
+
+Workflow:
+
+User Request
+↓
+Intent Analysis
+↓
+Task Planning
+↓
+Action Generation
+↓
+Action Engine
+↓
+Execution
+
+==================================================
+2. INTENT UNDERSTANDING
+==================================================
+
+Phân loại:
+
+EDIT_VIDEO
+
+CREATE_SHORTS
+
+GENERATE_SUBTITLE
+
+EXPORT
+
+ANALYZE
+
+PUBLISH_PREP
+
+==================================================
+3. MULTI STEP PLANNING
+==================================================
+
+Ví dụ:
+
+"Tạo 10 shorts"
+
+↓
+
+[
+ create_transcript,
+ analyze_viral,
+ generate_shorts,
+ generate_subtitles,
+ export_shorts
+]
+
+==================================================
+4. EXECUTION PLAN
+==================================================
+
+Schema:
+
+{
+  intent:"",
+  confidence:0,
+  tasks:[]
+}
+
+==================================================
+5. PREVIEW BEFORE EXECUTION
+==================================================
+
+AI phải hiển thị:
+
+"Tôi sẽ thực hiện:
+
+1. Phân tích transcript
+2. Tìm 10 đoạn viral
+3. Tạo subtitle
+4. Xuất video
+
+Tiếp tục?"
+
+Người dùng xác nhận.
+
+==================================================
+6. SAFE EXECUTION
+==================================================
+
+Không tự động:
+
+- xóa project
+- ghi đè project
+- export hàng loạt
+- reset timeline
+
+nếu chưa xác nhận.
+
+==================================================
+7. CONTEXT AWARENESS
+==================================================
+
+AI hiểu:
+
+"video này"
+
+"clip này"
+
+"đoạn này"
+
+"short vừa tạo"
+
+dựa trên:
+
+- clip đang chọn
+- playhead
+- project hiện tại
+- panel đang mở
+
+==================================================
+8. SMART EDIT COMMANDS
+==================================================
+
+Ví dụ:
+
+"Cắt các đoạn im lặng"
+
+"Dịch subtitle sang tiếng Anh"
+
+"Tăng nhịp video"
+
+"Đổi subtitle sang phong cách MrBeast"
+
+"Thêm CTA cuối video"
+
+"Tạo phiên bản podcast"
+
+==================================================
+9. BRAND AWARENESS
+==================================================
+
+Kết nối Brand Clone.
+
+Ví dụ:
+
+"Làm giống phong cách của tôi"
+
+↓
+
+AI áp dụng:
+
+- subtitle
+- hook
+- CTA
+- template
+
+từ Brand Profile.
+
+==================================================
+10. LEARNING SYSTEM
+==================================================
+
+Theo dõi:
+
+- lệnh được dùng nhiều
+- lệnh bị hủy
+- lệnh được chỉnh sửa
+
+để cải thiện planner.
+
+==================================================
+11. CONVERSATION MEMORY
+==================================================
+
+Trong cùng phiên làm việc.
+
+Ví dụ:
+
+User:
+
+"Tạo 5 shorts"
+
+Sau đó:
+
+"Xuất tất cả"
+
+AI hiểu:
+
+"tất cả" = 5 shorts vừa tạo.
+
+==================================================
+12. AGENT COLLABORATION
+==================================================
+
+Task Planner có thể gọi:
+
+- Viral Intelligence
+- Subtitle Pro
+- Export Engine
+- Content Agent
+- Brand Clone
+
+như các worker.
+
+==================================================
+13. EXPLANATION MODE
+==================================================
+
+Hiển thị:
+
+- AI đang làm gì
+- tại sao làm vậy
+- kết quả từng bước
+
+==================================================
+14. ACTION ENGINE
+==================================================
+
+KHÔNG tạo hệ thống chỉnh sửa riêng.
+
+Task Planner chỉ sinh action.
+
+Action Engine vẫn là nơi thực thi duy nhất.
+
+==================================================
+15. DASHBOARD
+==================================================
+
+Tạo:
+
+AI Command Center
+
+Hiển thị:
+
+- yêu cầu hiện tại
+- kế hoạch
+- trạng thái
+- lịch sử
+
+==================================================
+16. KHÔNG ĐƯỢC PHÁ VỠ
+==================================================
+
+Không làm hỏng:
+
+- Voice Copilot
+- Save/Load
+- Export Engine
+- Brand Clone
+- Analytics
+- Content Agent
+
+==================================================
+17. BÁO CÁO
+==================================================
+
+Sau khi hoàn thành cung cấp:
+
+1. File tạo mới
+2. File chỉnh sửa
+3. Planner architecture
+4. Intent system
+5. Execution workflow
+6. Confirmation workflow
+7. Context system
+8. Conversation memory
+9. Limitations
+
+==================================================
+YÊU CẦU QUAN TRỌNG
+==================================================
+
+Không hardcode command.
+
+Planner phải hoạt động theo kiến trúc mở rộng.
+
+Mọi thao tác cuối cùng đều đi qua Action Engine.
+
+Natural Language Layer chỉ:
+- hiểu ý định
+- lập kế hoạch
+- điều phối hành động

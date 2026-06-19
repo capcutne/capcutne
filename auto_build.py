@@ -884,12 +884,44 @@ def update_markdown(md_content, feature):
     if bl_item:
         md_content = remove_backlog_item(md_content, bl_item)
 
-    # Thêm vào nhóm tương ứng trong Đã hoàn thành
     gnum  = feature["group"]
     gname = feature["group_name"]
     fid   = feature["id"]
     fname = feature["name"]
     fdet  = feature["detail"]
+
+    # ── 1. Thêm [x] vào phần CHECKLIST ở đầu file ─────────────────────────────
+    checkbox_line = f'- [x] {fid} — {fname}: {fdet}'
+    section_header = f'### Auto-build — {gname} ✅'
+    checklist_marker = '## ✅ CHECKLIST HOÀN THÀNH'
+
+    if fid not in md_content:  # chỉ thêm nếu chưa có
+        # Tìm xem section của group này đã tồn tại chưa
+        group_pat = re.compile(
+            rf'(### Auto-build — {re.escape(gname)} ✅\n)((?:- \[.\].*\n)*)',
+            re.MULTILINE
+        )
+        gm = group_pat.search(md_content)
+        if gm:
+            # Thêm dòng vào cuối section đó
+            md_content = md_content[:gm.end(2)] + checkbox_line + '\n' + md_content[gm.end(2):]
+        else:
+            # Tạo section mới, chèn ngay sau dòng checklist marker
+            new_section = f'\n{section_header}\n{checkbox_line}\n'
+            # Chèn sau dòng "## ✅ CHECKLIST HOÀN THÀNH\n\n> ..."
+            insert_pat = re.compile(r'(## ✅ CHECKLIST HOÀN THÀNH.*?\n\n>.*?\n\n)', re.DOTALL)
+            im = insert_pat.search(md_content)
+            if im:
+                md_content = md_content[:im.end()] + new_section + md_content[im.end():]
+            else:
+                # fallback: chèn sau dòng đầu tiên của checklist
+                md_content = md_content.replace(
+                    checklist_marker,
+                    checklist_marker + new_section,
+                    1
+                )
+
+    # ── 2. Thêm vào bảng Nhóm tương ứng ──────────────────────────────────────
     new_row = f'\n| {fid} | {fname} | {fdet} | {TODAY} |'
 
     pat = (rf'(### Nhóm {gnum}[^\n]*\n\| ID \| Tính năng \| Chi tiết \| Ngày \|\n'
