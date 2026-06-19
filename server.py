@@ -28,8 +28,9 @@ UPLOADS_DIR.mkdir(exist_ok=True)
 # do not change this unless explicitly requested by the user
 MODEL = "gpt-5-mini"
 
-_api_key = os.environ.get("OPENAI_API_KEY")
-client   = OpenAI(api_key=_api_key) if _api_key else None
+_api_key  = os.environ.get("AI_INTEGRATIONS_OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
+_base_url = os.environ.get("AI_INTEGRATIONS_OPENAI_BASE_URL")
+client    = OpenAI(api_key=_api_key, base_url=_base_url) if _api_key else None
 
 AI_PATHS = {
     "/ai/subtitle", "/ai/title", "/ai/describe",
