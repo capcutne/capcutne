@@ -23,6 +23,348 @@ EXPORTS_DIR  = Path("exports")
 EXPORTS_DIR.mkdir(exist_ok=True)
 UPLOADS_DIR  = Path("uploads")
 UPLOADS_DIR.mkdir(exist_ok=True)
+DATA_DIR     = Path("data")
+DATA_DIR.mkdir(exist_ok=True)
+
+# ── Beta data helpers ─────────────────────────────────────────────────────────
+import hashlib, re as _re
+
+def _data_path(name): return DATA_DIR / name
+
+def _load_json(name, default=None):
+    p = _data_path(name)
+    if p.exists():
+        try:
+            with open(p, encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return default if default is not None else []
+
+def _save_json(name, data):
+    with open(_data_path(name), "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+def _hash_pw(pw):
+    return hashlib.sha256(pw.encode()).hexdigest()
+
+# ── Rate limiting ─────────────────────────────────────────────────────────────
+_rate_buckets: dict = {}   # ip → [timestamps]
+_RATE_LIMIT_WINDOW = 60    # seconds
+_RATE_LIMIT_MAX    = 30    # requests per window
+
+def _rate_ok(ip: str) -> bool:
+    now = time.time()
+    bucket = _rate_buckets.setdefault(ip, [])
+    bucket[:] = [t for t in bucket if now - t < _RATE_LIMIT_WINDOW]
+    if len(bucket) >= _RATE_LIMIT_MAX:
+        return False
+    bucket.append(now)
+    return True
+
+# ── Session helpers ───────────────────────────────────────────────────────────
+SESSION_TTL = 86400  # 24h
+
+def _session_create(user_id: str) -> str:
+    token    = uuid.uuid4().hex
+    sessions = _load_json("sessions.json", {})
+    sessions[token] = {"userId": user_id, "createdAt": time.time()}
+    _save_json("sessions.json", sessions)
+    return token
+
+def _session_get(token: str):
+    sessions = _load_json("sessions.json", {})
+    s = sessions.get(token)
+    if not s:
+        return None
+    if time.time() - s.get("createdAt", 0) > SESSION_TTL:
+        sessions.pop(token, None)
+        _save_json("sessions.json", sessions)
+        return None
+    return s
+
+def _session_delete(token: str):
+    sessions = _load_json("sessions.json", {})
+    sessions.pop(token, None)
+    _save_json("sessions.json", sessions)
+
+# ── Beta endpoint handlers ────────────────────────────────────────────────────
+
+def handle_beta_register(body):
+    email       = (body.get("email") or "").strip().lower()
+    display     = (body.get("displayName") or "").strip()
+    password    = body.get("password") or ""
+    if not email or not password or not display:
+        return {"error": "Thiếu thông tin bắt buộc"}
+    if not _re.match(r"[^@]+@[^@]+\.[^@]+", email):
+        return {"error": "Email không hợp lệ"}
+    if len(password) < 6:
+        return {"error": "Mật khẩu tối thiểu 6 ký tự"}
+    users = _load_json("users.json", [])
+    if any(u["email"] == email for u in users):
+        return {"error": "Email đã được đăng ký"}
+    flags = _load_json("feature_flags.json", {})
+    role = "admin" if email == flags.get("admin_email") else "beta_user"
+    user = {
+        "id":          uuid.uuid4().hex[:16],
+        "email":       email,
+        "displayName": display,
+        "passwordHash": _hash_pw(password),
+        "role":        role,
+        "createdAt":   time.time(),
+        "healthScore": 0,
+    }
+    users.append(user)
+    _save_json("users.json", users)
+    token = _session_create(user["id"])
+    safe  = {k: v for k, v in user.items() if k != "passwordHash"}
+    print(f"[beta] register: {email} ({role})", flush=True)
+    return {"ok": True, "token": token, "user": safe}
+
+def handle_beta_login(body):
+    email    = (body.get("email") or "").strip().lower()
+    password = body.get("password") or ""
+    users    = _load_json("users.json", [])
+    user     = next((u for u in users if u["email"] == email), None)
+    if not user or user.get("passwordHash") != _hash_pw(password):
+        return {"error": "Email hoặc mật khẩu không đúng"}
+    token = _session_create(user["id"])
+    safe  = {k: v for k, v in user.items() if k != "passwordHash"}
+    print(f"[beta] login: {email}", flush=True)
+    return {"ok": True, "token": token, "user": safe}
+
+def handle_beta_logout(body):
+    token = body.get("token") or ""
+    _session_delete(token)
+    return {"ok": True}
+
+def handle_beta_feedback(body):
+    users = _load_json("users.json", [])
+    fb    = _load_json("feedback.json", [])
+    entry = {
+        "id":        uuid.uuid4().hex[:12],
+        "type":      body.get("type", "general"),
+        "message":   (body.get("message") or "")[:2000],
+        "rating":    body.get("rating"),
+        "userId":    body.get("userId", "anonymous"),
+        "projectId": body.get("projectId", ""),
+        "createdAt": time.time(),
+    }
+    fb.append(entry)
+    _save_json("feedback.json", fb)
+    return {"ok": True, "id": entry["id"]}
+
+def handle_beta_bug_report(body):
+    fb  = _load_json("feedback.json", [])
+    entry = {
+        "id":        uuid.uuid4().hex[:12],
+        "type":      "bug",
+        "message":   (body.get("message") or "")[:2000],
+        "userId":    body.get("userId", "anonymous"),
+        "context":   body.get("context", {}),
+        "projectId": body.get("projectId", ""),
+        "createdAt": time.time(),
+    }
+    fb.append(entry)
+    _save_json("feedback.json", fb)
+    print(f"[beta] bug report from {entry['userId']}: {entry['message'][:80]}", flush=True)
+    return {"ok": True, "id": entry["id"]}
+
+def handle_beta_feature_request(body):
+    reqs  = _load_json("feature_requests.json", [])
+    title = (body.get("title") or "").strip()[:200]
+    if not title:
+        return {"error": "Cần tiêu đề yêu cầu"}
+    # Dedup by title similarity (simple)
+    if any(r["title"].lower() == title.lower() for r in reqs):
+        return {"error": "Yêu cầu tương tự đã tồn tại"}
+    entry = {
+        "id":          uuid.uuid4().hex[:12],
+        "title":       title,
+        "description": (body.get("description") or "")[:500],
+        "userId":      body.get("userId", "anonymous"),
+        "votes":       1,
+        "voters":      [body.get("userId", "anonymous")],
+        "createdAt":   time.time(),
+    }
+    reqs.append(entry)
+    _save_json("feature_requests.json", reqs)
+    return {"ok": True, "id": entry["id"]}
+
+def handle_beta_vote_feature(body):
+    reqs      = _load_json("feature_requests.json", [])
+    rid       = body.get("requestId", "")
+    user_id   = body.get("userId", "anonymous")
+    req = next((r for r in reqs if r["id"] == rid), None)
+    if not req:
+        return {"error": "Không tìm thấy yêu cầu"}
+    voters = req.setdefault("voters", [])
+    if user_id in voters:
+        return {"error": "Bạn đã bình chọn yêu cầu này rồi", "votes": req["votes"]}
+    voters.append(user_id)
+    req["votes"] = len(voters)
+    _save_json("feature_requests.json", reqs)
+    return {"ok": True, "votes": req["votes"]}
+
+def handle_beta_analytics_event(body):
+    evts = _load_json("analytics.json", [])
+    entry = {
+        "userId": body.get("userId", "anonymous"),
+        "event":  body.get("event", ""),
+        "data":   body.get("data", {}),
+        "step":   body.get("step"),
+        "ts":     body.get("ts", time.time() * 1000),
+        "url":    body.get("url", ""),
+    }
+    # update healthScore on user
+    _update_user_health(entry)
+    evts.append(entry)
+    # Keep last 5000 events
+    if len(evts) > 5000:
+        evts = evts[-5000:]
+    _save_json("analytics.json", evts)
+    return {"ok": True}
+
+def _update_user_health(evt):
+    field_map = {
+        "export":           "exportsCompleted",
+        "project_saved":    "projectsCreated",
+        "short_created":    "shortCreated",
+        "subtitle_done":    "subtitleGenerated",
+        "voice_command":    "voiceCommands",
+        "ai_command":       "aiCommands",
+        "onboarding_complete": None,
+    }
+    ev = evt.get("event", "")
+    uid = evt.get("userId", "")
+    if not uid or uid == "anonymous":
+        return
+    users = _load_json("users.json", [])
+    user  = next((u for u in users if u.get("id") == uid), None)
+    if not user:
+        return
+    field = field_map.get(ev)
+    if field:
+        user[field] = user.get(field, 0) + 1
+    if ev == "onboarding_complete":
+        user["onboardingComplete"] = True
+    # Recalc health score
+    score = 0
+    if user.get("onboardingComplete"): score += 20
+    score += min(user.get("exportsCompleted", 0) * 10, 30)
+    score += min(user.get("projectsCreated", 0) * 5, 20)
+    score += min((user.get("shortCreated", 0) + user.get("subtitleGenerated", 0)) * 2, 15)
+    score += min((user.get("voiceCommands", 0) + user.get("aiCommands", 0)), 15)
+    user["healthScore"] = min(score, 100)
+    _save_json("users.json", users)
+
+def handle_beta_crash(body):
+    crashes = _load_json("crashes.json", [])
+    entry = {
+        "userId":    body.get("userId", "anonymous"),
+        "timestamp": body.get("timestamp", time.strftime("%Y-%m-%dT%H:%M:%SZ")),
+        "module":    body.get("module", "unknown"),
+        "error":     (body.get("error") or "")[:1000],
+        "stack":     (body.get("stack") or "")[:2000],
+        "context":   body.get("context", {}),
+    }
+    crashes.append(entry)
+    if len(crashes) > 1000:
+        crashes = crashes[-1000:]
+    _save_json("crashes.json", crashes)
+    print(f"[beta] crash report: {entry['module']} — {entry['error'][:60]}", flush=True)
+    return {"ok": True}
+
+def handle_beta_feature_flags_get():
+    flags = _load_json("feature_flags.json", {})
+    safe  = {k: v for k, v in flags.items() if k != "admin_email"}
+    return {"flags": safe}
+
+def handle_beta_admin_feature_flags(body):
+    flag    = body.get("flag", "")
+    enabled = bool(body.get("enabled", True))
+    flags   = _load_json("feature_flags.json", {})
+    if flag:
+        flags[flag] = enabled
+        _save_json("feature_flags.json", flags)
+        print(f"[beta] flag '{flag}' set to {enabled}", flush=True)
+    return {"ok": True}
+
+def handle_beta_admin_stats():
+    users    = _load_json("users.json", [])
+    feedback = _load_json("feedback.json", [])
+    crashes  = _load_json("crashes.json", [])
+    analytics= _load_json("analytics.json", [])
+    reqs     = _load_json("feature_requests.json", [])
+
+    now      = time.time()
+    today    = now - 86400
+
+    # Event counts
+    def count_event(ev, since=0):
+        return sum(1 for e in analytics if e.get("event") == ev and e.get("ts", 0) / 1000 >= since)
+
+    # Active today (any event in last 24h)
+    active_uids = {e.get("userId") for e in analytics if e.get("ts", 0) / 1000 >= today}
+    active_today = len(active_uids - {"anonymous"})
+
+    # Journey funnel (% of users completing each step)
+    journey_events = {s: set() for s in ["register","upload_video","generate_transcript","create_short","export"]}
+    for e in analytics:
+        if e.get("event") == "journey_step" and e.get("step") in journey_events:
+            journey_events[e["step"]].add(e.get("userId"))
+    total = max(len(users), 1)
+    journey_funnel = {s: round(len(uids) / total * 100) for s, uids in journey_events.items()}
+
+    # Retention (D1/D7/D30) — approximate
+    def retention_rate(days):
+        cutoff = now - days * 86400
+        cohort = [u for u in users if u.get("createdAt", now) >= cutoff]
+        if not cohort:
+            return 0
+        active = {e.get("userId") for e in analytics if e.get("ts", 0) / 1000 >= cutoff}
+        ret    = sum(1 for u in cohort if u["id"] in active)
+        return round(ret / max(len(cohort), 1) * 100)
+
+    # Event breakdown (24h)
+    event_breakdown = {}
+    for e in analytics:
+        if e.get("ts", 0) / 1000 >= today:
+            ev = e.get("event", "unknown")
+            event_breakdown[ev] = event_breakdown.get(ev, 0) + 1
+
+    # Safe user list (no password hash)
+    safe_users = [{k: v for k, v in u.items() if k != "passwordHash"} for u in users]
+
+    return {
+        "stats": {
+            "totalUsers":       len(users),
+            "activeToday":      active_today,
+            "totalExports":     count_event("export"),
+            "totalShorts":      count_event("short_created"),
+            "totalSubtitles":   count_event("subtitle_done"),
+            "totalFeedback":    len(feedback),
+            "totalCrashes":     len(crashes),
+            "totalVoiceCommands": count_event("voice_command"),
+        },
+        "users":         safe_users,
+        "feedback":      sorted(feedback, key=lambda x: x.get("createdAt", 0), reverse=True)[:50],
+        "crashes":       sorted(crashes,  key=lambda x: x.get("timestamp", ""), reverse=True)[:50],
+        "retention":     {"d1": retention_rate(1), "d7": retention_rate(7), "d30": retention_rate(30)},
+        "journeyFunnel": journey_funnel,
+        "eventBreakdown": event_breakdown,
+    }
+
+# Set of beta paths for routing
+BETA_POST_PATHS = {
+    "/beta/register", "/beta/login", "/beta/logout",
+    "/beta/feedback", "/beta/bug-report", "/beta/feature-request",
+    "/beta/vote-feature", "/beta/analytics/event", "/beta/crash",
+    "/beta/admin/feature-flags",
+}
+BETA_GET_PATHS = {
+    "/beta/feature-flags", "/beta/feature-requests", "/beta/admin/stats",
+}
 
 # the newest OpenAI model is "gpt-5" which was released August 7, 2025.
 # do not change this unless explicitly requested by the user
@@ -596,6 +938,21 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 "completed_at": b.get("completed_at"),
             })
 
+        # Beta GET endpoints
+        if self.path in BETA_GET_PATHS:
+            ip = self.client_address[0]
+            if not _rate_ok(ip):
+                return self.send_json({"error": "Rate limit exceeded"}, 429)
+            if self.path == "/beta/feature-flags":
+                return self.send_json(handle_beta_feature_flags_get())
+            if self.path == "/beta/feature-requests":
+                reqs = _load_json("feature_requests.json", [])
+                reqs_sorted = sorted(reqs, key=lambda r: r.get("votes", 0), reverse=True)
+                safe = [{k: v for k, v in r.items() if k != "voters"} for r in reqs_sorted]
+                return self.send_json({"requests": safe})
+            if self.path == "/beta/admin/stats":
+                return self.send_json(handle_beta_admin_stats())
+
         # Export history
         if self.path == "/export/history":
             records = [
@@ -664,10 +1021,43 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         EXPORT_START    = "/export/start"
         EXPORT_CANCEL   = "/export/cancel"
         FACTORY_GENERATE = "/factory/generate"
-        ALLOWED_PATHS = AI_PATHS | {"/project/save", EXPORT_START, EXPORT_CANCEL, FACTORY_GENERATE}
+        ALLOWED_PATHS = AI_PATHS | BETA_POST_PATHS | {"/project/save", EXPORT_START, EXPORT_CANCEL, FACTORY_GENERATE}
         if self.path not in ALLOWED_PATHS:
             self.send_json({"error": "Not found"}, 404)
             return
+
+        # Beta endpoints (before JSON body read for rate-limiting)
+        if self.path in BETA_POST_PATHS:
+            ip = self.client_address[0]
+            if not _rate_ok(ip):
+                return self.send_json({"error": "Rate limit exceeded"}, 429)
+            length = int(self.headers.get("Content-Length", 0))
+            body   = json.loads(self.rfile.read(length)) if length else {}
+            try:
+                if self.path == "/beta/register":
+                    return self.send_json(handle_beta_register(body))
+                if self.path == "/beta/login":
+                    return self.send_json(handle_beta_login(body))
+                if self.path == "/beta/logout":
+                    return self.send_json(handle_beta_logout(body))
+                if self.path == "/beta/feedback":
+                    return self.send_json(handle_beta_feedback(body))
+                if self.path == "/beta/bug-report":
+                    return self.send_json(handle_beta_bug_report(body))
+                if self.path == "/beta/feature-request":
+                    return self.send_json(handle_beta_feature_request(body))
+                if self.path == "/beta/vote-feature":
+                    return self.send_json(handle_beta_vote_feature(body))
+                if self.path == "/beta/analytics/event":
+                    return self.send_json(handle_beta_analytics_event(body))
+                if self.path == "/beta/crash":
+                    return self.send_json(handle_beta_crash(body))
+                if self.path == "/beta/admin/feature-flags":
+                    return self.send_json(handle_beta_admin_feature_flags(body))
+            except Exception as exc:
+                print(f"[beta] ERROR {self.path}: {exc}", flush=True)
+                return self.send_json({"error": str(exc)}, 500)
+            return self.send_json({"error": "Unknown beta endpoint"}, 404)
 
         # Multipart upload must be handled before the JSON body read
         if self.path == "/ai/upload-media":

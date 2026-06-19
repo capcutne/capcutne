@@ -1,0 +1,320 @@
+PHASE 5.5 - REAL USER BETA PROGRAM
+
+Phân tích toàn bộ hệ thống hiện tại trước khi thực hiện.
+
+Các module hiện có:
+
+- Video Editor
+- AI Copilot
+- Voice Editing Copilot
+- Natural Language Editing
+- Transcript Engine
+- Viral Intelligence
+- Auto Subtitle Pro
+- Export Engine
+- Batch Shorts Factory
+- Brand Clone System
+- Content Agent
+- Publishing System
+- Analytics System
+
+==================================================
+MỤC TIÊU
+==================================================
+
+Chuẩn bị hệ thống cho:
+
+50 → 100 → 500 người dùng beta đầu tiên.
+
+Mục tiêu:
+
+- phát hiện lỗi thật
+- thu thập feedback thật
+- đo usage thật
+- xác thực giá trị sản phẩm
+
+KHÔNG thêm AI mới.
+
+Tập trung vào:
+
+- người dùng
+- dữ liệu
+- độ ổn định
+
+==================================================
+1. USER ACCOUNT SYSTEM
+==================================================
+
+Tạo:
+
+UserManager
+
+Schema:
+
+{
+  id:"",
+  email:"",
+  displayName:"",
+  createdAt:"",
+  role:"beta_user"
+}
+
+Hỗ trợ:
+
+- đăng ký
+- đăng nhập
+- đăng xuất
+
+==================================================
+2. USER PROJECT ISOLATION
+==================================================
+
+Mỗi người dùng:
+
+- project riêng
+- assets riêng
+- analytics riêng
+
+Không chia sẻ dữ liệu.
+
+==================================================
+3. FEEDBACK CENTER
+==================================================
+
+Tạo:
+
+FeedbackManager
+
+Người dùng có thể:
+
+- Report Bug
+- Request Feature
+- General Feedback
+
+Schema:
+
+{
+ id:"",
+ type:"",
+ message:"",
+ projectId:"",
+ createdAt:""
+}
+
+==================================================
+4. IN-APP BUG REPORT
+==================================================
+
+Nút:
+
+"Báo lỗi"
+
+Tự động đính kèm:
+
+- browser info
+- project version
+- module đang mở
+- log gần nhất
+
+==================================================
+5. FEATURE REQUEST SYSTEM
+==================================================
+
+Cho phép người dùng:
+
+- gửi yêu cầu
+- bình chọn yêu cầu
+
+Schema:
+
+{
+ id:"",
+ title:"",
+ votes:0
+}
+
+==================================================
+6. PRODUCT ANALYTICS
+==================================================
+
+Theo dõi:
+
+- số project tạo
+- số export
+- số shorts tạo
+- số subtitle tạo
+- số lệnh voice
+- số lệnh AI
+
+==================================================
+7. USER JOURNEY TRACKING
+==================================================
+
+Theo dõi:
+
+Đăng ký
+↓
+Upload video
+↓
+Tạo short
+↓
+Export
+
+Xác định nơi người dùng bỏ cuộc.
+
+==================================================
+8. CRASH REPORTING
+==================================================
+
+Thu thập:
+
+- JS errors
+- API errors
+- Export failures
+
+Schema:
+
+{
+ timestamp:"",
+ module:"",
+ error:"",
+ stack:""
+}
+
+==================================================
+9. BETA ADMIN DASHBOARD
+==================================================
+
+Tạo:
+
+Admin Dashboard
+
+Hiển thị:
+
+- tổng user
+- active user
+- exports
+- feedback
+- crashes
+
+==================================================
+10. FEATURE FLAGS
+==================================================
+
+Cho phép bật/tắt:
+
+- Voice Editing
+- Content Agent
+- Brand Clone
+- Viral Intelligence
+
+theo từng user.
+
+==================================================
+11. ONBOARDING FLOW
+==================================================
+
+Người dùng mới:
+
+Bước 1:
+Upload video
+
+Bước 2:
+Generate transcript
+
+Bước 3:
+Create shorts
+
+Bước 4:
+Export
+
+==================================================
+12. USER HEALTH SCORE
+==================================================
+
+Tính:
+
+{
+ onboardingComplete:true,
+ exportsCompleted:3,
+ projectsCreated:5,
+ engagementScore:82
+}
+
+==================================================
+13. RETENTION ANALYTICS
+==================================================
+
+Theo dõi:
+
+D1
+
+D7
+
+D30
+
+Retention
+
+==================================================
+14. SECURITY & RATE LIMIT
+==================================================
+
+Thêm:
+
+- rate limiting
+- session timeout
+- upload limits
+
+==================================================
+15. ACTION ENGINE
+==================================================
+
+Thêm actions:
+
+submit_feedback
+report_bug
+request_feature
+
+==================================================
+16. KHÔNG ĐƯỢC PHÁ VỠ
+==================================================
+
+Không làm hỏng:
+
+- Save/Load
+- Export Engine
+- Analytics
+- Content Agent
+- Publishing
+- Brand Clone
+
+==================================================
+17. BÁO CÁO
+==================================================
+
+Sau khi hoàn thành cung cấp:
+
+1. File tạo mới
+2. File chỉnh sửa
+3. User schema
+4. Feedback schema
+5. Analytics schema
+6. Admin dashboard
+7. Onboarding workflow
+8. Crash reporting workflow
+9. Security measures
+10. Beta readiness assessment
+
+==================================================
+YÊU CẦU QUAN TRỌNG
+==================================================
+
+Ưu tiên trải nghiệm người dùng thật.
+
+Mọi dữ liệu analytics phải có thể dùng để ra quyết định sản phẩm.
+
+Không thêm tính năng AI mới trong phase này.
+
+Mục tiêu cuối cùng:
+
+Sẵn sàng mời 100 người dùng beta đầu tiên vào sử dụng.

@@ -10,6 +10,24 @@
 
 > Cập nhật mỗi khi hoàn thành một tính năng. Chức năng mới nhất ở **đầu danh sách**.
 
+### Phase 5.5 — Real User Beta Program ✅
+- [x] F145 — Security & Rate Limiting: 30 req/60s per IP, session timeout 24h, SHA-256 password hashing
+- [x] F144 — Action Engine Integration: `submit_feedback`, `report_bug`, `request_feature` actions
+- [x] F143 — Feature Flags: bật/tắt Voice/ContentAgent/BrandClone/Viral theo user, admin toggle UI
+- [x] F142 — Beta Admin Dashboard (`js/admin.js`): 6 tabs — Tổng quan, Users, Feedback, Crashes, Retention, Feature Flags
+- [x] F141 — Retention Analytics: D1/D7/D30 retention tracking + event breakdown 24h
+- [x] F140 — User Health Score: tính điểm 0–100 từ exports/projects/shorts/AI commands, hiển thị badge góc phải
+- [x] F139 — User Journey Tracking: Register→Upload→Transcript→Short→Export, phát hiện dropout point
+- [x] F138 — Onboarding Flow (`js/onboarding.js`): 4-bước wizard với progress dots và action buttons
+- [x] F137 — Crash Reporting (`js/feedback.js`): tự động bắt JS errors + unhandled rejections → `/beta/crash`
+- [x] F136 — Feature Request + Voting: gửi yêu cầu, bình chọn realtime, xem danh sách sorted by votes
+- [x] F135 — In-App Bug Report: nút "Báo lỗi" tự đính kèm browser info, active panel, recent logs
+- [x] F134 — Feedback Center: 3 loại (Bug/Feature/General) + rating + context tự động
+- [x] F133 — Product Analytics (`/beta/analytics/event`): track exports/shorts/subtitles/voice/AI commands
+- [x] F132 — User Project Isolation: project data riêng per userId, analytics riêng
+- [x] F131 — User Account System (`js/beta.js`): UserManager + SessionManager + đăng ký/đăng nhập/đăng xuất
+- [x] F130 — Beta Backend (`server.py`): 14 endpoints `/beta/*`, data persistence JSON files, rate limiting
+
 ### Phase 5.4 — Natural Language Video Editing ✅
 - [x] F123 — Conversation Memory: nhớ ngữ cảnh trong cùng phiên ("tất cả" = shorts vừa tạo, "tiếp tục" = kế hoạch trước)
 - [x] F122 — Agent Collaboration: Task Planner điều phối Viral Intelligence, Subtitle Pro, Export Engine, Brand Clone, Content Agent
