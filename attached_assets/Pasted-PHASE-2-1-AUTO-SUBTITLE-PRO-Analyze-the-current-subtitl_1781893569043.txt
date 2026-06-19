@@ -1,0 +1,205 @@
+PHASE 2.1 - AUTO SUBTITLE PRO
+
+Analyze the current subtitle system, transcript engine, shorts generator and timeline architecture first.
+
+Goal:
+
+Build a professional AI subtitle system comparable to modern creator tools.
+
+==================================================
+
+1. WORD LEVEL SUBTITLES
+   ==================================================
+
+Use transcript word timestamps.
+
+Store:
+
+{
+word:"Hello",
+start:0.0,
+end:0.3
+}
+
+Render subtitles word-by-word.
+
+==================================================
+2. KARAOKE MODE
+===============
+
+Active word should highlight while playing.
+
+Example:
+
+HELLO everyone welcome back
+
+Current word receives animation.
+
+==================================================
+3. AUTO LINE BREAKING
+=====================
+
+AI determines optimal subtitle chunks.
+
+Rules:
+
+* 2 lines max
+* 42 characters max per line
+* preserve readability
+* avoid awkward breaks
+
+==================================================
+4. KEYWORD HIGHLIGHTING
+=======================
+
+AI detects:
+
+* numbers
+* money
+* percentages
+* strong emotional words
+* product names
+* action verbs
+
+Example:
+
+MAKE $10,000 FAST
+
+Highlight:
+$10,000
+FAST
+
+==================================================
+5. EMOJI INTELLIGENCE
+=====================
+
+AI inserts context-aware emojis.
+
+Examples:
+
+money → 💰
+fire → 🔥
+warning → ⚠️
+growth → 📈
+
+Allow disable toggle.
+
+==================================================
+6. SUBTITLE TEMPLATES
+=====================
+
+Create built-in presets:
+
+TikTok
+MrBeast
+Podcast
+Netflix
+Gaming
+Minimal
+Documentary
+
+Template structure:
+
+{
+font:"",
+size:0,
+weight:"",
+color:"",
+stroke:"",
+animation:""
+}
+
+==================================================
+7. SUBTITLE ANIMATIONS
+======================
+
+Support:
+
+fade
+pop
+bounce
+slide
+karaoke
+
+Timeline preview updates instantly.
+
+==================================================
+8. AUTO STYLING
+===============
+
+AI analyzes content.
+
+Examples:
+
+Motivational → bold energetic style
+Podcast → clean style
+Gaming → colorful style
+Documentary → cinematic style
+
+Generate recommendation.
+
+==================================================
+9. BULK REGENERATE
+==================
+
+One click:
+
+Generate
+Regenerate
+Apply New Style
+
+without losing timing.
+
+==================================================
+10. EXPORT SUPPORT
+==================
+
+Export:
+
+SRT
+VTT
+JSON
+
+==================================================
+11. ACTION ENGINE
+=================
+
+New actions:
+
+generate_subtitles
+restyle_subtitles
+highlight_keywords
+
+AI Copilot commands:
+
+"Generate subtitles"
+"Make subtitles like MrBeast"
+"Highlight important words"
+
+==================================================
+12. NON-BREAKING REQUIREMENT
+============================
+
+Do not break:
+
+* Transcript Engine
+* Shorts Generator
+* Viral Intelligence
+* Save/Load
+* Timeline
+
+==================================================
+13. DELIVERABLE
+===============
+
+Provide:
+
+1. files created
+2. files modified
+3. subtitle schema
+4. template system
+5. animation system
+6. keyword detection logic
+7. emoji logic
+8. export formats
+9. limitations
