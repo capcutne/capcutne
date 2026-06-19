@@ -17,8 +17,13 @@ import subprocess
 import http.server
 import socketserver
 import tempfile
+import calendar
 from pathlib import Path
 from openai import OpenAI
+try:
+    import stripe as _stripe_sdk
+except ImportError:
+    _stripe_sdk = None
 
 PROJECTS_DIR          = Path("projects")
 PROJECTS_DIR.mkdir(exist_ok=True)
@@ -1281,6 +1286,45 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if self.path == "/health":
             return self.send_json(_health_data())
 
+        # ── Billing GET endpoints ─────────────────────────────────────────────
+        if self.path == "/billing/plans":
+            safe = {}
+            for pk, pv in PLANS.items():
+                safe[pk] = {k: v for k, v in pv.items() if k != "stripe_price_id"}
+            return self.send_json({"plans": safe})
+
+        if self.path == "/billing/status":
+            user = _resolve_user_from_handler(self)
+            if not user:
+                return self.send_json({"plan": "free", "status": "guest", "usage": {}, "limits": PLANS["free"]["limits"], "features": PLANS["free"]["features"]})
+            return self.send_json(handle_billing_status(user["id"]))
+
+        if self.path == "/billing/usage":
+            user = _resolve_user_from_handler(self)
+            if not user:
+                return self.send_json({"error": "Not authenticated"}, 401)
+            return self.send_json({"usage": _get_usage(user["id"]), "limits": _plan_limits(user["id"]), "plan": _plan_for_user(user["id"])})
+
+        if self.path == "/billing/admin":
+            user = _resolve_user_from_handler(self)
+            if not user or user.get("role") != "admin":
+                return self.send_json({"error": "Admin only"}, 403)
+            return self.send_json(handle_admin_billing_stats())
+
+        # ── Workspace GET endpoints ───────────────────────────────────────────
+        if self.path == "/workspace/list":
+            user = _resolve_user_from_handler(self)
+            if not user:
+                return self.send_json({"error": "Not authenticated"}, 401)
+            return self.send_json(handle_workspace_list(user["id"]))
+
+        if self.path.startswith("/workspace/projects/"):
+            ws_id = self.path[len("/workspace/projects/"):].strip("/")
+            user  = _resolve_user_from_handler(self)
+            if not user:
+                return self.send_json({"error": "Not authenticated"}, 401)
+            return self.send_json(handle_workspace_projects(ws_id, user["id"]))
+
         # ── Asset registry list ───────────────────────────────────────────────
         if self.path == "/asset/list":
             assets = []
@@ -1460,7 +1504,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         EXPORT_CANCEL   = "/export/cancel"
         FACTORY_GENERATE = "/factory/generate"
         FOUNDATION_PATHS = {"/project/restore", "/asset/delete", "/cleanup/run"}
-        ALLOWED_PATHS = AI_PATHS | BETA_POST_PATHS | FOUNDATION_PATHS | {"/project/save", EXPORT_START, EXPORT_CANCEL, FACTORY_GENERATE}
+        BILLING_PATHS = {
+            "/billing/checkout", "/billing/portal", "/billing/cancel",
+            "/billing/reactivate", "/billing/webhook",
+        }
+        WORKSPACE_PATHS = {
+            "/workspace/create", "/workspace/invite",
+            "/workspace/remove-member", "/workspace/delete",
+        }
+        ALLOWED_PATHS = (AI_PATHS | BETA_POST_PATHS | FOUNDATION_PATHS | BILLING_PATHS
+                         | WORKSPACE_PATHS | {"/project/save", EXPORT_START, EXPORT_CANCEL, FACTORY_GENERATE})
         if self.path not in ALLOWED_PATHS:
             self.send_json({"error": "Not found"}, 404)
             return
@@ -1511,12 +1564,28 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         try:
             # Export start
             if self.path == EXPORT_START:
+                # ── Usage limit check for exports ──────────────────────────
+                _exp_user = _resolve_user_from_handler(self)
+                _exp_uid  = _exp_user["id"] if _exp_user else "anonymous"
+                if _exp_uid != "anonymous":
+                    elim = _check_limit(_exp_uid, "exports", 1)
+                    if not elim["ok"]:
+                        return self.send_json({**elim, "error": elim["error"]}, 402)
+                    _increment_usage(_exp_uid, "exports", 1)
+                # ── Quality gating ──────────────────────────────────────────
                 jid      = "exp_" + uuid.uuid4().hex[:12]
                 fmt      = body.get("format",  "mp4").lower()
                 quality  = body.get("quality", "1080p").lower()
                 fps      = int(body.get("fps", 30))
                 project  = body.get("project", {})
                 settings = body.get("settings", {})
+                # Downgrade quality for free users
+                if _exp_uid != "anonymous":
+                    feats = _plan_features(_exp_uid)
+                    if quality == "4k" and not feats.get("export_4k"):
+                        quality = "1080p"
+                    if quality in ("1080p", "1440p") and not feats.get("export_1080p"):
+                        quality = "720p"
                 export_jobs[jid] = {
                     "id":           jid,
                     "status":       "queued",
@@ -1569,6 +1638,42 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     return self.send_json({"ok": True})
                 return self.send_json({"error": "Job not found or already finished"}, 404)
 
+            # ── Billing POST endpoints ────────────────────────────────────────
+            if self.path == "/billing/webhook":
+                # Stripe webhook — needs raw body, read before JSON parse
+                raw  = body if isinstance(body, bytes) else json.dumps(body).encode()
+                sig  = self.headers.get("Stripe-Signature", "")
+                return self.send_json(handle_stripe_webhook(raw, sig))
+
+            if self.path in ("/billing/checkout", "/billing/portal",
+                             "/billing/cancel", "/billing/reactivate"):
+                user = _resolve_user_from_handler(self)
+                if not user:
+                    return self.send_json({"error": "Not authenticated"}, 401)
+                if self.path == "/billing/checkout":
+                    return self.send_json(handle_billing_checkout(body, user))
+                elif self.path == "/billing/portal":
+                    return self.send_json(handle_billing_portal(body, user))
+                elif self.path == "/billing/cancel":
+                    return self.send_json(handle_billing_cancel(body, user))
+                elif self.path == "/billing/reactivate":
+                    return self.send_json(handle_billing_reactivate(body, user))
+
+            # ── Workspace POST endpoints ──────────────────────────────────────
+            if self.path in ("/workspace/create", "/workspace/invite",
+                             "/workspace/remove-member", "/workspace/delete"):
+                user = _resolve_user_from_handler(self)
+                if not user:
+                    return self.send_json({"error": "Not authenticated"}, 401)
+                if self.path == "/workspace/create":
+                    return self.send_json(handle_workspace_create(body, user))
+                elif self.path == "/workspace/invite":
+                    return self.send_json(handle_workspace_invite(body, user))
+                elif self.path == "/workspace/remove-member":
+                    return self.send_json(handle_workspace_remove_member(body, user))
+                elif self.path == "/workspace/delete":
+                    return self.send_json(handle_workspace_delete(body.get("workspaceId",""), user["id"]))
+
             # Foundation endpoints
             if self.path == "/project/restore":
                 pid = body.get("pid", "")
@@ -1603,6 +1708,16 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if self.path == "/project/save":
                 return self.send_json(project_save(body))
 
+            # ── Feature gating + Usage tracking ──────────────────────────────
+            _req_user = _resolve_user_from_handler(self)
+            _req_uid  = _req_user["id"] if _req_user else "anonymous"
+
+            # Track AI requests for metered usage
+            if _req_uid != "anonymous":
+                _increment_usage(_req_uid, "ai_requests", 1)
+                lim = _check_limit(_req_uid, "ai_requests", 0)  # already incremented
+                # (limit check already consumed, just warn; enforced on next)
+
             # AI endpoints
             if self.path == "/ai/subtitle":
                 result = handle_subtitle(body)
@@ -1621,27 +1736,60 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             elif self.path == "/ai/transcribe":
                 result = handle_transcribe(body)
             elif self.path == "/ai/transcribe-real":
+                # Track transcript minutes
+                if _req_uid != "anonymous":
+                    dur_min = float(body.get("durationMinutes", 0))
+                    lim2 = _check_limit(_req_uid, "transcript_minutes", dur_min)
+                    if not lim2["ok"]:
+                        result = {**lim2, "error": lim2["error"]}
+                        self.send_json(result, 402)
+                        return
+                    _increment_usage(_req_uid, "transcript_minutes", dur_min)
                 result = handle_transcribe_real(body)
             elif self.path == "/ai/auto-style":
                 result = handle_auto_style(body)
             # Phase 5.4 — Natural Language Video Editing
             elif self.path == "/ai/plan-task":
-                result = handle_plan_task(body)
+                # Content Agent → Pro+
+                gate = _check_feature(_req_uid, "content_agent")
+                if not gate["ok"] and _req_uid != "anonymous":
+                    result = gate
+                else:
+                    result = handle_plan_task(body)
             elif self.path == "/brand/train":
-                result = handle_brand_train(body)
+                # Brand Clone → Pro+
+                gate = _check_feature(_req_uid, "brand_clone")
+                if not gate["ok"] and _req_uid != "anonymous":
+                    result = gate
+                else:
+                    result = handle_brand_train(body)
             elif self.path == "/brand/compare":
-                result = handle_brand_compare(body)
+                gate = _check_feature(_req_uid, "brand_clone")
+                if not gate["ok"] and _req_uid != "anonymous":
+                    result = gate
+                else:
+                    result = handle_brand_compare(body)
             # Phase 4.0 — Auto Content Factory
             elif self.path == "/cfactory/plan":
-                result = handle_cfactory_plan(body)
-            elif self.path == "/cfactory/titles":
-                result = handle_cfactory_titles(body)
-            elif self.path == "/cfactory/blog":
-                result = handle_cfactory_blog(body)
-            elif self.path == "/cfactory/newsletter":
-                result = handle_cfactory_newsletter(body)
-            elif self.path == "/cfactory/social":
-                result = handle_cfactory_social(body)
+                # Batch Factory → Business
+                gate = _check_feature(_req_uid, "batch_factory")
+                if not gate["ok"] and _req_uid != "anonymous":
+                    result = gate
+                else:
+                    result = handle_cfactory_plan(body)
+            elif self.path in ("/cfactory/titles", "/cfactory/blog",
+                                "/cfactory/newsletter", "/cfactory/social"):
+                gate = _check_feature(_req_uid, "batch_factory")
+                if not gate["ok"] and _req_uid != "anonymous":
+                    result = gate
+                elif self.path == "/cfactory/titles":
+                    result = handle_cfactory_titles(body)
+                elif self.path == "/cfactory/blog":
+                    result = handle_cfactory_blog(body)
+                elif self.path == "/cfactory/newsletter":
+                    result = handle_cfactory_newsletter(body)
+                else:
+                    result = handle_cfactory_social(body)
             else:
                 result = {"error": "Unknown endpoint"}
 
@@ -3017,6 +3165,536 @@ Quy tắc:
 
     print(f"[planner] intent={result['intent']} conf={result['confidence']} steps={len(result['tasks'])}", flush=True)
     return result
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PHASE 5.6 — BILLING, USAGE TRACKING, WORKSPACES, FEATURE GATING
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── Stripe SDK init ───────────────────────────────────────────────────────────
+_STRIPE_SECRET_KEY  = os.environ.get("STRIPE_SECRET_KEY", "")
+_STRIPE_WEBHOOK_SEC = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
+if _stripe_sdk and _STRIPE_SECRET_KEY:
+    _stripe_sdk.api_key = _STRIPE_SECRET_KEY
+
+# ── Plan definitions ──────────────────────────────────────────────────────────
+PLANS = {
+    "free": {
+        "name": "Free",
+        "price_monthly_usd": 0,
+        "stripe_price_id": "",
+        "limits": {
+            "projects":           3,
+            "transcript_minutes": 30,
+            "exports":            10,
+            "ai_requests":        50,
+            "storage_mb":         500,
+            "team_members":       1,
+        },
+        "features": {
+            "brand_clone":   False,
+            "batch_factory": False,
+            "content_agent": False,
+            "workspace":     False,
+            "viral_analysis":True,
+            "export_1080p":  False,
+            "export_4k":     False,
+        },
+    },
+    "pro": {
+        "name": "Pro",
+        "price_monthly_usd": 19,
+        "stripe_price_id": os.environ.get("STRIPE_PRO_PRICE_ID", ""),
+        "limits": {
+            "projects":           50,
+            "transcript_minutes": 300,
+            "exports":            100,
+            "ai_requests":        500,
+            "storage_mb":         5000,
+            "team_members":       5,
+        },
+        "features": {
+            "brand_clone":   True,
+            "batch_factory": False,
+            "content_agent": True,
+            "workspace":     True,
+            "viral_analysis":True,
+            "export_1080p":  True,
+            "export_4k":     False,
+        },
+    },
+    "business": {
+        "name": "Business",
+        "price_monthly_usd": 49,
+        "stripe_price_id": os.environ.get("STRIPE_BUSINESS_PRICE_ID", ""),
+        "limits": {
+            "projects":           -1,
+            "transcript_minutes": -1,
+            "exports":            -1,
+            "ai_requests":        -1,
+            "storage_mb":         50000,
+            "team_members":       -1,
+        },
+        "features": {
+            "brand_clone":   True,
+            "batch_factory": True,
+            "content_agent": True,
+            "workspace":     True,
+            "viral_analysis":True,
+            "export_1080p":  True,
+            "export_4k":     True,
+        },
+    },
+}
+
+def _plan_for_user(user_id: str) -> str:
+    """Return plan key for a user (free/pro/business)."""
+    subs = _load_json("subscriptions.json", {})
+    sub  = subs.get(user_id, {})
+    if sub.get("status") not in ("active", "trialing"):
+        return "free"
+    return sub.get("plan", "free")
+
+def _plan_limits(user_id: str) -> dict:
+    return PLANS[_plan_for_user(user_id)]["limits"]
+
+def _plan_features(user_id: str) -> dict:
+    return PLANS[_plan_for_user(user_id)]["features"]
+
+# ── Usage Tracking ────────────────────────────────────────────────────────────
+# data/usage.json  →  { "userId:YYYY-MM": { metric: value, ... } }
+
+def _usage_key(user_id: str) -> str:
+    now = time.gmtime()
+    return f"{user_id}:{now.tm_year:04d}-{now.tm_mon:02d}"
+
+def _get_usage(user_id: str) -> dict:
+    all_usage = _load_json("usage.json", {})
+    key       = _usage_key(user_id)
+    return all_usage.get(key, {
+        "projects":           0,
+        "transcript_minutes": 0.0,
+        "exports":            0,
+        "ai_requests":        0,
+        "storage_mb":         0.0,
+    })
+
+def _increment_usage(user_id: str, metric: str, amount=1):
+    all_usage = _load_json("usage.json", {})
+    key       = _usage_key(user_id)
+    bucket    = all_usage.setdefault(key, {
+        "projects":           0,
+        "transcript_minutes": 0.0,
+        "exports":            0,
+        "ai_requests":        0,
+        "storage_mb":         0.0,
+    })
+    bucket[metric] = round(bucket.get(metric, 0) + amount, 3)
+    _save_json("usage.json", all_usage)
+
+def _check_limit(user_id: str, metric: str, amount=1) -> dict:
+    """Returns {"ok": True} or {"ok": False, "error": "...", "limit": N, "used": N, "plan": "..."}"""
+    plan   = _plan_for_user(user_id)
+    limits = PLANS[plan]["limits"]
+    cap    = limits.get(metric, 0)
+    if cap == -1:   # unlimited
+        return {"ok": True}
+    usage  = _get_usage(user_id)
+    used   = usage.get(metric, 0)
+    if used + amount > cap:
+        return {
+            "ok":      False,
+            "error":   f"Limit reached: {metric.replace('_',' ')} ({used}/{cap} used this month).",
+            "metric":  metric,
+            "limit":   cap,
+            "used":    used,
+            "plan":    plan,
+            "upgrade": True,
+        }
+    return {"ok": True}
+
+def _check_feature(user_id: str, feature: str) -> dict:
+    """Returns {"ok": True} or {"ok": False, "error": "...", "upgrade": True}"""
+    features = _plan_features(user_id)
+    if features.get(feature, False):
+        return {"ok": True}
+    plan = _plan_for_user(user_id)
+    # Find minimum plan that has the feature
+    for pname in ("pro", "business"):
+        if PLANS[pname]["features"].get(feature, False):
+            return {
+                "ok":      False,
+                "error":   f"'{feature.replace('_',' ').title()}' requires the {pname.title()} plan.",
+                "feature": feature,
+                "plan":    plan,
+                "requires": pname,
+                "upgrade": True,
+            }
+    return {"ok": False, "error": "Feature not available.", "upgrade": False}
+
+# ── Subscription store helpers ────────────────────────────────────────────────
+def _set_subscription(user_id: str, plan: str, status: str,
+                       stripe_customer_id="", stripe_sub_id="",
+                       current_period_end=0.0, cancel_at_period_end=False):
+    subs = _load_json("subscriptions.json", {})
+    subs[user_id] = {
+        "plan":                plan,
+        "status":              status,
+        "stripe_customer_id":  stripe_customer_id,
+        "stripe_sub_id":       stripe_sub_id,
+        "current_period_end":  current_period_end,
+        "cancel_at_period_end":cancel_at_period_end,
+        "updated_at":          time.time(),
+    }
+    _save_json("subscriptions.json", subs)
+
+def _get_subscription(user_id: str) -> dict:
+    subs = _load_json("subscriptions.json", {})
+    return subs.get(user_id, {"plan": "free", "status": "free", "stripe_customer_id": "", "stripe_sub_id": ""})
+
+# ── Stripe helpers ────────────────────────────────────────────────────────────
+def _stripe_ok() -> bool:
+    return bool(_stripe_sdk and _STRIPE_SECRET_KEY)
+
+def _stripe_customer_for_user(user_id: str, email: str) -> str:
+    """Get or create Stripe customer for user, return customer_id."""
+    sub = _get_subscription(user_id)
+    cid = sub.get("stripe_customer_id", "")
+    if cid:
+        return cid
+    # Create new customer
+    c   = _stripe_sdk.Customer.create(email=email, metadata={"userId": user_id})
+    cid = c["id"]
+    _set_subscription(user_id, "free", "free", stripe_customer_id=cid)
+    return cid
+
+def handle_billing_checkout(body, user):
+    """Create Stripe Checkout Session → return URL."""
+    if not _stripe_ok():
+        return {"error": "Stripe not configured. Set STRIPE_SECRET_KEY."}
+    plan_key = body.get("plan", "pro")
+    if plan_key not in ("pro", "business"):
+        return {"error": "Invalid plan"}
+    price_id = PLANS[plan_key]["stripe_price_id"]
+    if not price_id:
+        return {"error": f"STRIPE_{plan_key.upper()}_PRICE_ID not set."}
+    user_id = user["id"]
+    email   = user.get("email", "")
+    cid     = _stripe_customer_for_user(user_id, email)
+    domain  = os.environ.get("REPLIT_DEV_DOMAIN", "localhost:5000")
+    base    = f"https://{domain}" if not domain.startswith("http") else domain
+    session = _stripe_sdk.checkout.Session.create(
+        customer=cid,
+        payment_method_types=["card"],
+        mode="subscription",
+        line_items=[{"price": price_id, "quantity": 1}],
+        success_url=f"{base}/?billing=success&plan={plan_key}",
+        cancel_url=f"{base}/?billing=cancel",
+        metadata={"userId": user_id, "plan": plan_key},
+        subscription_data={"metadata": {"userId": user_id, "plan": plan_key}},
+    )
+    return {"ok": True, "url": session["url"], "sessionId": session["id"]}
+
+def handle_billing_portal(body, user):
+    """Create Stripe Customer Portal session → return URL."""
+    if not _stripe_ok():
+        return {"error": "Stripe not configured."}
+    sub     = _get_subscription(user["id"])
+    cid     = sub.get("stripe_customer_id", "")
+    if not cid:
+        return {"error": "No billing account found. Please subscribe first."}
+    domain  = os.environ.get("REPLIT_DEV_DOMAIN", "localhost:5000")
+    base    = f"https://{domain}" if not domain.startswith("http") else domain
+    portal  = _stripe_sdk.billing_portal.Session.create(
+        customer=cid,
+        return_url=f"{base}/?billing=portal_return",
+    )
+    return {"ok": True, "url": portal["url"]}
+
+def handle_billing_cancel(body, user):
+    """Cancel subscription at period end."""
+    if not _stripe_ok():
+        return {"error": "Stripe not configured."}
+    sub    = _get_subscription(user["id"])
+    sub_id = sub.get("stripe_sub_id", "")
+    if not sub_id:
+        return {"error": "No active subscription found."}
+    updated = _stripe_sdk.Subscription.modify(sub_id, cancel_at_period_end=True)
+    _set_subscription(
+        user["id"], sub.get("plan","free"), sub.get("status","active"),
+        sub.get("stripe_customer_id",""), sub_id,
+        updated.get("current_period_end", 0),
+        cancel_at_period_end=True
+    )
+    return {"ok": True, "message": "Subscription will cancel at period end."}
+
+def handle_billing_reactivate(body, user):
+    """Remove cancel_at_period_end to reactivate."""
+    if not _stripe_ok():
+        return {"error": "Stripe not configured."}
+    sub    = _get_subscription(user["id"])
+    sub_id = sub.get("stripe_sub_id", "")
+    if not sub_id:
+        return {"error": "No subscription found."}
+    updated = _stripe_sdk.Subscription.modify(sub_id, cancel_at_period_end=False)
+    _set_subscription(
+        user["id"], sub.get("plan","free"), "active",
+        sub.get("stripe_customer_id",""), sub_id,
+        updated.get("current_period_end", 0), False
+    )
+    return {"ok": True, "message": "Subscription reactivated."}
+
+def handle_stripe_webhook(raw_body: bytes, signature: str) -> dict:
+    """Process Stripe webhook events to update subscription state."""
+    if not _stripe_ok():
+        return {"ok": False, "error": "Stripe not configured"}
+    try:
+        if _STRIPE_WEBHOOK_SEC:
+            event = _stripe_sdk.Webhook.construct_event(raw_body, signature, _STRIPE_WEBHOOK_SEC)
+        else:
+            event = json.loads(raw_body)
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+    etype = event.get("type", "")
+    obj   = event.get("data", {}).get("object", {})
+
+    if etype in ("customer.subscription.created",
+                 "customer.subscription.updated",
+                 "customer.subscription.deleted"):
+        user_id  = obj.get("metadata", {}).get("userId", "")
+        plan_key = obj.get("metadata", {}).get("plan", "free")
+        status   = obj.get("status", "active")
+        cid      = obj.get("customer", "")
+        sub_id   = obj.get("id", "")
+        ppe      = obj.get("current_period_end", 0)
+        cape     = obj.get("cancel_at_period_end", False)
+        if etype == "customer.subscription.deleted":
+            status   = "canceled"
+            plan_key = "free"
+        if user_id:
+            _set_subscription(user_id, plan_key, status, cid, sub_id, ppe, cape)
+            print(f"[billing] {etype}: user={user_id} plan={plan_key} status={status}", flush=True)
+
+    elif etype == "checkout.session.completed":
+        user_id  = obj.get("metadata", {}).get("userId", "")
+        plan_key = obj.get("metadata", {}).get("plan", "pro")
+        cid      = obj.get("customer", "")
+        if user_id:
+            _set_subscription(user_id, plan_key, "active", cid, "", 0, False)
+            print(f"[billing] checkout.completed: user={user_id} plan={plan_key}", flush=True)
+
+    return {"ok": True, "type": etype}
+
+# ── Usage stats endpoint ───────────────────────────────────────────────────────
+def handle_billing_status(user_id: str) -> dict:
+    plan    = _plan_for_user(user_id)
+    usage   = _get_usage(user_id)
+    sub     = _get_subscription(user_id)
+    limits  = PLANS[plan]["limits"]
+    features= PLANS[plan]["features"]
+    return {
+        "plan":     plan,
+        "planName": PLANS[plan]["name"],
+        "status":   sub.get("status", "free"),
+        "cancel_at_period_end": sub.get("cancel_at_period_end", False),
+        "current_period_end":   sub.get("current_period_end", 0),
+        "features": features,
+        "usage":    usage,
+        "limits":   limits,
+    }
+
+# ── Admin billing dashboard ───────────────────────────────────────────────────
+def handle_admin_billing_stats() -> dict:
+    subs  = _load_json("subscriptions.json", {})
+    users = _load_json("users.json", [])
+
+    plan_counts = {"free": 0, "pro": 0, "business": 0}
+    active_subs = []
+    canceled    = []
+    mrr         = 0.0
+
+    for uid, sub in subs.items():
+        plan   = sub.get("plan", "free")
+        status = sub.get("status", "free")
+        plan_counts[plan] = plan_counts.get(plan, 0) + 1
+        if status in ("active", "trialing"):
+            mrr        += PLANS.get(plan, {}).get("price_monthly_usd", 0)
+            active_subs.append(uid)
+        elif status == "canceled":
+            canceled.append(uid)
+
+    total_users  = len(users)
+    paying_users = len(active_subs)
+    conversion   = round(paying_users / max(total_users, 1) * 100, 1)
+    churn_rate   = round(len(canceled) / max(paying_users + len(canceled), 1) * 100, 1)
+
+    # MRR breakdown
+    mrr_breakdown = {
+        "pro":      plan_counts.get("pro", 0)      * PLANS["pro"]["price_monthly_usd"],
+        "business": plan_counts.get("business", 0) * PLANS["business"]["price_monthly_usd"],
+    }
+
+    # Usage aggregates
+    all_usage = _load_json("usage.json", {})
+    now = time.gmtime()
+    month_prefix = f"{now.tm_year:04d}-{now.tm_mon:02d}"
+    agg = {"exports": 0, "transcript_minutes": 0.0, "ai_requests": 0}
+    for key, bucket in all_usage.items():
+        if month_prefix in key:
+            agg["exports"]             += bucket.get("exports", 0)
+            agg["transcript_minutes"]  += bucket.get("transcript_minutes", 0)
+            agg["ai_requests"]         += bucket.get("ai_requests", 0)
+
+    return {
+        "mrr":            round(mrr, 2),
+        "mrr_breakdown":  mrr_breakdown,
+        "total_users":    total_users,
+        "paying_users":   paying_users,
+        "conversion_pct": conversion,
+        "churn_pct":      churn_rate,
+        "plan_counts":    plan_counts,
+        "this_month":     agg,
+        "stripe_configured": _stripe_ok(),
+    }
+
+# ── Workspace / Team system ───────────────────────────────────────────────────
+# data/workspaces.json  →  { "ws_xxx": { id, name, ownerId, members: [{userId,role}], createdAt } }
+# Roles: owner | editor | viewer
+
+def _ws_all() -> dict:
+    return _load_json("workspaces.json", {})
+
+def _ws_save(ws: dict):
+    _save_json("workspaces.json", ws)
+
+def _ws_user_role(ws: dict, user_id: str) -> str | None:
+    if ws.get("ownerId") == user_id:
+        return "owner"
+    for m in ws.get("members", []):
+        if m.get("userId") == user_id:
+            return m.get("role", "viewer")
+    return None
+
+def handle_workspace_create(body, user) -> dict:
+    check = _check_feature(user["id"], "workspace")
+    if not check["ok"]:
+        return check
+    name = (body.get("name") or "").strip()[:80]
+    if not name:
+        return {"error": "Workspace name is required"}
+    ws_all = _ws_all()
+    ws_id  = "ws_" + uuid.uuid4().hex[:14]
+    ws_all[ws_id] = {
+        "id":        ws_id,
+        "name":      name,
+        "ownerId":   user["id"],
+        "members":   [],
+        "createdAt": time.time(),
+    }
+    _ws_save(ws_all)
+    return {"ok": True, "workspace": ws_all[ws_id]}
+
+def handle_workspace_list(user_id: str) -> dict:
+    ws_all = _ws_all()
+    result = []
+    for ws in ws_all.values():
+        role = _ws_user_role(ws, user_id)
+        if role:
+            result.append({**ws, "myRole": role})
+    result.sort(key=lambda x: x.get("createdAt", 0), reverse=True)
+    return {"workspaces": result}
+
+def handle_workspace_invite(body, user) -> dict:
+    ws_id    = body.get("workspaceId", "")
+    email    = (body.get("email") or "").strip().lower()
+    role     = body.get("role", "editor")
+    if role not in ("editor", "viewer"):
+        return {"error": "Role must be editor or viewer"}
+    ws_all   = _ws_all()
+    ws       = ws_all.get(ws_id)
+    if not ws:
+        return {"error": "Workspace not found"}
+    my_role  = _ws_user_role(ws, user["id"])
+    if my_role not in ("owner",):
+        return {"error": "Only owners can invite members"}
+    # Find user by email
+    users    = _load_json("users.json", [])
+    invitee  = next((u for u in users if u.get("email") == email), None)
+    if not invitee:
+        return {"error": f"No account found for {email}"}
+    uid      = invitee["id"]
+    if _ws_user_role(ws, uid):
+        return {"error": "User is already a member"}
+    # Check team member limit
+    plan     = _plan_for_user(user["id"])
+    cap      = PLANS[plan]["limits"].get("team_members", 1)
+    cur      = len(ws.get("members", [])) + 1  # +1 for owner
+    if cap != -1 and cur >= cap:
+        return {"ok": False, "error": f"Team member limit ({cap}) reached for {plan} plan.", "upgrade": True}
+    ws["members"].append({"userId": uid, "role": role, "joinedAt": time.time(), "email": email})
+    _ws_save(ws_all)
+    return {"ok": True, "userId": uid, "role": role}
+
+def handle_workspace_remove_member(body, user) -> dict:
+    ws_id    = body.get("workspaceId", "")
+    target   = body.get("userId", "")
+    ws_all   = _ws_all()
+    ws       = ws_all.get(ws_id)
+    if not ws:
+        return {"error": "Workspace not found"}
+    my_role  = _ws_user_role(ws, user["id"])
+    if my_role not in ("owner",) and user["id"] != target:
+        return {"error": "Only owners can remove members"}
+    ws["members"] = [m for m in ws.get("members", []) if m.get("userId") != target]
+    _ws_save(ws_all)
+    return {"ok": True}
+
+def handle_workspace_delete(ws_id: str, user_id: str) -> dict:
+    ws_all = _ws_all()
+    ws     = ws_all.get(ws_id)
+    if not ws:
+        return {"error": "Not found"}
+    if ws.get("ownerId") != user_id:
+        return {"error": "Only the owner can delete a workspace"}
+    del ws_all[ws_id]
+    _ws_save(ws_all)
+    return {"ok": True}
+
+def handle_workspace_projects(ws_id: str, user_id: str) -> dict:
+    ws_all = _ws_all()
+    ws     = ws_all.get(ws_id)
+    if not ws:
+        return {"error": "Not found"}
+    if not _ws_user_role(ws, user_id):
+        return {"error": "Access denied"}
+    all_projs = []
+    for p in PROJECTS_DIR.glob("*.json"):
+        try:
+            data = json.loads(p.read_text(encoding="utf-8"))
+            if data.get("workspaceId") == ws_id:
+                all_projs.append({"id": data.get("id"), "name": data.get("name"), "updatedAt": data.get("updatedAt")})
+        except Exception:
+            pass
+    return {"workspaceId": ws_id, "projects": all_projs}
+
+# ── Feature gating helper called by request handlers ─────────────────────────
+def _resolve_user_from_handler(handler) -> dict | None:
+    """Extract user from session cookie in HTTP handler."""
+    cookie = handler.headers.get("Cookie", "")
+    token  = ""
+    for part in cookie.split(";"):
+        k, _, v = part.strip().partition("=")
+        if k.strip() == "session":
+            token = v.strip()
+            break
+    if not token:
+        return None
+    sess = _session_get(token)
+    if not sess:
+        return None
+    users = _load_json("users.json", [])
+    return next((u for u in users if u["id"] == sess.get("userId")), None)
 
 
 # ── Entry ─────────────────────────────────────────────────────────────────────

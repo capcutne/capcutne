@@ -48,5 +48,47 @@
     "step": null,
     "ts": 1781904377976,
     "url": "/"
+  },
+  {
+    "userId": "b18b9c6f854b43ce",
+    "event": "app_open",
+    "data": {},
+    "step": null,
+    "ts": 1781907966631,
+    "url": "/"
+  },
+  {
+    "userId": "b18b9c6f854b43ce",
+    "event": "login",
+    "data": {
+      "userId": "b18b9c6f854b43ce"
+    },
+    "step": null,
+    "ts": 1781907970897,
+    "url": "/"
+  },
+  {
+    "userId": "b18b9c6f854b43ce",
+    "event": "onboarding_complete",
+    "data": {},
+    "step": null,
+    "ts": 1781907976993,
+    "url": "/"
+  },
+  {
+    "userId": "b18b9c6f854b43ce",
+    "event": "journey_step",
+    "data": {},
+    "step": "register",
+    "ts": 1781907976993,
+    "url": ""
+  },
+  {
+    "userId": "b18b9c6f854b43ce",
+    "event": "journey_progress",
+    "data": {},
+    "step": null,
+    "ts": 1781907976967.401,
+    "url": ""
   }
 ]
