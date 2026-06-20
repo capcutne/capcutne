@@ -533,14 +533,51 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 .ca{background:var(--ta);color:var(--tat)}
 .cs{background:var(--ts);color:var(--tst)}
 .cx{background:var(--tfx);color:var(--tfxt)}
-/* transition node */
+/* transition node — diamond shape */
 .trans-node{
-  position:absolute;top:50%;transform:translate(-50%,-50%);
-  width:18px;height:18px;background:var(--bg3);border:1px solid var(--border2);
-  border-radius:50%;display:flex;align-items:center;justify-content:center;
-  cursor:pointer;z-index:12;font-size:8px;color:var(--t3)
+  position:absolute;top:50%;transform:translate(-50%,-50%) rotate(45deg);
+  width:16px;height:16px;background:var(--bg4);border:1.5px solid var(--border2);
+  cursor:pointer;z-index:12;transition:all .15s
 }
-.trans-node:hover{background:var(--accent);border-color:var(--accent2);color:#000}
+.trans-node:hover{background:var(--accent);border-color:var(--accent2)}
+.trans-node.trans-has{background:rgba(99,180,255,.2);border-color:rgba(99,180,255,.6)}
+.trans-node.trans-sel{background:var(--accent);border-color:var(--accent2);box-shadow:0 0 0 3px rgba(232,200,64,.25)}
+.trans-icon{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  transform:rotate(-45deg);font-size:9px;line-height:1;color:var(--t3);user-select:none
+}
+.trans-node:hover .trans-icon,.trans-node.trans-has .trans-icon,.trans-node.trans-sel .trans-icon{color:var(--t1)}
+/* effect badge on clips */
+.fx-badge{
+  position:absolute;top:3px;right:3px;background:rgba(99,180,255,.9);color:#000;
+  border-radius:3px;font-size:8px;font-weight:700;padding:1px 4px;z-index:5;
+  pointer-events:none;letter-spacing:.3px
+}
+.clip.has-fx{border-color:rgba(99,180,255,.4)!important}
+/* drag-over highlight on clip drop target */
+.clip.drag-over{outline:2px dashed var(--accent);outline-offset:-2px;background:rgba(232,200,64,.07)!important}
+/* effect stack inspector */
+.fx-stack-item{background:var(--bg3);border:1px solid var(--border1);border-radius:8px;padding:8px 10px;margin-bottom:2px}
+.fx-stack-header{display:flex;align-items:center;gap:6px}
+.fx-stack-icon{font-size:14px;flex-shrink:0}
+.fx-stack-name{flex:1;font-size:12px;font-weight:600;color:var(--t1)}
+.fx-stack-order{display:flex;gap:2px}
+.fx-stack-order button{background:var(--bg4);border:1px solid var(--border1);color:var(--t2);border-radius:3px;cursor:pointer;font-size:9px;width:18px;height:18px;padding:0;line-height:1}
+.fx-stack-order button:hover{background:var(--accent);color:#000;border-color:var(--accent)}
+.fx-stack-order button:disabled{opacity:.3;cursor:not-allowed}
+.fx-stack-del{background:none;border:none;color:var(--t3);cursor:pointer;font-size:11px;padding:2px 4px;border-radius:3px;margin-left:2px}
+.fx-stack-del:hover{color:#ff7070;background:rgba(255,80,80,.1)}
+.fx-stack-sep{height:3px}
+/* empty state */
+.ps-empty{text-align:center;color:var(--t3);font-size:11px;padding:20px 8px;line-height:1.6}
+/* effect library draggable items */
+.efl-item{background:var(--bg3);border:1px solid var(--border1);border-radius:8px;padding:8px 4px 6px;
+  text-align:center;cursor:grab;font-size:11px;color:var(--t2);transition:all .15s;position:relative}
+.efl-item:hover{border-color:var(--accent);color:var(--t1);background:var(--bg4)}
+.efl-item:active{cursor:grabbing}
+.efl-item .eff-icon{font-size:18px;display:block;margin-bottom:4px}
+.efl-cat{font-size:10px;color:var(--t3);margin-top:1px}
+.efl-hint{font-size:10px;color:var(--t3);text-align:center;padding:6px 4px;background:var(--bg3);border-radius:6px;border:1px dashed var(--border1)}
 /* keyframe dot */
 .kf-dot{
   position:absolute;bottom:-4px;width:8px;height:8px;border-radius:50%;
@@ -1331,6 +1368,8 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 <script src="/js/onboarding.js" defer></script>
 <script src="/js/admin.js" defer></script>
 <script src="/js/beta.js" defer></script>
+<script src="/js/effects.js" defer></script>
+<script src="/js/transitions.js" defer></script>
 </head>
 <body>
 <div id="app">
@@ -2206,10 +2245,29 @@ function renderTracks(){
           wave=waveformSVG(wpx, c.label);
         }
       }
-      html+=`<div class="clip ${c.cls}${sel}" data-clip="${c.id}" style="${clipStyle(c)}">${wave}<div class="clip-lh"></div><span class="clip-label">${c.label}</span><div class="clip-rh"></div></div>`;
-      if(tr.trans && i<sorted.length-1){
+      const hasFx=c.effects&&c.effects.length>0;
+      const fxBadge=hasFx?`<span class="fx-badge">${c.effects.length}fx</span>`:'';
+      html+=`<div class="clip ${c.cls}${sel}${hasFx?' has-fx':''}" data-clip="${c.id}" style="${clipStyle(c)}"
+        ondragover="event.preventDefault();event.stopPropagation();this.classList.add('drag-over')"
+        ondragleave="this.classList.remove('drag-over')"
+        ondrop="typeof dropEffectOnClip==='function'&&dropEffectOnClip(event,'${c.id}')"
+      >${wave}${fxBadge}<div class="clip-lh"></div><span class="clip-label">${c.label}</span><div class="clip-rh"></div></div>`;
+      /* Transition diamond nodes between adjacent video clips */
+      if(tr.type==='video' && i<sorted.length-1){
         const x=(c.start+c.dur)*pps();
-        html+=`<div class="trans-node" style="left:${x}px">⇄</div>`;
+        const tn=c.transition||{};
+        const hasTN=tn.name&&tn.name!=='none';
+        const tLib=typeof TRANSITION_LIBRARY!=='undefined'?TRANSITION_LIBRARY:[];
+        const tDef=tLib.find(td=>td.id===tn.name)||{icon:'+'};
+        const selTN=typeof selectedTransition!=='undefined'&&selectedTransition===c.id;
+        html+=`<div class="trans-node${hasTN?' trans-has':''}${selTN?' trans-sel':''}" style="left:${x}px"
+          title="${hasTN?(tn.name+' · '+(tn.dur||0.5).toFixed(1)+'s'):'Thêm chuyển cảnh'}"
+          onclick="typeof selectTransitionNode==='function'&&selectTransitionNode('${c.id}',event)">
+          <span class="trans-icon">${hasTN?(tDef.icon||'⇄'):'+'}</span>
+        </div>`;
+      } else if(tr.trans && tr.type!=='video' && i<sorted.length-1){
+        const x=(c.start+c.dur)*pps();
+        html+=`<div class="trans-node" style="left:${x}px"><span class="trans-icon">⇄</span></div>`;
       }
     });
     html+='</div></div>';
@@ -2328,7 +2386,8 @@ function _applyClipFilter(clip){
   const hue = adj.hue || 0;
   const sharp = adj.sharpen || 0;
   const manual = `brightness(${bri.toFixed(2)}) contrast(${con.toFixed(2)}) saturate(${sat.toFixed(2)}) hue-rotate(${hue}deg)${sharp>0?' contrast('+(1+sharp/200).toFixed(2)+')':''}`;
-  ph.style.filter = base + ' ' + manual;
+  const stackFx = typeof composeEffectStack==='function' ? composeEffectStack(clip) : '';
+  ph.style.filter = [base, manual, stackFx].filter(Boolean).join(' ').trim();
 }
 
 function updatePlayhead(){
@@ -3436,16 +3495,123 @@ const EFF_CATS={
   'Kỹ thuật số':[['💻','Digital'],['🤖','Robot face'],['📡','Radar'],['🔋','HUD'],['⚙️','Gears'],['🌐','Matrix'],['💾','Pixel'],['🔌','Circuit'],['📊','Data viz'],['🎮','Neon grid'],['🛸','Sci-fi'],['🔭','Telescope'],['🧬','DNA'],['⚛️','Atom'],['🔬','Microscope'],['💡','Tech glow'],['🌐','Globe wire'],['📱','Screen'],['🖥️','Terminal'],['🤖','AI face']],
   '❤️ Yêu thích':[],
 };
-const TPL_EFFECT = `
+
+/* ============================================================
+   EFFECT LIBRARY — 10 named effects with id/name/category/params
+   apply(params, intensity_0_to_1) → CSS filter string
+   ============================================================ */
+const EFFECT_LIBRARY=[
+  {id:'blur',       name:'Blur',       category:'Basic',     icon:'🌫️',
+   params:{radius:{type:'range',min:0,max:20,default:5,label:'Bán kính (px)'}},
+   apply(p,t){return`blur(${((p.radius||5)*t).toFixed(1)}px)`;}},
+
+  {id:'glow',       name:'Glow',       category:'Basic',     icon:'✨',
+   params:{spread:{type:'range',min:0,max:10,default:3,label:'Lan tỏa'}},
+   apply(p,t){return`brightness(${(1+0.35*t).toFixed(2)}) saturate(${(1+0.5*t).toFixed(2)})`;}},
+
+  {id:'sharpen',    name:'Sharpen',    category:'Basic',     icon:'🔍',
+   params:{},
+   apply(p,t){return`contrast(${(1+0.6*t).toFixed(2)}) saturate(${(1+0.2*t).toFixed(2)})`;}},
+
+  {id:'vignette',   name:'Vignette',   category:'Cinematic', icon:'⬛',
+   params:{size:{type:'range',min:0,max:100,default:50,label:'Kích thước'}},
+   apply(p,t){return`brightness(${(1-0.42*t).toFixed(2)}) contrast(${(1+0.2*t).toFixed(2)})`;}},
+
+  {id:'film_grain', name:'Film Grain', category:'Cinematic', icon:'🎞️',
+   params:{amount:{type:'range',min:0,max:100,default:30,label:'Lượng nhiễu'}},
+   apply(p,t){return`sepia(${(0.18*t).toFixed(2)}) contrast(${(1+0.12*t).toFixed(2)}) brightness(${(1-0.06*t).toFixed(2)})`;}},
+
+  {id:'rgb_split',  name:'RGB Split',  category:'Glitch',    icon:'🎨',
+   params:{offset:{type:'range',min:0,max:20,default:5,label:'Độ lệch'}},
+   apply(p,t){return`hue-rotate(${(25*t).toFixed(0)}deg) saturate(${(1+0.9*t).toFixed(2)}) contrast(${(1+0.2*t).toFixed(2)})`;}},
+
+  {id:'shake',      name:'Shake',      category:'Motion',    icon:'📳',
+   params:{amplitude:{type:'range',min:0,max:30,default:10,label:'Biên độ'}},
+   apply(p,t){return`blur(${(0.5*t).toFixed(1)}px) contrast(${(1+0.15*t).toFixed(2)})`;}},
+
+  {id:'zoom_blur',  name:'Zoom Blur',  category:'Motion',    icon:'🔭',
+   params:{strength:{type:'range',min:0,max:20,default:8,label:'Cường độ'}},
+   apply(p,t){return`blur(${((p.strength||8)*t*0.35).toFixed(1)}px) brightness(${(1+0.12*t).toFixed(2)})`;}},
+
+  {id:'motion_blur',name:'Motion Blur',category:'Motion',    icon:'💨',
+   params:{strength:{type:'range',min:0,max:30,default:10,label:'Cường độ'}},
+   apply(p,t){return`blur(${((p.strength||10)*t*0.28).toFixed(1)}px)`;}},
+
+  {id:'color_boost',name:'Color Boost',category:'Color',     icon:'🌈',
+   params:{saturation:{type:'range',min:100,max:300,default:180,label:'Bão hòa %'}},
+   apply(p,t){const s=(p.saturation||180);return`saturate(${(1+(s-100)*t/100).toFixed(2)}) brightness(${(1+0.05*t).toFixed(2)})`;}}
+];
+
+/* ============================================================
+   TRANSITION LIBRARY — 7 cinematic transitions
+   ============================================================ */
+const TRANSITION_LIBRARY=[
+  {id:'none',     name:'Không',   icon:'✖️', category:'Basic',   directions:[]},
+  {id:'fade',     name:'Fade',    icon:'⬜', category:'Basic',   directions:[]},
+  {id:'dissolve', name:'Dissolve',icon:'🌊', category:'Basic',   directions:[]},
+  {id:'slide',    name:'Slide',   icon:'↔️',  category:'Move',    directions:['left','right','up','down']},
+  {id:'push',     name:'Push',    icon:'👉', category:'Move',    directions:['left','right','up','down']},
+  {id:'zoom',     name:'Zoom',    icon:'🔍', category:'Scale',   directions:['in','out']},
+  {id:'whip',     name:'Whip',    icon:'💥', category:'Dynamic', directions:['left','right']},
+  {id:'spin',     name:'Spin',    icon:'🌀', category:'Dynamic', directions:['cw','ccw']}
+];
+
+/* ============================================================
+   EFFECT PANEL TEMPLATE — rebuilt for CE-1
+   ============================================================ */
+/* Helper: render one draggable EFFECT_LIBRARY item */
+function _eflItem(e){
+  return `<div class="efl-item" draggable="true"
+    ondragstart="typeof onEffectDragStart==='function'&&onEffectDragStart(event,'${e.id}')"
+    onclick="selectEffect('${e.name}',this);toast&&toast('Kéo vào clip để thêm vào stack')"
+    title="${e.name} — kéo vào clip trên timeline">
+    <span class="eff-icon">${e.icon}</span>
+    ${e.name}
+    <div class="efl-cat">${e.category}</div>
+  </div>`;
+}
+/* Helper: render one TRANSITION_LIBRARY item for the panel */
+function _tlItem(tr,selName){
+  return `<div class="eff-item${tr.id===selName?' on':''}"
+    onclick="document.querySelectorAll('#tl-panel-grid .eff-item').forEach(x=>x.classList.remove('on'));this.classList.add('on');_panelTransSel='${tr.id}';document.getElementById('tl-apply-btn').disabled=false">
+    <span class="eff-icon">${tr.icon}</span>${tr.name}
+  </div>`;
+}
+var _panelTransSel='fade';
+
+const TPL_EFFECT=(()=>{
+  /* Effect Library section */
+  const cats=[...new Set(EFFECT_LIBRARY.map(e=>e.category))];
+  const effLibHTML=`
   <div class="ps">
-    <div class="ps-title">Danh mục hiệu ứng</div>
+    <div class="ps-title" style="display:flex;justify-content:space-between;align-items:center">
+      <span>✨ Effect Library</span>
+      <span style="font-size:10px;color:var(--t3);font-weight:400">${EFFECT_LIBRARY.length} hiệu ứng</span>
+    </div>
+    <div class="cat-tabs" id="efl-cat-tabs" style="margin-bottom:8px">
+      <div class="cat-tab on" onclick="switchEflCat('all',this)">Tất cả</div>
+      ${cats.map(c=>`<div class="cat-tab" onclick="switchEflCat('${c}',this)">${c}</div>`).join('')}
+    </div>
+    <div class="eff-grid" id="efl-item-grid" style="grid-template-columns:repeat(2,1fr)">
+      ${EFFECT_LIBRARY.map(e=>_eflItem(e)).join('')}
+    </div>
+    <div class="efl-hint" style="margin-top:6px">
+      💡 Kéo thả vào clip trên timeline để thêm vào effect stack
+    </div>
+  </div>
+  <div class="ps-div"></div>`;
+
+  /* Legacy overlay effects section */
+  const overlayHTML=`
+  <div class="ps">
+    <div class="ps-title">Hiệu ứng Overlay (timeline track)</div>
     <div class="cat-tabs" id="eff-cat-tabs">
       ${Object.keys(EFF_CATS).map((c,i)=>`<div class="cat-tab${i===0?' on':''}" onclick="switchEffCat('${c}',this)">${c}</div>`).join('')}
     </div>
-    <div class="eff-grid" id="eff-item-grid">
+    <div class="eff-grid" id="eff-item-grid" style="margin-top:6px">
       ${EFF_CATS['Video'].map(item=>_effItem(item)).join('')}
     </div>
-    <div class="prop-row" style="margin-top:10px">
+    <div class="prop-row" style="margin-top:8px">
       <span class="prop-lbl">Cường độ</span>
       <input type="range" class="prop-sl" id="eff-intensity" min="10" max="100" value="60"
         oninput="document.getElementById('eff-int-val').textContent=this.value+'%'">
@@ -3457,33 +3623,39 @@ const TPL_EFFECT = `
         oninput="document.getElementById('eff-dur-val').textContent=this.value+'s'">
       <span class="prop-val" id="eff-dur-val">3s</span>
     </div>
-    <div class="toggle-row" style="margin-top:6px">
-      <span class="tg-lbl">Lặp lại hiệu ứng</span>
-      <div class="tg off" onclick="this.classList.toggle('on')"><div class="tg-k"></div></div>
-    </div>
-    <button class="add-ov-btn" style="margin-top:8px" onclick="addSelectedEffect()">+ Thêm vào timeline</button>
+    <button class="add-ov-btn" style="margin-top:8px" onclick="addSelectedEffect()">+ Thêm vào timeline track</button>
   </div>
-  <div class="ps-div"></div>
+  <div class="ps-div"></div>`;
+
+  /* Transitions section */
+  const transHTML=`
   <div class="ps">
-    <div class="ps-title">Chuyển cảnh</div>
-    <div class="eff-grid" id="trans-grid">
-      <div class="eff-item on" onclick="selectTransition('Mờ dần',this)"><span class="eff-icon">🌫️</span>Mờ dần</div>
-      <div class="eff-item" onclick="selectTransition('Trượt',this)"><span class="eff-icon">↔️</span>Trượt</div>
-      <div class="eff-item" onclick="selectTransition('Zoom',this)"><span class="eff-icon">🔍</span>Zoom</div>
-      <div class="eff-item" onclick="selectTransition('Lật',this)"><span class="eff-icon">🔄</span>Lật</div>
-      <div class="eff-item" onclick="selectTransition('Xoay',this)"><span class="eff-icon">🌀</span>Xoay</div>
-      <div class="eff-item" onclick="selectTransition('Chéo',this)"><span class="eff-icon">✂️</span>Chéo</div>
-      <div class="eff-item" onclick="selectTransition('Vỡ vụn',this)"><span class="eff-icon">💥</span>Vỡ vụn</div>
-      <div class="eff-item" onclick="selectTransition('Dissolve',this)"><span class="eff-icon">🌊</span>Dissolve</div>
-      <div class="eff-item" onclick="selectTransition('Không',this)"><span class="eff-icon">✖️</span>Không</div>
+    <div class="ps-title" style="display:flex;justify-content:space-between;align-items:center">
+      <span>🎬 Chuyển cảnh</span>
+      <span style="font-size:10px;color:var(--t3);font-weight:400">Click clip ghép để áp dụng</span>
+    </div>
+    <div class="eff-grid" id="tl-panel-grid" style="grid-template-columns:repeat(4,1fr);gap:4px">
+      ${TRANSITION_LIBRARY.map(tr=>_tlItem(tr,'fade')).join('')}
     </div>
     <div class="prop-row" style="margin-top:8px">
-      <span class="prop-lbl">Thời lượng chuyển</span>
-      <input type="range" class="prop-sl" min="1" max="20" value="5"
-        oninput="document.getElementById('trans-dur-v').textContent=(this.value/10).toFixed(1)+'s'">
-      <span class="prop-val" id="trans-dur-v">0.5s</span>
+      <span class="prop-lbl">Thời lượng</span>
+      <input type="range" class="prop-sl" id="tl-panel-dur" min="1" max="30" value="5"
+        oninput="document.getElementById('tl-panel-dur-v').textContent=(this.value/10).toFixed(1)+'s'">
+      <span class="prop-val" id="tl-panel-dur-v">0.5s</span>
+    </div>
+    <button class="add-ov-btn" id="tl-apply-btn" style="margin-top:8px;width:100%"
+      onclick="
+        const c=_getSelClip();
+        if(!c||c.cls!=='cv'){toast('Chọn video clip trên timeline trước');return;}
+        typeof applyTransitionToClip==='function'&&applyTransitionToClip(c.id,_panelTransSel,document.getElementById('tl-panel-dur').value/10,'');
+      ">🎬 Áp dụng cho clip đang chọn</button>
+    <div class="efl-hint" style="margin-top:6px">
+      💡 Hoặc click vào hình thoi ◆ giữa 2 clip trên timeline
     </div>
   </div>`;
+
+  return effLibHTML + overlayHTML + transHTML;
+})();
 
 const FILT_PRESETS={
   'Phổ biến':[['∅','none','Gốc'],['🌇','sunset','Hoàng hôn'],['🎞️','vintage','Vintage'],['🌈','vivid','Sống động'],['⬛','bw','Đen trắng'],['❄️','cold','Lạnh'],['🔥','warm','Ấm'],['🌸','pastel','Pastel'],['💜','fade','Fade'],['🌊','aqua','Aqua'],['🟠','amber','Amber'],['🌿','emerald','Emerald'],['💎','crystal','Crystal'],['🌙','midnight','Midnight'],['🎨','pop','Pop art'],['🔮','violet','Tím mộng']],
@@ -4295,6 +4467,28 @@ function _loadClipToPanel(clip){
 
   /* apply clip's filter to preview immediately */
   _applyClipFilter(clip);
+
+  /* Effect Stack section for video/image clips */
+  if(clip.cls==='cv'){
+    let fxSec=document.getElementById('rp-fx-stack');
+    if(!fxSec){
+      fxSec=document.createElement('div');
+      fxSec.id='rp-fx-stack';
+      const body=document.getElementById('rp-body');
+      if(body) body.appendChild(fxSec);
+    }
+    const stackHTML=typeof renderEffectStackInspector==='function'?renderEffectStackInspector(clip):'';
+    const cnt=(clip.effects||[]).length;
+    fxSec.innerHTML=`
+      <div class="ps-div"></div>
+      <div class="ps">
+        <div class="ps-title" style="display:flex;justify-content:space-between;align-items:center">
+          <span>✨ Effect Stack</span>
+          <span style="font-size:10px;color:var(--t3);font-weight:400">${cnt} hiệu ứng</span>
+        </div>
+        ${stackHTML}
+      </div>`;
+  }
 }
 
 /* Right panel for effect (cx) clips — like CapCut */
@@ -6150,6 +6344,15 @@ function addCustomSticker(input){
 }
 
 /* ---- EFFECT TAB ---- */
+function switchEflCat(cat,el){
+  el.closest('.cat-tabs').querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  const grid=document.getElementById('efl-item-grid');
+  if(!grid) return;
+  const items=(typeof EFFECT_LIBRARY!=='undefined'?EFFECT_LIBRARY:[]);
+  const filtered=cat==='all'?items:items.filter(e=>e.category===cat);
+  grid.innerHTML=filtered.length?filtered.map(e=>_eflItem(e)).join(''):'<div class="ps-empty">Không có hiệu ứng</div>';
+}
 function switchEffCat(cat, el){
   el.closest('.cat-tabs').querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('on'));
   el.classList.add('on');

@@ -2,3 +2,4 @@
 - [Asset registry pattern](asset-registry.md) — uploads auto-register in data/asset_registry.json; look up disk path with _asset_path_by_id(fileId)
 - [Server architecture](server-architecture.md) — pure http.server (no Flask); JSON files for all persistence; MODEL="gpt-5-mini"; port 5000
 - [Billing & SaaS architecture](billing-saas.md) — Phase 5.6: Stripe SDK, Free/Pro/Business plans, usage quotas, workspace teams; billing block sits in server.py before AI router
+- [CE-1 Effects & Transitions](ce1-effects-transitions.md) — EFFECT_LIBRARY+TRANSITION_LIBRARY in capcut.html (before TPL_EFFECT); engines in js/effects.js + js/transitions.js (deferred)
