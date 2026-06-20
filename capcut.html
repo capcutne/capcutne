@@ -585,6 +585,27 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
   transform:translateX(-50%);cursor:pointer;z-index:15
 }
 .kf-dot:hover{background:#fff;transform:translateX(-50%) scale(1.3)}
+/* CE-2: keyframe timeline diamonds */
+.kf-tl-dot{
+  position:absolute;bottom:2px;width:7px;height:7px;
+  background:var(--accent);border:1px solid rgba(0,0,0,.5);
+  transform:translateX(-50%) rotate(45deg);pointer-events:none;
+  z-index:6;border-radius:1px;opacity:.85;transition:transform .1s
+}
+.kf-tl-dot-active{
+  background:#fff;transform:translateX(-50%) rotate(45deg) scale(1.35);
+  box-shadow:0 0 4px rgba(255,255,255,.6);opacity:1
+}
+/* CE-2: KF panel upgrade */
+.kf-nav-row{display:flex;align-items:center;gap:5px;margin-bottom:6px}
+.kf-nav-btn{flex-shrink:0;padding:3px 7px;font-size:13px;background:var(--bg3);
+  border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--t2);line-height:1}
+.kf-nav-btn:hover{background:var(--border2);color:var(--t1)}
+.kf-toggle-btn{flex:1;padding:4px 8px;font-size:12px;font-weight:600;
+  background:var(--bg3);border:1px solid var(--border);border-radius:4px;
+  cursor:pointer;color:var(--t1);text-align:center;transition:background .15s,color .15s}
+.kf-toggle-btn.has-kf{background:var(--accent);color:#000;border-color:var(--accent)}
+.kf-prop-group{font-size:9px;color:var(--t4);padding:3px 8px 1px;text-transform:uppercase;letter-spacing:.05em}
 /* snap line */
 .snap-line{position:absolute;top:0;bottom:0;width:1px;background:rgba(255,210,0,.75);pointer-events:none;z-index:30;display:none}
 /* drag tooltip */
@@ -1370,6 +1391,7 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 <script src="/js/beta.js" defer></script>
 <script src="/js/effects.js" defer></script>
 <script src="/js/transitions.js" defer></script>
+<script src="/js/keyframes.js" defer></script>
 </head>
 <body>
 <div id="app">
@@ -1932,20 +1954,38 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 
     <!-- KEYFRAME EDITOR -->
     <div class="ps kf-section" id="kf-panel">
-      <div class="ps-title">🎯 Keyframe</div>
+      <div class="ps-title">◆ Keyframe</div>
+      <!-- Property selector -->
       <div class="kf-prop-row">
-        <select class="kf-prop-select" id="kf-prop-sel">
-          <option value="opacity">Độ mờ (Opacity)</option>
-          <option value="volume">Âm lượng (Volume)</option>
-          <option value="brightness">Độ sáng</option>
-          <option value="scale">Phóng to (Scale)</option>
+        <select class="kf-prop-select" id="kf-prop-sel" onchange="renderKFEditor()">
+          <optgroup label="🎭 Visual">
+            <option value="opacity">Opacity (Độ mờ)</option>
+            <option value="brightness">Brightness (Độ sáng)</option>
+          </optgroup>
+          <optgroup label="📐 Transform">
+            <option value="posX">Position X</option>
+            <option value="posY">Position Y</option>
+            <option value="scale">Scale (Phóng to)</option>
+            <option value="rotation">Rotation (Xoay)</option>
+          </optgroup>
+          <optgroup label="🎨 Color / FX">
+            <option value="colorHue">Color Hue (Màu sắc)</option>
+            <option value="blur">Blur (Mờ)</option>
+          </optgroup>
+          <optgroup label="🔊 Audio">
+            <option value="volume">Volume (Âm lượng)</option>
+          </optgroup>
         </select>
-        <button class="kf-add-btn" onclick="kfAddAtPlayhead()">◆ Thêm</button>
+      </div>
+      <!-- Navigation + toggle row -->
+      <div class="kf-nav-row">
+        <button class="kf-nav-btn" onclick="typeof kfNavigatePrev==='function'&&kfNavigatePrev()" title="Keyframe trước">◀</button>
+        <button class="kf-toggle-btn" id="kf-add-btn" onclick="typeof kfToggleAtPlayhead==='function'?kfToggleAtPlayhead():kfAddAtPlayhead()">◇ Thêm KF</button>
+        <button class="kf-nav-btn" onclick="typeof kfNavigateNext==='function'&&kfNavigateNext()" title="Keyframe sau">▶</button>
       </div>
       <!-- mini strip showing keyframes for selected property -->
       <div class="kf-strip-wrap" id="kf-strip" title="Click để di chuyển playhead">
         <div class="kf-strip-ph" id="kf-strip-ph"></div>
-        <!-- markers injected by JS -->
       </div>
       <!-- current interpolated value -->
       <div class="kf-val-row">
@@ -1954,7 +1994,7 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
       </div>
       <!-- list of keyframes -->
       <div class="kf-list" id="kf-list"></div>
-      <div class="kf-hint" id="kf-hint">Chọn thuộc tính → Nhấn <strong>◆ Thêm</strong> để thêm keyframe tại vị trí playhead. Click marker để chọn và xóa.</div>
+      <div class="kf-hint" id="kf-hint">Chọn thuộc tính → Nhấn <strong>◇ Thêm KF</strong> để thêm keyframe. Click ◀▶ để chuyển qua lại.</div>
     </div>
 
   </div>
@@ -2247,11 +2287,15 @@ function renderTracks(){
       }
       const hasFx=c.effects&&c.effects.length>0;
       const fxBadge=hasFx?`<span class="fx-badge">${c.effects.length}fx</span>`:'';
-      html+=`<div class="clip ${c.cls}${sel}${hasFx?' has-fx':''}" data-clip="${c.id}" style="${clipStyle(c)}"
+      /* CE-2: keyframe timeline diamonds */
+      const hasKF=c.keyframes&&Object.keys(c.keyframes).some(p=>c.keyframes[p]&&c.keyframes[p].length>0);
+      const kfDots=hasKF&&typeof kfGetTimelineDots==='function'?kfGetTimelineDots(c,wpx):'';
+      const hasKFCls=hasKF?' has-kf':'';
+      html+=`<div class="clip ${c.cls}${sel}${hasFx?' has-fx':''}${hasKFCls}" data-clip="${c.id}" style="${clipStyle(c)}"
         ondragover="event.preventDefault();event.stopPropagation();this.classList.add('drag-over')"
         ondragleave="this.classList.remove('drag-over')"
         ondrop="typeof dropEffectOnClip==='function'&&dropEffectOnClip(event,'${c.id}')"
-      >${wave}${fxBadge}<div class="clip-lh"></div><span class="clip-label">${c.label}</span><div class="clip-rh"></div></div>`;
+      >${wave}${fxBadge}<div class="clip-lh"></div><span class="clip-label">${c.label}</span><div class="clip-rh"></div>${kfDots}</div>`;
       /* Transition diamond nodes between adjacent video clips */
       if(tr.type==='video' && i<sorted.length-1){
         const x=(c.start+c.dur)*pps();
@@ -4899,35 +4943,48 @@ function doRedo(){
 
 /* Default value range cho từng thuộc tính */
 const KF_DEFAULTS = {
-  opacity:    { def:100, min:0,    max:100,  unit:'%',  suffix:'%' },
-  volume:     { def:100, min:0,    max:200,  unit:'%',  suffix:'%' },
-  brightness: { def:0,   min:-100, max:100,  unit:'',   suffix:'' },
-  scale:      { def:100, min:10,   max:300,  unit:'%',  suffix:'%' },
+  opacity:    { def:100,  min:0,    max:100,  unit:'%',  suffix:'%' },
+  volume:     { def:100,  min:0,    max:200,  unit:'%',  suffix:'%' },
+  brightness: { def:0,    min:-100, max:100,  unit:'',   suffix:'' },
+  scale:      { def:100,  min:10,   max:300,  unit:'%',  suffix:'%' },
+  /* CE-2 new properties */
+  posX:       { def:0,    min:-500, max:500,  unit:'px', suffix:'px' },
+  posY:       { def:0,    min:-300, max:300,  unit:'px', suffix:'px' },
+  rotation:   { def:0,    min:-360, max:360,  unit:'°',  suffix:'°' },
+  blur:       { def:0,    min:0,    max:40,   unit:'px', suffix:'px' },
+  colorHue:   { def:0,    min:-180, max:180,  unit:'°',  suffix:'°' },
 };
 
 /* Linear interpolation giữa 2 keyframe */
 /* ── Easing functions (0→1 input, 0→1 output) ── */
 const EASING_FN = {
-  'linear':       t => t,
-  'ease-in':      t => t*t*t,
-  'ease-out':     t => 1 - Math.pow(1-t, 3),
-  'ease-in-out':  t => t<0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2,
-  'bounce-out':   t => {
+  'linear':           t => t,
+  'ease-in':          t => t*t*t,
+  'ease-out':         t => 1 - Math.pow(1-t, 3),
+  'ease-in-out':      t => t<0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2,
+  'bounce-out':       t => {
     const n1=7.5625, d1=2.75;
     if(t<1/d1) return n1*t*t;
     if(t<2/d1) return n1*(t-=1.5/d1)*t+0.75;
     if(t<2.5/d1) return n1*(t-=2.25/d1)*t+0.9375;
     return n1*(t-=2.625/d1)*t+0.984375;
   },
-  'elastic':      t => t===0||t===1 ? t : -Math.pow(2,10*t-10)*Math.sin((t*10-10.75)*(2*Math.PI)/3),
+  'elastic':          t => t===0||t===1 ? t : -Math.pow(2,10*t-10)*Math.sin((t*10-10.75)*(2*Math.PI)/3),
+  /* CE-2: Bezier presets — cubic-bezier approximation */
+  'bezier-ease':      t => { const y=((1-3*0.1+3*0.25)*t+(3*0.1-6*0.25))*t*t+3*0.25*t*t+3*0.25*t; return Math.max(0,Math.min(1,y)); },
+  'bezier-sharp':     t => { const y=((1-3*1+3*0.4)*t+(3*1-6*0.4))*t*t+3*0.4*t*t+3*0.4*t; return Math.max(0,Math.min(1,y)); },
+  'bezier-overshoot': t => { const y=((1-3*1+3*0.34)*t+(3*1-6*0.34))*t*t+3*0.34*t*t+3*0.34*t; return Math.max(0,Math.min(1,y)); },
 };
 const EASING_LABELS = {
-  'linear':      '→ Linear',
-  'ease-in':     '↗ Ease In',
-  'ease-out':    '↘ Ease Out',
-  'ease-in-out': '⟿ Ease In-Out',
-  'bounce-out':  '⤵ Bounce',
-  'elastic':     '〜 Elastic',
+  'linear':           '→ Linear',
+  'ease-in':          '↗ Ease In',
+  'ease-out':         '↘ Ease Out',
+  'ease-in-out':      '⟿ Ease In-Out',
+  'bounce-out':       '⤵ Bounce',
+  'elastic':          '〜 Elastic',
+  'bezier-ease':      '◉ Bezier Ease',
+  'bezier-sharp':     '◉ Bezier Sharp',
+  'bezier-overshoot': '◉ Overshoot',
 };
 
 function kfApplyEase(t, easingName){
@@ -5093,6 +5150,9 @@ function renderKFEditor(fullRender=true){
 
   /* apply to preview overlay */
   kfApplyPreview(clip, prop);
+
+  /* CE-2: update toggle button state ◇/◆ */
+  if(typeof kfUpdateAddBtn==='function') kfUpdateAddBtn();
 }
 
 /* Thay đổi easing type của 1 keyframe */
@@ -5162,16 +5222,28 @@ function kfApplyPreview(clip, prop){
   if(val===null) return;
   const preview=document.getElementById('phone-el');
   if(!preview) return;
-  const cur=preview.style.filter||'';
+  const curFilter=preview.style.filter||'';
 
   if(prop==='opacity'){
-    preview.style.opacity=(val/100).toFixed(2);
+    preview.style.opacity=(Math.max(0,Math.min(100,val))/100).toFixed(3);
   } else if(prop==='brightness'){
-    /* merge into filter */
-    const bri=`brightness(${1+val/100})`;
-    preview.style.filter=cur.replace(/brightness\([^)]*\)/,'')+' '+bri;
-  } else if(prop==='scale'){
-    preview.style.transform=`scale(${val/100})`;
+    const bri=`brightness(${(1+val/100).toFixed(3)})`;
+    preview.style.filter=curFilter.replace(/brightness\([^)]*\)/g,'')+' '+bri;
+  } else if(prop==='scale'||prop==='posX'||prop==='posY'||prop==='rotation'){
+    /* CE-2: compose all transform KFs together */
+    if(typeof kfComposeTransform==='function'){
+      preview.style.transform=kfComposeTransform(clip,relT)||'';
+    } else {
+      if(prop==='scale') preview.style.transform=`scale(${val/100})`;
+    }
+  } else if(prop==='blur'){
+    /* CE-2: merge blur into filter */
+    const blr=`blur(${Math.max(0,val).toFixed(1)}px)`;
+    preview.style.filter=curFilter.replace(/blur\([^)]*\)/g,'')+' '+blr;
+  } else if(prop==='colorHue'){
+    /* CE-2: hue-rotate for color animation */
+    const hue=`hue-rotate(${val.toFixed(0)}deg)`;
+    preview.style.filter=curFilter.replace(/hue-rotate\([^)]*\)/g,'')+' '+hue;
   }
   /* volume doesn't affect preview visually */
 }
@@ -5184,7 +5256,13 @@ function kfApplyAllActiveClips(){
   if(!found) return;
   const {clip}=found;
   if(!clip.keyframes) return;
-  Object.keys(clip.keyframes).forEach(prop=>kfApplyPreview(clip,prop));
+  const relT=playhead-clip.start;
+  /* CE-2: use full preview composer (posX/posY/rotation/blur/colorHue) */
+  if(typeof kfApplyFullPreview==='function'){
+    kfApplyFullPreview(clip, relT);
+  } else {
+    Object.keys(clip.keyframes).forEach(prop=>kfApplyPreview(clip,prop));
+  }
   renderKFEditor(false);
 }
 
