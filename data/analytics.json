@@ -98,5 +98,29 @@
     "step": null,
     "ts": 1781908581135,
     "url": "/"
+  },
+  {
+    "userId": "b18b9c6f854b43ce",
+    "event": "app_open",
+    "data": {},
+    "step": null,
+    "ts": 1781909175082,
+    "url": "/"
+  },
+  {
+    "userId": "b18b9c6f854b43ce",
+    "event": "app_open",
+    "data": {},
+    "step": null,
+    "ts": 1781977596511,
+    "url": "/"
+  },
+  {
+    "userId": "b18b9c6f854b43ce",
+    "event": "app_open",
+    "data": {},
+    "step": null,
+    "ts": 1781977964291,
+    "url": "/"
   }
 ]
