@@ -347,17 +347,33 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 /* tracks */
 #tracks-area{min-width:max-content}
 #tracks{padding:3px 0;display:flex;flex-direction:column;gap:1px}
-.t-row{display:flex;align-items:center;height:44px}
+/* CE-3 Track head — 120px wide with color strip + controls */
+.t-row{display:flex;align-items:stretch;height:48px}
 .t-head{
-  width:74px;flex-shrink:0;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:3px;color:var(--t3);
+  width:120px;flex-shrink:0;display:flex;flex-direction:row;
   position:sticky;left:0;background:var(--bg2);z-index:10;
-  border-right:1px solid var(--border);padding:2px 0;
-  font-size:9px;text-transform:uppercase;font-weight:600;letter-spacing:.3px
+  border-right:1px solid var(--border);overflow:hidden;cursor:default;
 }
-.t-head svg{opacity:.65;width:14px;height:14px}
+.th-color-strip{width:4px;flex-shrink:0;align-self:stretch}
+.th-main{flex:1;display:flex;flex-direction:column;justify-content:center;padding:3px 5px;gap:2px;min-width:0;overflow:hidden}
+.th-top{display:flex;align-items:center;gap:3px;min-width:0}
+.th-icon{display:flex;align-items:center;flex-shrink:0}
+.th-icon svg,.th-icon .ic{width:11px;height:11px;opacity:.7}
+.th-lbl{color:var(--t3);font-size:8px;text-transform:uppercase;font-weight:600;letter-spacing:.3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;cursor:text;min-width:0;outline:none;
+  padding:0 1px;border-radius:2px}
+.th-lbl:focus{background:var(--bg3);color:var(--t1);outline:1px solid var(--accent)}
+.th-btns{display:flex;align-items:center;gap:1px}
+.thb{background:none;border:none;cursor:pointer;color:var(--t4);font-size:9px;padding:1px 2px;
+  border-radius:3px;line-height:1;transition:background .1s,color .1s;font-family:inherit}
+.thb:hover{background:var(--bg3);color:var(--t1)}
+.thb.on{color:#f87171}
 .t-head-lbl{color:var(--t4);font-size:8.5px}
 .t-body{flex:1;height:100%;position:relative;min-width:1600px}
+/* Track state classes */
+.t-row.tr-locked .t-body .clip{pointer-events:none;opacity:.55}
+.t-row.tr-muted{opacity:.65}
+.t-row.tr-hidden .t-body .clip{opacity:.2}
 /* clips */
 .clip{
   position:absolute;top:4px;height:36px;border-radius:5px;
@@ -388,6 +404,113 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 .wf-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:rgba(255,255,255,.5);pointer-events:none;letter-spacing:.5px}
 .vol-badge{position:absolute;top:3px;right:5px;font-size:9px;font-weight:700;color:rgba(255,255,255,.85);background:rgba(0,0,0,.4);border-radius:3px;padding:1px 4px;pointer-events:none;z-index:4;display:none}
 .clip.playing-now{box-shadow:0 0 0 2px #fff inset,0 0 8px rgba(255,255,255,.3)}
+/* CE-3: Grouped clips */
+.clip.grouped{outline:2px dashed rgba(255,255,255,.28);outline-offset:-3px}
+/* CE-3: Context menus */
+#ce3-ctx-menu,#ce3-track-ctx-menu{
+  position:fixed;display:none;background:var(--bg2);border:1px solid var(--border2);
+  border-radius:9px;padding:4px;z-index:99999;min-width:185px;
+  box-shadow:0 8px 28px rgba(0,0,0,.55);
+}
+.ctx-item{padding:6px 12px;font-size:12px;color:var(--t2);cursor:pointer;border-radius:6px;
+  display:flex;align-items:center;gap:8px;transition:background .1s,color .1s;user-select:none}
+.ctx-item:hover{background:var(--bg3);color:var(--t1)}
+.ctx-item.danger:hover{background:rgba(239,68,68,.15);color:#f87171}
+.ctx-sep{height:1px;background:var(--border);margin:3px 4px}
+/* CE-3: Expanded add-track row */
+.t-add-row{display:flex;flex-wrap:wrap;gap:4px;padding:5px 8px;background:var(--bg2);border-top:1px solid var(--border)}
+.t-add-track{background:var(--bg3);border:1px solid var(--border2);color:var(--t3);border-radius:5px;
+  padding:3px 9px;font-size:10px;cursor:pointer;font-family:inherit;transition:background .1s,color .1s}
+.t-add-track:hover{background:var(--bg4);color:var(--t1)}
+/* CE-4: Text clip type indicators */
+.clip.cs.ct-title{border-left:3px solid #f59e0b}
+.clip.cs.ct-subtitle{border-left:3px solid #3b82f6}
+.clip.cs.ct-callout{border-left:3px solid #8b5cf6}
+.clip.cs.ct-lower-third{border-left:3px solid #10b981}
+.clip.cs.ct-quote{border-left:3px solid #f43f5e}
+/* CE-4: Text inspector panel */
+#ce4-text-panel{padding:0}
+.ce4-section{padding:9px 12px;border-bottom:1px solid var(--border)}
+.ce4-sec-title{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
+.ce4-textarea{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;color:var(--t1);
+  padding:7px 9px;font-size:12px;font-family:inherit;resize:vertical;min-height:52px;outline:none;box-sizing:border-box}
+.ce4-textarea:focus{border-color:var(--accent)}
+.ce4-type-row{display:grid;grid-template-columns:repeat(5,1fr);gap:3px}
+.ce4-type-btn{background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--t3);
+  font-size:8.5px;padding:4px 2px;cursor:pointer;text-align:center;transition:all .15s;
+  font-family:inherit;font-weight:600;line-height:1.3}
+.ce4-type-btn:hover{background:var(--bg4);color:var(--t1)}
+.ce4-type-btn.on{background:var(--accent);color:#000;border-color:transparent}
+.ce4-anim-label{font-size:9.5px;color:var(--t4);margin-bottom:4px}
+.ce4-anim-row{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
+.ce4-anim-btn{background:var(--bg3);border:1px solid var(--border2);border-radius:6px;color:var(--t3);
+  font-size:9px;padding:4px 2px;cursor:pointer;text-align:center;transition:all .15s;font-family:inherit}
+.ce4-anim-btn:hover{background:var(--bg4);color:var(--t1)}
+.ce4-anim-btn.on{background:rgba(99,102,241,.25);border-color:rgba(99,102,241,.5);color:#a5b4fc}
+.ce4-font-row{display:flex;gap:6px;align-items:center}
+.ce4-font-sel{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;
+  color:var(--t1);padding:5px 7px;font-size:11px;font-family:inherit;outline:none}
+.ce4-size-row{display:flex;align-items:center;gap:6px}
+.ce4-size-sl{flex:1;accent-color:var(--accent)}
+.ce4-size-lbl{font-size:11px;color:var(--t2);min-width:24px;text-align:right}
+.ce4-sub-lbl{font-size:10px;color:var(--t3);min-width:36px;flex-shrink:0}
+.ce4-sub-row{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.ce4-style-row{display:flex;gap:3px;flex-wrap:wrap}
+.ce4-style-btn{background:var(--bg3);border:1px solid var(--border2);border-radius:5px;color:var(--t3);
+  font-size:11px;padding:4px 8px;cursor:pointer;transition:all .15s;font-family:inherit;font-weight:600;min-width:30px;text-align:center}
+.ce4-style-btn:hover{background:var(--bg4);color:var(--t1)}
+.ce4-style-btn.on{background:rgba(255,255,255,.15);color:var(--t1);border-color:rgba(255,255,255,.25)}
+.ce4-color-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ce4-color-swatch{width:26px;height:26px;border-radius:6px;border:1px solid var(--border2);cursor:pointer;flex-shrink:0}
+.ce4-color-presets{display:flex;gap:4px;flex-wrap:wrap;flex:1}
+.ce4-color-preset{width:16px;height:16px;border-radius:3px;cursor:pointer;border:1px solid rgba(255,255,255,.1);transition:transform .1s}
+.ce4-color-preset:hover{transform:scale(1.25)}
+.ce4-toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.ce4-toggle{position:relative;width:32px;height:18px;cursor:pointer;flex-shrink:0}
+.ce4-toggle input{opacity:0;width:0;height:0;position:absolute}
+.ce4-toggle-slider{position:absolute;inset:0;background:var(--bg4);border-radius:9px;transition:background .2s}
+.ce4-toggle input:checked+.ce4-toggle-slider{background:var(--accent)}
+.ce4-toggle-slider::after{content:'';position:absolute;width:12px;height:12px;background:#fff;
+  border-radius:50%;top:3px;left:3px;transition:transform .2s;pointer-events:none}
+.ce4-toggle input:checked+.ce4-toggle-slider::after{transform:translateX(14px)}
+.ce4-tpl-open-btn{width:100%;background:var(--bg3);border:1px solid var(--accent);color:var(--accent);
+  border-radius:7px;padding:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600;
+  transition:all .15s}
+.ce4-tpl-open-btn:hover{background:var(--accent);color:#000}
+/* CE-4: Template modal */
+#ce4-tpl-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9998;
+  align-items:center;justify-content:center}
+#ce4-tpl-modal.open{display:flex}
+#ce4-tpl-box{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;
+  width:680px;max-width:94vw;max-height:88vh;display:flex;flex-direction:column;overflow:hidden}
+.ce4-tpl-header{display:flex;justify-content:space-between;align-items:center;
+  padding:14px 20px;border-bottom:1px solid var(--border);flex-shrink:0}
+.ce4-tpl-header h3{font-size:15px;font-weight:700;color:var(--t1);margin:0}
+.ce4-tpl-close{background:none;border:none;color:var(--t3);font-size:20px;cursor:pointer;padding:2px 6px;border-radius:5px}
+.ce4-tpl-close:hover{background:var(--bg3);color:var(--t1)}
+.ce4-tpl-cats{display:flex;gap:6px;padding:10px 16px;border-bottom:1px solid var(--border);
+  flex-wrap:wrap;flex-shrink:0}
+.ce4-tpl-cat{background:var(--bg3);border:1px solid var(--border2);border-radius:20px;color:var(--t3);
+  font-size:11px;padding:4px 12px;cursor:pointer;transition:all .15s;font-family:inherit}
+.ce4-tpl-cat:hover{background:var(--bg4);color:var(--t1)}
+.ce4-tpl-cat.on{background:var(--accent);color:#000;border-color:transparent}
+.ce4-tpl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;
+  padding:14px 16px;overflow-y:auto;flex:1}
+.ce4-tpl-card{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:9px;
+  cursor:pointer;transition:all .15s;text-align:center}
+.ce4-tpl-card:hover{border-color:var(--accent);transform:translateY(-2px);background:var(--bg4)}
+.ce4-tpl-preview{height:52px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+  margin-bottom:6px;overflow:hidden}
+.ce4-tpl-name{font-size:10px;color:var(--t3);font-weight:600}
+/* CE-4: Animation keyframes */
+@keyframes ce4FadeIn{from{opacity:0}to{opacity:1}}
+@keyframes ce4FadeOut{from{opacity:1}to{opacity:0}}
+@keyframes ce4SlideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes ce4SlideLeft{from{opacity:0;transform:translateX(-30px)}to{opacity:1;transform:translateX(0)}}
+@keyframes ce4SlideRight{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+@keyframes ce4Pop{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
+@keyframes ce4Bounce{0%{opacity:0;transform:scale(.3)}50%{transform:scale(1.05)}70%{transform:scale(.95)}100%{opacity:1;transform:scale(1)}}
+@keyframes ce4Zoom{from{opacity:0;transform:scale(1.5)}to{opacity:1;transform:scale(1)}}
 /* Save / Load buttons */
 .tb-save{display:flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border2);color:var(--t2);border-radius:7px;padding:5px 11px;font-size:12px;cursor:pointer;font-family:inherit;transition:background .15s,color .15s}
 .tb-save:hover{background:var(--bg4);color:var(--t1)}
@@ -1819,8 +1942,11 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
       </div>
     </div>
     <div class="t-add-row">
-      <button class="t-add-track" onclick="addVideoTrack()">+ Video Track</button>
-      <button class="t-add-track" onclick="addAudioTrack()">+ Audio Track</button>
+      <button class="t-add-track" onclick="typeof ce3_addTrack!=='undefined'?ce3_addTrack('video'):addVideoTrack()">＋ Video</button>
+      <button class="t-add-track" onclick="typeof ce3_addTrack!=='undefined'&&ce3_addTrack('overlay')">＋ Overlay</button>
+      <button class="t-add-track" onclick="typeof ce3_addTrack!=='undefined'&&ce3_addTrack('effect')">＋ Hiệu ứng</button>
+      <button class="t-add-track" onclick="typeof ce3_addTrack!=='undefined'&&ce3_addTrack('text')">＋ Văn bản</button>
+      <button class="t-add-track" onclick="typeof ce3_addTrack!=='undefined'?ce3_addTrack('audio'):addAudioTrack()">＋ Audio</button>
     </div>
   </div>
   <!-- MINIMAP -->
@@ -2049,34 +2175,36 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 
 /* ---------- ICONS for track heads ---------- */
 const ICONS = {
-  text:'<svg class="ic" viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>',
-  effect:'<svg class="ic" viewBox="0 0 24 24"><path d="M12 2L9.5 9.5 2 12l7.5 2.5L12 22l2.5-7.5L22 12l-7.5-2.5z"/></svg>',
-  video:'<svg class="ic" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
-  audio:'<svg class="ic" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>'
+  text   :'<svg class="ic" viewBox="0 0 24 24"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg>',
+  effect :'<svg class="ic" viewBox="0 0 24 24"><path d="M12 2L9.5 9.5 2 12l7.5 2.5L12 22l2.5-7.5L22 12l-7.5-2.5z"/></svg>',
+  video  :'<svg class="ic" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
+  audio  :'<svg class="ic" viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>',
+  overlay:'<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><rect x="7" y="7" width="10" height="10" rx="1" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
 };
+const CE3_TRACK_COLORS={video:'#3b82f6',overlay:'#8b5cf6',effect:'#f59e0b',text:'#10b981',audio:'#ef4444'};
 
 /* ---------- STATE ---------- */
 const zoomLevels=[25,50,75,100,150,200];
 const zoomPPS   =[7,  14, 21, 28, 42, 56];
 let zoomIdx=1;
-const HEAD_W=74;
+const HEAD_W=120;
 let nextId=9;
 
 let tracks=[
- {id:'tr1',type:'text',label:'Văn bản',icon:ICONS.text,clips:[
-   {id:'c1',start:0,dur:3,label:'Chào mừng!',cls:'cs'},
-   {id:'c2',start:10,dur:4,label:'Khám phá ngay',cls:'cs'}
+ {id:'tr1',type:'text',  label:'Văn bản', icon:ICONS.text,  color:'#10b981',locked:false,muted:false,hidden:false,clips:[
+   {id:'c1',start:0, dur:3,label:'Chào mừng!',  cls:'cs',textType:'title'},
+   {id:'c2',start:10,dur:4,label:'Khám phá ngay',cls:'cs',textType:'subtitle'}
  ]},
- {id:'tr2',type:'effect',label:'Hiệu ứng',icon:ICONS.effect,clips:[
-   {id:'c3',start:0,dur:5,label:'Zoom in',cls:'cx'},
-   {id:'c4',start:15,dur:3,label:'Glitch',cls:'cx'}
+ {id:'tr2',type:'effect',label:'Hiệu ứng',icon:ICONS.effect,color:'#f59e0b',locked:false,muted:false,hidden:false,clips:[
+   {id:'c3',start:0, dur:5,label:'Zoom in',cls:'cx'},
+   {id:'c4',start:15,dur:3,label:'Glitch',  cls:'cx'}
  ]},
- {id:'tr3',type:'video',label:'Video',icon:ICONS.video,trans:true,clips:[
-   {id:'c5',start:0,dur:8,label:'sunset_beach.mp4',cls:'cv'},
-   {id:'c6',start:8,dur:12,label:'forest_walk.mp4',cls:'cv'},
-   {id:'c7',start:20,dur:10,label:'city_night.mp4',cls:'cv'}
+ {id:'tr3',type:'video', label:'Video',   icon:ICONS.video, color:'#3b82f6',locked:false,muted:false,hidden:false,trans:true,clips:[
+   {id:'c5',start:0, dur:8, label:'sunset_beach.mp4', cls:'cv'},
+   {id:'c6',start:8, dur:12,label:'forest_walk.mp4',  cls:'cv'},
+   {id:'c7',start:20,dur:10,label:'city_night.mp4',   cls:'cv'}
  ]},
- {id:'tr4',type:'audio',label:'Âm thanh',icon:ICONS.audio,clips:[
+ {id:'tr4',type:'audio', label:'Âm thanh',icon:ICONS.audio, color:'#ef4444',locked:false,muted:false,hidden:false,clips:[
    {id:'c8',start:0,dur:30,label:'🎵 lofi_chill_beat.mp3',cls:'ca',wave:true}
  ]}
 ];
@@ -2270,7 +2398,31 @@ function paintWaveformCanvases(){
 function renderTracks(){
   let html='';
   tracks.forEach(tr=>{
-    html+=`<div class="t-row" data-track="${tr.id}"><div class="t-head">${tr.icon}<span class="t-head-lbl">${tr.label}</span></div><div class="t-body">`;
+    /* CE-3: track head with color strip + controls */
+    const color   = tr.color || CE3_TRACK_COLORS[tr.type] || '#6b7280';
+    const lockCls = tr.locked ? ' tr-locked' : '';
+    const muteCls = tr.muted  ? ' tr-muted'  : '';
+    const hideCls = tr.hidden ? ' tr-hidden' : '';
+    html+=`<div class="t-row${lockCls}${muteCls}${hideCls}" data-track="${tr.id}">
+      <div class="t-head" oncontextmenu="typeof ce3_showTrackCtx==='function'&&ce3_showTrackCtx(event,'${tr.id}')">
+        <div class="th-color-strip" style="background:${color}"></div>
+        <div class="th-main">
+          <div class="th-top">
+            <span class="th-icon">${tr.icon||''}</span>
+            <span class="th-lbl" title="Double-click để đổi tên"
+              ondblclick="typeof ce3_renameTrack==='function'&&ce3_renameTrack('${tr.id}',this)">${tr.label}</span>
+          </div>
+          <div class="th-btns">
+            <button class="thb${tr.locked?' on':''}" title="${tr.locked?'Mở khoá':'Khoá'} track"
+              onclick="typeof ce3_toggleLock==='function'&&ce3_toggleLock('${tr.id}')">${tr.locked?'🔒':'🔓'}</button>
+            <button class="thb${tr.muted?' on':''}" title="${tr.muted?'Bật tiếng':'Tắt tiếng'}"
+              onclick="typeof ce3_toggleMute==='function'&&ce3_toggleMute('${tr.id}')">${tr.muted?'🔇':'🔊'}</button>
+            <button class="thb${tr.hidden?' on':''}" title="${tr.hidden?'Hiện':'Ẩn'} track"
+              onclick="typeof ce3_toggleHide==='function'&&ce3_toggleHide('${tr.id}')">${tr.hidden?'🙈':'👁'}</button>
+          </div>
+        </div>
+      </div>
+      <div class="t-body">`;
     const sorted=[...tr.clips].sort((a,b)=>a.start-b.start);
     sorted.forEach((c,i)=>{
       const sel=selected.has(c.id)?' sel':'';
@@ -2278,10 +2430,8 @@ function renderTracks(){
       let wave='';
       if(c.wave){
         if(wfCache[c.id]){
-          /* real waveform — canvas rendered after DOM insert */
           wave=`<canvas class="clip-waveform-canvas" id="wf-${c.id}" width="${Math.round(wpx)}" height="36"></canvas>`;
         } else {
-          /* pseudo-random fallback SVG */
           wave=waveformSVG(wpx, c.label);
         }
       }
@@ -2291,10 +2441,15 @@ function renderTracks(){
       const hasKF=c.keyframes&&Object.keys(c.keyframes).some(p=>c.keyframes[p]&&c.keyframes[p].length>0);
       const kfDots=hasKF&&typeof kfGetTimelineDots==='function'?kfGetTimelineDots(c,wpx):'';
       const hasKFCls=hasKF?' has-kf':'';
-      html+=`<div class="clip ${c.cls}${sel}${hasFx?' has-fx':''}${hasKFCls}" data-clip="${c.id}" style="${clipStyle(c)}"
+      /* CE-3: group indicator */
+      const groupCls=c.group?' grouped':'';
+      /* CE-4: text type left-border class */
+      const textTypeCls=(c.cls==='cs'&&c.textType)?' ct-'+c.textType:'';
+      html+=`<div class="clip ${c.cls}${sel}${hasFx?' has-fx':''}${hasKFCls}${groupCls}${textTypeCls}" data-clip="${c.id}" style="${clipStyle(c)}"
         ondragover="event.preventDefault();event.stopPropagation();this.classList.add('drag-over')"
         ondragleave="this.classList.remove('drag-over')"
         ondrop="typeof dropEffectOnClip==='function'&&dropEffectOnClip(event,'${c.id}')"
+        oncontextmenu="typeof ce3_showCtxMenu==='function'&&ce3_showCtxMenu(event,'${c.id}','${tr.id}')"
       >${wave}${fxBadge}<div class="clip-lh"></div><span class="clip-label">${c.label}</span><div class="clip-rh"></div>${kfDots}</div>`;
       /* Transition diamond nodes between adjacent video clips */
       if(tr.type==='video' && i<sorted.length-1){
@@ -2772,13 +2927,17 @@ function clearMultiSel(){ selected.clear(); renderTracks(); updateMultiBar(); up
 
 function addVideoTrack(){
   saveState();
-  tracks.push({id:'tr'+(nextId++),type:'video',label:'Video',icon:ICONS.video,trans:true,clips:[]});
-  renderAll(); toast('Đã thêm track video');
+  const n=tracks.filter(t=>t.type==='video').length+1;
+  tracks.push({id:'tr'+(nextId++),type:'video',label:'Video'+(n>1?' '+n:''),icon:ICONS.video,
+    color:CE3_TRACK_COLORS.video,locked:false,muted:false,hidden:false,trans:true,clips:[]});
+  renderAll(); toast('✅ Đã thêm Video track');
 }
 function addAudioTrack(){
   saveState();
-  tracks.push({id:'tr'+(nextId++),type:'audio',label:'Âm thanh',icon:ICONS.audio,clips:[]});
-  renderAll(); toast('Đã thêm track âm thanh');
+  const n=tracks.filter(t=>t.type==='audio').length+1;
+  tracks.push({id:'tr'+(nextId++),type:'audio',label:'Âm thanh'+(n>1?' '+n:''),icon:ICONS.audio,
+    color:CE3_TRACK_COLORS.audio,locked:false,muted:false,hidden:false,clips:[]});
+  renderAll(); toast('✅ Đã thêm Audio track');
 }
 function zoom(dir){
   zoomIdx=Math.max(0,Math.min(zoomLevels.length-1,zoomIdx+dir));
@@ -2792,7 +2951,7 @@ function renderMinimap(){
   const mh=document.getElementById('minimap-head');
   if(!mm) return;
   const totalDur=timelineDur();
-  const mmW=mm.parentElement.clientWidth - 74 - 4;
+  const mmW=mm.parentElement.clientWidth - HEAD_W - 4;
   if(mmW<=0) return;
   const scale=mmW/totalDur;
   let html='';
@@ -2812,11 +2971,11 @@ function renderMinimap(){
   const totalPx=Math.max(tlInner.scrollWidth - HEAD_W, 1);
   const vpX=(scroll.scrollLeft/totalPx)*mmW;
   const vpW=Math.min(mmW, (visW/totalPx)*mmW);
-  vp.style.left=(74+vpX)+'px';
+  vp.style.left=(HEAD_W+vpX)+'px';
   vp.style.width=Math.max(vpW,8)+'px';
   vp.style.top='0'; vp.style.bottom='0';
   /* playhead on minimap */
-  mh.style.left=(74+playhead*scale)+'px';
+  mh.style.left=(HEAD_W+playhead*scale)+'px';
 }
 
 /* Tính năng 4: Drag-select rectangle */
@@ -4468,6 +4627,8 @@ function updateRightInfo(){
 
 /* populate right-panel controls from a clip's stored state */
 function _loadClipToPanel(clip){
+  /* CE-4: Text clips get the dedicated text inspector */
+  if(clip.cls==='cs'&&typeof ce4_handleTextClip==='function'){ce4_handleTextClip(clip);return;}
   /* Effect clips get a dedicated panel */
   if(clip.cls==='cx'){
     _loadEffectClipPanel(clip);
@@ -7454,7 +7615,45 @@ window.switchRP=function(tab){
   });
 })();
 
+
 </script>
+
+<!-- ═══ CE-3: Clip context menu ════════════════════════════ -->
+<div id="ce3-ctx-menu">
+  <div class="ctx-item" data-action="split" onclick="ce3_splitClip()">✂ Split tại Playhead <span style="margin-left:auto;opacity:.5;font-size:10px">S</span></div>
+  <div class="ctx-item" data-action="ripple" onclick="ce3_rippleDelete()">⬅ Ripple Delete <span style="margin-left:auto;opacity:.5;font-size:10px">⇧⌫</span></div>
+  <div class="ctx-item" data-action="dup" onclick="ce3_duplicateClip()">⧉ Nhân đôi <span style="margin-left:auto;opacity:.5;font-size:10px">D</span></div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" data-action="group" onclick="ce3_groupSelected()">📦 Nhóm các clip đã chọn</div>
+  <div class="ctx-item" data-action="ungroup" onclick="ce3_ungroupSelected()">📭 Bỏ nhóm</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item danger" data-action="remove-track" onclick="ce3_removeTrack(_ce3CtxTrackId)">🗑 Xoá track</div>
+</div>
+
+<!-- ═══ CE-3: Track head context menu ══════════════════════ -->
+<div id="ce3-track-ctx-menu">
+  <div class="ctx-item" data-action="t-lock" onclick="ce3_toggleLock(_ce3CtxTrackId);ce3_hideTrackCtxMenu()">🔒 Khoá track</div>
+  <div class="ctx-item" data-action="t-mute" onclick="ce3_toggleMute(_ce3CtxTrackId);ce3_hideTrackCtxMenu()">🔇 Tắt tiếng track</div>
+  <div class="ctx-item" data-action="t-hide" onclick="ce3_toggleHide(_ce3CtxTrackId);ce3_hideTrackCtxMenu()">🙈 Ẩn track</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item danger" onclick="ce3_removeTrack(_ce3CtxTrackId);ce3_hideTrackCtxMenu()">🗑 Xoá track này</div>
+</div>
+
+<!-- ═══ CE-4: Template modal ════════════════════════════════ -->
+<div id="ce4-tpl-modal">
+  <div id="ce4-tpl-box">
+    <div class="ce4-tpl-header">
+      <h3>📋 Text Templates</h3>
+      <button class="ce4-tpl-close" onclick="ce4_closeTemplates()">✕</button>
+    </div>
+    <div class="ce4-tpl-cats"><!-- rendered by ce4_renderTemplates() --></div>
+    <div class="ce4-tpl-grid"><!-- rendered by ce4_renderTemplates() --></div>
+  </div>
+</div>
+
+<!-- ═══ CE-3 + CE-4 modules ═════════════════════════════════ -->
+<script src="/js/timeline_ce3.js"></script>
+<script src="/js/text_ce4.js"></script>
 </body>
 </html>
 

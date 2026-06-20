@@ -3,3 +3,4 @@
 - [Server architecture](server-architecture.md) — pure http.server (no Flask); JSON files for all persistence; MODEL="gpt-5-mini"; port 5000
 - [Billing & SaaS architecture](billing-saas.md) — Phase 5.6: Stripe SDK, Free/Pro/Business plans, usage quotas, workspace teams; billing block sits in server.py before AI router
 - [CE-1 Effects & Transitions](ce1-effects-transitions.md) — EFFECT_LIBRARY+TRANSITION_LIBRARY in capcut.html (before TPL_EFFECT); engines in js/effects.js + js/transitions.js (deferred)
+- [CE-3 & CE-4 architecture](ce3-ce4-architecture.md) — HEAD_W=120; track schema extended with color/locked/muted/hidden; CE-4 hook in _loadClipToPanel; modules in js/timeline_ce3.js + js/text_ce4.js
