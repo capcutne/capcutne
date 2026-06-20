@@ -509,10 +509,12 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 #spd-curve-canvas{display:block;width:100%;height:90px;border-radius:6px;background:var(--bg3)}
 /* Effect items with icon */
 .eff-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
-.eff-item{background:var(--bg3);border:1px solid var(--border1);border-radius:7px;padding:8px 4px;text-align:center;cursor:pointer;font-size:11px;color:var(--t2);transition:all .15s}
+.eff-item{background:var(--bg3);border:1px solid var(--border1);border-radius:7px;padding:8px 4px 6px;text-align:center;cursor:pointer;font-size:11px;color:var(--t2);transition:all .15s;position:relative}
 .eff-item:hover{border-color:var(--accent);color:var(--t1)}
 .eff-item.on{border-color:var(--accent);background:rgba(232,200,64,.12);color:var(--t1)}
 .eff-icon{font-size:18px;display:block;margin-bottom:3px}
+.eff-add-btn{display:none;position:absolute;bottom:3px;right:4px;background:var(--accent);color:#000;border-radius:4px;font-size:10px;font-weight:700;width:16px;height:16px;line-height:16px;text-align:center;cursor:pointer;z-index:2}
+.eff-item:hover .eff-add-btn{display:block}
 /* Filter pill */
 .fi{cursor:pointer;transition:all .15s}
 .fi.on .fi-name{color:var(--accent);font-weight:700}
@@ -2268,6 +2270,8 @@ function updatePreviewMedia(){
     }
     /* apply per-clip filter to preview */
     _applyClipFilter(activeClip);
+    /* stack active effect clips on top */
+    _applyActiveEffects();
     if(skyEl) skyEl.style.display = 'none';
     if(gndEl) gndEl.style.display = 'none';
   } else {
@@ -2279,7 +2283,36 @@ function updatePreviewMedia(){
     /* reset filter when no clip */
     const ph=document.getElementById('phone-el');
     if(ph) ph.style.filter='';
+    _applyActiveEffects();
   }
+}
+
+/* Apply any effect (cx) clips active at the current playhead on top of existing filter */
+function _applyActiveEffects(){
+  const ph=document.getElementById('phone-el');
+  if(!ph) return;
+  const effTrack=tracks.find(t=>t.type==='effect');
+  if(!effTrack) return;
+  const activeEff=effTrack.clips.find(c=>playhead>=c.start && playhead<c.start+c.dur);
+  if(!activeEff || !EFFECT_CSS[activeEff.label]) return;
+  const intensity=(activeEff.intensity!==undefined?activeEff.intensity:60)/100;
+  const scaled=_scaleFilterIntensity(EFFECT_CSS[activeEff.label], intensity);
+  ph.style.filter=(ph.style.filter?ph.style.filter+' ':'')+scaled;
+}
+
+/* Scale a CSS filter string by a 0-1 intensity factor */
+function _scaleFilterIntensity(filterStr, t){
+  if(t<=0) return '';
+  if(t>=1) return filterStr;
+  /* blend each filter function toward its neutral value */
+  return filterStr.replace(/(brightness|contrast|saturate|sepia|grayscale|opacity|invert|hue-rotate|blur)\(([^)]+)\)/g, (m,fn,valStr)=>{
+    const neutral={brightness:1,contrast:1,saturate:1,sepia:0,grayscale:0,opacity:1,invert:0,'hue-rotate':0,blur:0}[fn]??1;
+    const hasDeg=valStr.endsWith('deg');
+    const hasPx=valStr.endsWith('px');
+    const num=parseFloat(valStr);
+    const blended=neutral+(num-neutral)*t;
+    return fn+'('+(hasDeg?blended.toFixed(1)+'deg':hasPx?blended.toFixed(1)+'px':blended.toFixed(3))+')';
+  });
 }
 
 /* apply a clip's stored filter + adj to the phone-el */
@@ -3322,7 +3355,7 @@ function _stkItem(e){
 }
 function _effItem([icon,name]){
   const on=_FAV.effect.has(name);
-  return `<div class="eff-item" onclick="selectEffect('${name}',this)"><span class="eff-icon">${icon}</span>${name}<span class="fav-btn${on?' fav-on':''}" onclick="toggleFav('effect','${name}',event)">${on?'❤️':'🤍'}</span></div>`;
+  return `<div class="eff-item" onclick="selectEffect('${name}',this)" ondblclick="addEffectClip('${name}',parseInt(document.getElementById('eff-dur')?.value||3))"><span class="eff-icon">${icon}</span>${name}<span class="eff-add-btn" onclick="event.stopPropagation();addEffectClip('${name}',parseInt(document.getElementById('eff-dur')?.value||3))" title="Thêm vào timeline">+</span><span class="fav-btn${on?' fav-on':''}" onclick="toggleFav('effect','${name}',event)">${on?'❤️':'🤍'}</span></div>`;
 }
 function _filtItem([ico,key,name],i){
   const on=_FAV.filter.has(key);
@@ -4219,6 +4252,12 @@ function updateRightInfo(){
 
 /* populate right-panel controls from a clip's stored state */
 function _loadClipToPanel(clip){
+  /* Effect clips get a dedicated panel */
+  if(clip.cls==='cx'){
+    _loadEffectClipPanel(clip);
+    return;
+  }
+
   /* Volume */
   const volSl=document.getElementById('rp-vol');
   const volLbl=document.getElementById('rp-vol-lbl');
@@ -4256,6 +4295,84 @@ function _loadClipToPanel(clip){
 
   /* apply clip's filter to preview immediately */
   _applyClipFilter(clip);
+}
+
+/* Right panel for effect (cx) clips — like CapCut */
+function _loadEffectClipPanel(clip){
+  const body=document.getElementById('rp-body');
+  if(!body) return;
+  const intensity=clip.intensity!==undefined?clip.intensity:60;
+  const effCss=EFFECT_CSS[clip.label]||'';
+  body.innerHTML=`
+  <div class="ps">
+    <div class="ps-title">Hiệu ứng đã chọn</div>
+    <div class="info-card">
+      <div class="ic-row"><span class="ic-key">Tên</span><span class="ic-val">${clip.label}</span></div>
+      <div class="ic-row"><span class="ic-key">Thời lượng</span><span class="ic-val" id="cx-dur-lbl">${clip.dur.toFixed(1)}s</span></div>
+    </div>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Điều chỉnh</div>
+    <div class="prop-row">
+      <span class="prop-lbl">Cường độ</span>
+      <input type="range" class="prop-sl" id="cx-intensity" min="0" max="100" value="${intensity}"
+        oninput="rpEffIntensity(this.value)">
+      <span class="prop-val" id="cx-int-val">${intensity}%</span>
+    </div>
+    <div class="prop-row" style="margin-top:8px">
+      <span class="prop-lbl">Thời lượng</span>
+      <input type="range" class="prop-sl" id="cx-dur" min="1" max="20" value="${Math.round(clip.dur)}"
+        oninput="rpEffDur(this.value)">
+      <span class="prop-val" id="cx-dur-v">${clip.dur.toFixed(1)}s</span>
+    </div>
+  </div>
+  <div class="ps-div"></div>
+  <div class="ps">
+    <div class="ps-title">Preview nhanh</div>
+    <button class="add-ov-btn" style="width:100%;margin-bottom:6px" onclick="rpEffPreview()">▶ Xem hiệu ứng</button>
+    <button class="add-ov-btn" style="width:100%;background:rgba(255,80,80,.12);color:#ff7070;border:1px solid rgba(255,80,80,.25)"
+      onclick="deleteClip()">🗑 Xóa hiệu ứng</button>
+  </div>`;
+  bindPanelInteractions();
+  /* show effect on preview */
+  const ph=document.getElementById('phone-el');
+  if(ph && effCss){
+    const scaled=_scaleFilterIntensity(effCss, intensity/100);
+    ph.style.filter=scaled;
+  }
+}
+
+function rpEffIntensity(val){
+  val=parseInt(val);
+  const lbl=document.getElementById('cx-int-val');
+  if(lbl) lbl.textContent=val+'%';
+  const c=_getSelClip();
+  if(c){ c.intensity=val; }
+  const ph=document.getElementById('phone-el');
+  if(ph && c && EFFECT_CSS[c.label]){
+    ph.style.filter=_scaleFilterIntensity(EFFECT_CSS[c.label], val/100);
+  }
+}
+
+function rpEffDur(val){
+  val=parseFloat(val);
+  const lbl=document.getElementById('cx-dur-v');
+  if(lbl) lbl.textContent=val.toFixed(1)+'s';
+  const lbl2=document.getElementById('cx-dur-lbl');
+  const c=_getSelClip();
+  if(c){ saveState(); c.dur=val; renderAll(); if(lbl2) lbl2.textContent=val.toFixed(1)+'s'; }
+}
+
+function rpEffPreview(){
+  const c=_getSelClip();
+  if(!c || !EFFECT_CSS[c.label]) return;
+  const ph=document.getElementById('phone-el');
+  if(!ph) return;
+  const prev=ph.style.filter;
+  const intensity=(c.intensity!==undefined?c.intensity:60)/100;
+  ph.style.filter=_scaleFilterIntensity(EFFECT_CSS[c.label], intensity);
+  setTimeout(()=>{ ph.style.filter=prev; }, 1200);
 }
 
 /* ---- RIGHT PANEL HANDLERS ---- */

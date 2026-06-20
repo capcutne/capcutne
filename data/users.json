@@ -18,5 +18,15 @@
     "createdAt": 1781980986.4806852,
     "healthScore": 20,
     "onboardingComplete": true
+  },
+  {
+    "id": "59b4389ecab6498e",
+    "email": "mt@gmail.com",
+    "displayName": "mtmt",
+    "passwordHash": "64d1a7e653b202ba18882166f6d2be68726ce294f491a083e9041550d628bee9",
+    "role": "beta_user",
+    "createdAt": 1781981502.7394252,
+    "healthScore": 20,
+    "onboardingComplete": true
   }
 ]

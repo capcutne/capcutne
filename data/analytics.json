@@ -172,5 +172,47 @@
     "step": null,
     "ts": 1781981202295,
     "url": "/"
+  },
+  {
+    "userId": "59b4389ecab6498e",
+    "event": "register",
+    "data": {
+      "userId": "59b4389ecab6498e"
+    },
+    "step": null,
+    "ts": 1781981502862,
+    "url": "/"
+  },
+  {
+    "userId": "59b4389ecab6498e",
+    "event": "journey_progress",
+    "data": {},
+    "step": null,
+    "ts": 1781981502861.9531,
+    "url": ""
+  },
+  {
+    "userId": "59b4389ecab6498e",
+    "event": "journey_step",
+    "data": {},
+    "step": "register",
+    "ts": 1781981502861,
+    "url": ""
+  },
+  {
+    "userId": "59b4389ecab6498e",
+    "event": "onboarding_complete",
+    "data": {},
+    "step": null,
+    "ts": 1781981504525,
+    "url": "/"
+  },
+  {
+    "userId": "f3afb7f973054136",
+    "event": "app_open",
+    "data": {},
+    "step": null,
+    "ts": 1781981797740,
+    "url": "/"
   }
 ]
