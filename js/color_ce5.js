@@ -229,6 +229,9 @@ function ce5_handleVideoClip(clip) {
   Object.keys(d).forEach(k => { if (clip.colorGrade[k] === undefined) clip.colorGrade[k] = d[k]; });
   const cg = clip.colorGrade;
 
+  /* ← FIX: apply filter immediately so preview reflects current grade */
+  if (typeof _applyClipFilter === 'function') _applyClipFilter(clip);
+
   const body = document.getElementById('rp-body');
   if (!body) return;
 
@@ -326,7 +329,20 @@ function ce5_handleVideoClip(clip) {
       </div>
       <canvas id="ce5-scope-canvas" width="260" height="170"></canvas>
     </div>
-  </div>`;
+  </div>
+  <!-- ─── Effect Stack (always visible, restored from original panel) ─── -->
+  <div id="ce5-fx-wrap">
+    <div class="ce5-fx-header">
+      <span>✨ Effect Stack</span>
+      <span class="ce5-fx-count" id="ce5-fx-count">${(clip.effects||[]).length} hiệu ứng</span>
+      <span class="ce5-fx-hint">← kéo từ thư viện vào clip</span>
+    </div>
+    <div id="ce5-fx-body">
+      ${typeof renderEffectStackInspector==='function' ? renderEffectStackInspector(clip) :
+        '<div class="ce5-fx-empty">Chưa có hiệu ứng. Kéo từ Effect Library vào clip trên timeline.</div>'}
+    </div>
+  </div>
+</div>`;
 
   // Init sub-systems
   requestAnimationFrame(() => {
@@ -335,6 +351,18 @@ function ce5_handleVideoClip(clip) {
     if (_ce5ActiveTab === 'lut') ce5_renderLUTGrid(_ce5ActiveLUTCat);
     ce5_renderLUTCats();
   });
+}
+
+/* ─── Refresh effect stack section only (called after addEffectToClip) ─── */
+function ce5_refreshEffectStack() {
+  const c = _ce5clip(); if (!c) return;
+  const body = document.getElementById('ce5-fx-body');
+  const cnt  = document.getElementById('ce5-fx-count');
+  if (!body) return;
+  body.innerHTML = typeof renderEffectStackInspector==='function'
+    ? renderEffectStackInspector(c)
+    : '<div class="ce5-fx-empty">Chưa có hiệu ứng.</div>';
+  if (cnt) cnt.textContent = (c.effects||[]).length + ' hiệu ứng';
 }
 
 /* ─── Slider row builder ─────────────────────────────────── */

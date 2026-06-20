@@ -28,5 +28,25 @@
     "createdAt": 1781981502.7394252,
     "healthScore": 20,
     "onboardingComplete": true
+  },
+  {
+    "id": "acfd6cd4fcfe4e44",
+    "email": "a1a@gmail.com",
+    "displayName": "ádasdasd",
+    "passwordHash": "ef5615d2eb4ab1f5dff784e87b587e7c5396103857252893f39df3eee02dce29",
+    "role": "beta_user",
+    "createdAt": 1781989291.6049857,
+    "healthScore": 20,
+    "onboardingComplete": true
+  },
+  {
+    "id": "16fc2737b3a84280",
+    "email": "a12@gmail.com",
+    "displayName": "ádasdasd",
+    "passwordHash": "65c672a5b7fa330576f59cf17b7095ddd441c4024624de91a285c9d592c6146f",
+    "role": "beta_user",
+    "createdAt": 1781989308.656637,
+    "healthScore": 20,
+    "onboardingComplete": true
   }
 ]

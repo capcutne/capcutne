@@ -222,5 +222,81 @@
     "step": null,
     "ts": 1781983351492,
     "url": "/"
+  },
+  {
+    "userId": "acfd6cd4fcfe4e44",
+    "event": "journey_step",
+    "data": {},
+    "step": "register",
+    "ts": 1781989291823,
+    "url": ""
+  },
+  {
+    "userId": "acfd6cd4fcfe4e44",
+    "event": "journey_progress",
+    "data": {},
+    "step": null,
+    "ts": 1781989291924.544,
+    "url": ""
+  },
+  {
+    "userId": "acfd6cd4fcfe4e44",
+    "event": "register",
+    "data": {
+      "userId": "acfd6cd4fcfe4e44"
+    },
+    "step": null,
+    "ts": 1781989291826,
+    "url": "/"
+  },
+  {
+    "userId": "acfd6cd4fcfe4e44",
+    "event": "onboarding_complete",
+    "data": {},
+    "step": null,
+    "ts": 1781989294351,
+    "url": "/"
+  },
+  {
+    "userId": "16fc2737b3a84280",
+    "event": "journey_step",
+    "data": {},
+    "step": "register",
+    "ts": 1781989308796,
+    "url": ""
+  },
+  {
+    "userId": "16fc2737b3a84280",
+    "event": "journey_progress",
+    "data": {},
+    "step": null,
+    "ts": 1781989308776.2463,
+    "url": ""
+  },
+  {
+    "userId": "16fc2737b3a84280",
+    "event": "register",
+    "data": {
+      "userId": "16fc2737b3a84280"
+    },
+    "step": null,
+    "ts": 1781989308797,
+    "url": "/"
+  },
+  {
+    "userId": "16fc2737b3a84280",
+    "event": "onboarding_complete",
+    "data": {},
+    "step": null,
+    "ts": 1781989310949,
+    "url": "/"
+  },
+  {
+    "userId": "acfd6cd4fcfe4e44",
+    "event": "app_open",
+    "data": {},
+    "step": null,
+    "ts": 1781989923475,
+    "url": "/"
   }
 ]
