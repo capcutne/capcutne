@@ -511,6 +511,87 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 @keyframes ce4Pop{from{opacity:0;transform:scale(.5)}to{opacity:1;transform:scale(1)}}
 @keyframes ce4Bounce{0%{opacity:0;transform:scale(.3)}50%{transform:scale(1.05)}70%{transform:scale(.95)}100%{opacity:1;transform:scale(1)}}
 @keyframes ce4Zoom{from{opacity:0;transform:scale(1.5)}to{opacity:1;transform:scale(1)}}
+/* ─── CE-5: Color Grading & LUT Engine ─────────────────────────────── */
+#ce5-panel{display:flex;flex-direction:column;gap:0;height:100%;overflow-y:auto}
+.ce5-clip-info{display:flex;align-items:center;gap:6px;padding:8px 10px 6px;border-bottom:1px solid var(--border)}
+.ce5-ci-name{font-size:12px;font-weight:700;color:var(--t1);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ce5-ci-dur{font-size:10px;color:var(--t3);flex-shrink:0}
+.ce5-reset-all-btn{background:none;border:1px solid rgba(255,80,80,.4);color:#f87171;border-radius:5px;
+  font-size:10px;padding:2px 7px;cursor:pointer;flex-shrink:0;font-family:inherit;transition:all .15s}
+.ce5-reset-all-btn:hover{background:rgba(255,80,80,.15)}
+.ce5-vol-speed{display:flex;align-items:center;gap:5px;padding:6px 10px;border-bottom:1px solid var(--border);flex-shrink:0}
+.ce5-vs-lbl{font-size:12px;flex-shrink:0}
+.ce5-vs-sl{flex:1;height:3px;accent-color:var(--accent)}
+.ce5-vs-val{font-size:10px;color:var(--t3);min-width:32px;text-align:right;flex-shrink:0}
+.ce5-vs-sep{color:var(--border2);margin:0 2px}
+.ce5-sp-btn{background:var(--bg3);border:1px solid var(--border2);color:var(--t3);border-radius:5px;
+  font-size:10px;padding:2px 6px;cursor:pointer;font-family:inherit;transition:all .15s}
+.ce5-sp-btn:hover{background:var(--bg4);color:var(--t1)}
+.ce5-sp-btn.on{background:var(--accent);color:#000;border-color:transparent}
+.ce5-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.ce5-tab{flex:1;background:none;border:none;border-bottom:2px solid transparent;color:var(--t3);
+  font-size:11px;font-weight:600;padding:7px 4px;cursor:pointer;font-family:inherit;transition:all .15s}
+.ce5-tab:hover{color:var(--t1)}
+.ce5-tab.on{color:var(--t1);border-bottom-color:var(--accent)}
+.ce5-pane{padding:8px 10px;display:flex;flex-direction:column;gap:2px}
+.ce5-sl-row{display:flex;align-items:center;gap:6px;padding:3px 0}
+.ce5-sl-lbl{font-size:10px;color:var(--t3);min-width:72px;flex-shrink:0}
+.ce5-sl{flex:1;height:3px;accent-color:var(--accent);cursor:pointer}
+.ce5-sl-val{font-size:10px;color:var(--t2);min-width:34px;text-align:right;font-variant-numeric:tabular-nums}
+.ce5-reset-btn{background:var(--bg3);border:1px solid var(--border2);color:var(--t3);border-radius:6px;
+  font-size:11px;padding:4px 14px;cursor:pointer;font-family:inherit;transition:all .15s}
+.ce5-reset-btn:hover{background:var(--bg4);color:var(--t1)}
+.ce5-sub-title{font-size:10px;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.8px;
+  padding:4px 0 2px;border-bottom:1px solid var(--border);margin-bottom:4px}
+.ce5-sub-lbl{font-size:10px;color:var(--t3);min-width:56px;flex-shrink:0}
+/* Curves */
+.ce5-curve-chs{display:flex;gap:4px;margin-bottom:6px;align-items:center}
+.ce5-ch-btn{background:var(--bg3);border:1px solid var(--border2);color:var(--t3);border-radius:5px;
+  font-size:11px;font-weight:700;padding:3px 10px;cursor:pointer;font-family:inherit;transition:all .15s}
+.ce5-ch-btn:hover{color:var(--t1)}
+.ce5-ch-btn.on{color:#000;border-color:transparent}
+.ce5-ch-master.on{background:#e2e8f0}
+.ce5-ch-r.on{background:#f87171}
+.ce5-ch-g.on{background:#4ade80}
+.ce5-ch-b.on{background:#60a5fa}
+#ce5-curve-canvas{display:block;width:100%;border-radius:8px;border:1px solid var(--border);cursor:crosshair;max-width:100%}
+/* HSL */
+.ce5-hsl-colors{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
+.ce5-hsl-col-btn{width:22px;height:22px;border-radius:50%;border:2px solid transparent;cursor:pointer;
+  transition:transform .15s,border-color .15s;flex-shrink:0}
+.ce5-hsl-col-btn:hover{transform:scale(1.2)}
+.ce5-hsl-col-btn.on{border-color:#fff;transform:scale(1.15)}
+#ce5-hsl-sliders{display:flex;flex-direction:column;gap:2px}
+/* LUT */
+.ce5-lut-actions{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+.ce5-lut-import-btn{background:var(--bg3);border:1px dashed var(--accent);color:var(--accent);border-radius:7px;
+  font-size:11px;padding:6px 12px;cursor:pointer;font-family:inherit;font-weight:600;transition:all .15s;flex:1}
+.ce5-lut-import-btn:hover{background:rgba(255,193,7,.1)}
+.ce5-lut-remove-btn{background:rgba(255,80,80,.1);border:1px solid rgba(255,80,80,.3);color:#f87171;
+  border-radius:7px;font-size:11px;padding:6px 10px;cursor:pointer;font-family:inherit;transition:all .15s}
+.ce5-lut-remove-btn:hover{background:rgba(255,80,80,.2)}
+.ce5-lut-intensity-row{display:flex;align-items:center;gap:6px;margin-bottom:8px;
+  padding:6px 8px;background:var(--bg3);border-radius:7px}
+.ce5-lut-cats{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px}
+.ce5-lut-cat-btn{background:var(--bg3);border:1px solid var(--border2);color:var(--t3);border-radius:20px;
+  font-size:10px;padding:3px 10px;cursor:pointer;font-family:inherit;transition:all .15s}
+.ce5-lut-cat-btn:hover{background:var(--bg4);color:var(--t1)}
+.ce5-lut-cat-btn.on{background:var(--accent);color:#000;border-color:transparent}
+.ce5-lut-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.ce5-lut-card{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;overflow:hidden;
+  cursor:pointer;transition:all .15s}
+.ce5-lut-card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.ce5-lut-card.on{border-color:var(--accent);box-shadow:0 0 0 2px rgba(255,193,7,.25)}
+.ce5-lut-preview{height:40px;width:100%}
+.ce5-lut-name{font-size:9px;color:var(--t2);padding:4px 5px;text-align:center;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+/* Scopes */
+.ce5-scope-tabs{display:flex;gap:4px;margin-bottom:8px}
+.ce5-scope-tab{background:var(--bg3);border:1px solid var(--border2);color:var(--t3);border-radius:6px;
+  font-size:10px;padding:4px 10px;cursor:pointer;font-family:inherit;transition:all .15s;font-weight:600}
+.ce5-scope-tab:hover{color:var(--t1)}
+.ce5-scope-tab.on{background:var(--bg4);color:var(--t1);border-color:rgba(255,255,255,.2)}
+#ce5-scope-canvas{display:block;width:100%;border-radius:8px;border:1px solid var(--border)}
 /* Save / Load buttons */
 .tb-save{display:flex;align-items:center;gap:5px;background:var(--bg3);border:1px solid var(--border2);color:var(--t2);border-radius:7px;padding:5px 11px;font-size:12px;cursor:pointer;font-family:inherit;transition:background .15s,color .15s}
 .tb-save:hover{background:var(--bg4);color:var(--t1)}
@@ -4629,6 +4710,8 @@ function updateRightInfo(){
 function _loadClipToPanel(clip){
   /* CE-4: Text clips get the dedicated text inspector */
   if(clip.cls==='cs'&&typeof ce4_handleTextClip==='function'){ce4_handleTextClip(clip);return;}
+  /* CE-5: Video clips get the full Color Grading inspector */
+  if(clip.cls==='cv'&&typeof ce5_handleVideoClip==='function'){ce5_handleVideoClip(clip);return;}
   /* Effect clips get a dedicated panel */
   if(clip.cls==='cx'){
     _loadEffectClipPanel(clip);
@@ -7654,6 +7737,7 @@ window.switchRP=function(tab){
 <!-- ═══ CE-3 + CE-4 modules ═════════════════════════════════ -->
 <script src="/js/timeline_ce3.js"></script>
 <script src="/js/text_ce4.js"></script>
+<script src="/js/color_ce5.js"></script>
 </body>
 </html>
 
