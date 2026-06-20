@@ -427,8 +427,15 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 /* Sticker categories */
 .stk-big{font-size:26px;margin-bottom:3px;display:block}
 .stk-cat-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
-.stk-cat-item{background:var(--bg3);border:1px solid var(--border1);border-radius:7px;padding:6px 2px;text-align:center;font-size:20px;cursor:pointer;transition:all .15s}
+.stk-cat-item{background:var(--bg3);border:1px solid var(--border1);border-radius:7px;padding:6px 2px;text-align:center;font-size:20px;cursor:pointer;transition:all .15s;position:relative}
 .stk-cat-item:hover{border-color:var(--accent);transform:scale(1.1)}
+.eff-item{position:relative!important}.fi{position:relative!important}
+.fav-btn{position:absolute;top:2px;right:3px;font-size:8px;line-height:1;cursor:pointer;user-select:none;opacity:0;transition:opacity .15s;z-index:3;background:none;border:none;padding:0;pointer-events:auto}
+.stk-cat-item:hover .fav-btn,.eff-item:hover .fav-btn,.fi:hover .fav-btn{opacity:1}
+.fav-btn.fav-on{opacity:1!important;filter:drop-shadow(0 0 3px #ff6b9d)}
+.mus-track .fav-btn{position:static;opacity:.35;font-size:12px;margin-left:2px;flex-shrink:0}
+.mus-track:hover .fav-btn{opacity:1}
+.fav-empty{color:var(--t3);font-size:11px;padding:14px 8px;text-align:center;line-height:1.6}
 /* Beat sync grid */
 .beat-grid{display:flex;gap:3px;height:32px;align-items:flex-end;background:var(--bg3);border-radius:6px;padding:4px 6px}
 .beat-bar{flex:1;background:var(--accent);border-radius:2px;opacity:.5;transition:height .1s}
@@ -3286,6 +3293,46 @@ const TPL_TEXT = `
     </div>
   </div>`;
 
+/* ── Favorites System ─────────────────────────────────── */
+const _FAV={
+  sticker:new Set(JSON.parse(localStorage.getItem('fav_sticker')||'[]')),
+  effect: new Set(JSON.parse(localStorage.getItem('fav_effect')||'[]')),
+  filter: new Set(JSON.parse(localStorage.getItem('fav_filter')||'[]')),
+  music:  new Set(JSON.parse(localStorage.getItem('fav_music')||'[]')),
+};
+function _saveFav(cat){localStorage.setItem('fav_'+cat,JSON.stringify([..._FAV[cat]]));}
+function toggleFav(cat,key,ev){
+  ev.stopPropagation();
+  if(_FAV[cat].has(key)) _FAV[cat].delete(key); else _FAV[cat].add(key);
+  _saveFav(cat);
+  const on=_FAV[cat].has(key);
+  const btn=ev.currentTarget;
+  btn.classList.toggle('fav-on',on);
+  btn.textContent=on?'❤️':'🤍';
+  toast(on?'Đã thêm vào yêu thích ❤️':'Đã xóa khỏi yêu thích');
+  if(!on){
+    const activeTab=btn.closest('[id$="-cat-tabs"],[id$="filt-cat-tabs"]')?.querySelector('.cat-tab.on');
+    if(activeTab&&activeTab.textContent.includes('Yêu thích'))
+      btn.closest('.stk-cat-item,.eff-item,.fi')?.remove();
+  }
+}
+function _stkItem(e){
+  const on=_FAV.sticker.has(e);
+  return `<div class="stk-cat-item" onclick="addStickerOverlay('${e}')">${e}<span class="fav-btn${on?' fav-on':''}" onclick="toggleFav('sticker','${e}',event)">${on?'❤️':'🤍'}</span></div>`;
+}
+function _effItem([icon,name]){
+  const on=_FAV.effect.has(name);
+  return `<div class="eff-item" onclick="selectEffect('${name}',this)"><span class="eff-icon">${icon}</span>${name}<span class="fav-btn${on?' fav-on':''}" onclick="toggleFav('effect','${name}',event)">${on?'❤️':'🤍'}</span></div>`;
+}
+function _filtItem([ico,key,name],i){
+  const on=_FAV.filter.has(key);
+  return `<div class="fi${i===0?' on':''}" data-filter="${key}" onclick="applyFilter('${key}',this)"><div class="fi-thumb">${ico}</div><div class="fi-name">${name}</div><span class="fav-btn${on?' fav-on':''}" onclick="toggleFav('filter','${key}',event)">${on?'❤️':'🤍'}</span></div>`;
+}
+function _musItem(t,i){
+  const on=_FAV.music.has(t.name);
+  return `<div class="mus-track" onclick="selectMusicTrack(${i},this)"><span class="mus-track-icon">${t.icon}</span><div class="mus-track-info"><div class="mus-track-name">${t.name}</div><div class="mus-track-meta">${t.genre}${t.bpm?` · ${t.bpm} BPM`:''}</div></div><span class="mus-track-dur">${t.dur}</span><span class="fav-btn${on?' fav-on':''}" onclick="toggleFav('music','${t.name}',event)">${on?'❤️':'🤍'}</span></div>`;
+}
+
 const STK_CATS={
   'Biểu cảm':['😀','😂','🤣','😍','🥰','😎','🤩','😭','😤','🥺','😱','🤔','😴','🤯','🥳','😜','🤑','🤗','😈','👻','🫠','🥹','😮‍💨','🤭','🫢','🥸','😇','🤠','🤧','🥴','😵','🫨','😶‍🌫️','🫥','🙃','😏','😒','🙄','😬','🤥'],
   'Tình yêu':['❤️','🧡','💛','💚','💙','💜','🖤','🤍','💕','💞','💓','💗','💖','💘','💝','🫀','💌','💟','🫶','♥️','❤️‍🔥','❤️‍🩹','💑','👫','💏','🌹','💐','💍','🧸','🫦'],
@@ -3301,6 +3348,7 @@ const STK_CATS={
   'Phim & TV':['🎬','📽️','🎞️','📺','📷','📸','🎭','🎪','🎠','🎡','🎢','🎯','🎲','🎰','🕹️','🎮','👾','🃏','🀄','🎴','🧩','♟️','🎭','🎨','🖌️','🖼️','🎪','🎤','🎧','🎼'],
   'Thời tiết':['☀️','🌤️','⛅','🌥️','☁️','🌦️','🌧️','⛈️','🌩️','🌨️','❄️','🌪️','🌫️','🌬️','🌈','🌂','☂️','☔','⛱️','⚡','🌊','💧','💦','🔥','🌙','⭐','🌟','💫','✨','☄️'],
   'Biểu tượng':['✅','❌','⭕','🔴','🟡','🟢','⚠️','🚫','💯','🔥','⚡','💥','❓','❗','💬','💭','🗯️','📌','📍','🔑','🗝️','🔒','🔓','🔔','🔕','🔇','🔊','📣','📢','🔈'],
+  '❤️ Yêu thích':[],
 };
 const TPL_STICKER = `
   <div class="ps">
@@ -3309,7 +3357,7 @@ const TPL_STICKER = `
       ${Object.keys(STK_CATS).map((c,i)=>`<div class="cat-tab${i===0?' on':''}" onclick="switchStkCat('${c}',this)">${c}</div>`).join('')}
     </div>
     <div class="stk-cat-grid" id="stk-grid">
-      ${STK_CATS['Biểu cảm'].map(e=>`<div class="stk-cat-item" onclick="addStickerOverlay('${e}')">${e}</div>`).join('')}
+      ${STK_CATS['Biểu cảm'].map(e=>_stkItem(e)).join('')}
     </div>
     <input type="file" id="stk-upload" accept="image/*" style="display:none" onchange="addCustomSticker(this)">
     <button class="sub-add-btn" style="margin-top:8px" onclick="document.getElementById('stk-upload').click()">📤 Upload sticker tùy chỉnh</button>
@@ -3353,6 +3401,7 @@ const EFF_CATS={
   'Retro':[['📼','VHS 80s'],['📻','Radio waves'],['🎞️','Super 8mm'],['🖥️','CRT TV'],['📠','Fax noise'],['🟫','Sepia'],['⬛','B&W grain'],['🔴','Chromatic AB'],['📺','TV static'],['🌅','Kodachrome'],['🎨','Lomography'],['🌄','Polaroid'],['💿','80s synth'],['🕹️','8-bit'],['👾','Pixel art'],['🎮','Game boy'],['🌈','Neon retro'],['🏙️','Miami vice'],['🎪','Disco'],['🪩','Disco ball']],
   'Hoạt hình':[['😀','Cartoon face'],['💥','Comic boom'],['⭐','Star burst'],['💫','Dizzy'],['❤️','Heart pop'],['🌟','Sparkle'],['🎈','Balloon'],['🌈','Rainbow trail'],['💨','Speed lines'],['🎭','Exaggerate'],['🐱','Cat ears'],['🦊','Fox filter'],['🐼','Panda'],['🐰','Bunny'],['👑','Crown'],['🌸','Sakura'],['🎃','Halloween'],['🎄','Xmas'],['🎆','Confetti'],['🪄','Magic']],
   'Kỹ thuật số':[['💻','Digital'],['🤖','Robot face'],['📡','Radar'],['🔋','HUD'],['⚙️','Gears'],['🌐','Matrix'],['💾','Pixel'],['🔌','Circuit'],['📊','Data viz'],['🎮','Neon grid'],['🛸','Sci-fi'],['🔭','Telescope'],['🧬','DNA'],['⚛️','Atom'],['🔬','Microscope'],['💡','Tech glow'],['🌐','Globe wire'],['📱','Screen'],['🖥️','Terminal'],['🤖','AI face']],
+  '❤️ Yêu thích':[],
 };
 const TPL_EFFECT = `
   <div class="ps">
@@ -3361,7 +3410,7 @@ const TPL_EFFECT = `
       ${Object.keys(EFF_CATS).map((c,i)=>`<div class="cat-tab${i===0?' on':''}" onclick="switchEffCat('${c}',this)">${c}</div>`).join('')}
     </div>
     <div class="eff-grid" id="eff-item-grid">
-      ${EFF_CATS['Video'].map(([icon,name])=>`<div class="eff-item" onclick="selectEffect('${name}',this)"><span class="eff-icon">${icon}</span>${name}</div>`).join('')}
+      ${EFF_CATS['Video'].map(item=>_effItem(item)).join('')}
     </div>
     <div class="prop-row" style="margin-top:10px">
       <span class="prop-lbl">Cường độ</span>
@@ -3412,6 +3461,7 @@ const FILT_PRESETS={
   'Điện ảnh':[['🎬','cinema','Điện ảnh'],['🎞️','film35','Phim 35mm'],['🌆','teal','Teal & Orange'],['🖤','bleach','Bleach bypass'],['🎭','noir2','Noir classic'],['🌅','goldhour','Golden hour'],['🌃','nightfilm','Đêm điện ảnh'],['🌊','desat','Khử bão hòa'],['💜','haze','Purple haze'],['🟠','cross','Cross process'],['🌸','dream','Dreamy'],['🎪','widescreen','Widescreen'],['⚫','vignette2','Vignette'],['🔵','cold2','Lạnh điện ảnh'],['🌹','warm2','Ấm điện ảnh'],['🏔️','epic','Hùng vĩ']],
   'Vintage':[['📷','kodak','Kodak'],['🎞️','fuji','Fujifilm'],['📼','vhs2','VHS'],['🟫','sepia2','Sepia'],['🎨','lomo','Lomography'],['🌄','polaroid2','Polaroid'],['⬛','bwgrain','B&W grain'],['🟤','fade2','Faded brown'],['🔴','chromatic','Chromatic'],['📺','crt','CRT TV'],['🌅','slide','Slide film'],['💛','yellow','Vàng cổ'],['🟠','orange','Cam vintage'],['🌿','faded','Xanh faded'],['💜','purple','Tím vintage'],['🩷','pink','Hồng vintage']],
   'Xu hướng':[['🌸','aesthetic','Aesthetic'],['💜','vsco','VSCO'],['⚡','moody2','Moody'],['🤍','clean','Clean white'],['🖤','dark2','Dark mode'],['🌈','rainbow','Rainbow'],['🧊','ice','Ice blue'],['🔥','fire','Fire'],['🌴','tropical','Tropical'],['🌙','lofi','Lo-fi'],['💫','glitter','Glitter'],['🎀','kawaii','Kawaii'],['🦋','butterfly','Butterfly'],['🌊','wave2','Wave'],['⭐','star2','Starlight'],['🎭','editorial','Editorial']],
+  '❤️ Yêu thích':[],
 };
 const TPL_FILTER = `
   <div class="ps">
@@ -3424,7 +3474,7 @@ const TPL_FILTER = `
       ${Object.keys(FILT_PRESETS).map((c,i)=>`<div class="cat-tab${i===0?' on':''}" onclick="switchFiltCat('${c}',this)">${c}</div>`).join('')}
     </div>
     <div class="filter-row" id="filter-list">
-      ${FILT_PRESETS['Phổ biến'].map(([ico,key,name],i)=>`<div class="fi${i===0?' on':''}" data-filter="${key}" onclick="applyFilter('${key}',this)"><div class="fi-thumb">${ico}</div><div class="fi-name">${name}</div></div>`).join('')}
+      ${FILT_PRESETS['Phổ biến'].map((item,i)=>_filtItem(item,i)).join('')}
     </div>
     <div class="prop-row" style="margin-top:10px">
       <span class="prop-lbl">Cường độ</span>
@@ -3548,13 +3598,14 @@ const _MUS_GENRES=['Tất cả',...[...new Set(MUS_LIBRARY.map(t=>t.genre))]];
 function _renderMusList(filter='',genre='Tất cả'){
   const list=document.getElementById('mus-lib-list');
   if(!list) return;
+  if(genre==='❤️ Yêu thích'){
+    const favs=MUS_LIBRARY.map((t,i)=>[t,i]).filter(([t])=>_FAV.music.has(t.name));
+    list.innerHTML=favs.length?favs.map(([t,i])=>_musItem(t,i)).join(''):`<div class="fav-empty">Nhấn 🤍 trên bài nhạc để thêm vào đây</div>`;
+    return;
+  }
   const q=filter.toLowerCase();
   const rows=MUS_LIBRARY.map((t,i)=>[t,i]).filter(([t])=>(genre==='Tất cả'||t.genre===genre)&&(t.name.toLowerCase().includes(q)||t.genre.toLowerCase().includes(q)));
-  list.innerHTML=rows.length?rows.map(([t,i])=>`<div class="mus-track" onclick="selectMusicTrack(${i},this)">
-    <span class="mus-track-icon">${t.icon}</span>
-    <div class="mus-track-info"><div class="mus-track-name">${t.name}</div><div class="mus-track-meta">${t.genre}${t.bpm?` · ${t.bpm} BPM`:''}</div></div>
-    <span class="mus-track-dur">${t.dur}</span>
-  </div>`).join(''):`<div style="color:var(--t3);font-size:11px;padding:10px;text-align:center">Không tìm thấy bài nào</div>`;
+  list.innerHTML=rows.length?rows.map(([t,i])=>_musItem(t,i)).join(''):`<div style="color:var(--t3);font-size:11px;padding:10px;text-align:center">Không tìm thấy bài nào</div>`;
 }
 const TPL_MUSIC = MP_AUDIO + `
   <div class="ps-div"></div>
@@ -3562,14 +3613,11 @@ const TPL_MUSIC = MP_AUDIO + `
     <div class="ps-title">Thư viện nhạc nền <span style="color:var(--t3);font-size:10px;font-weight:400">(${MUS_LIBRARY.length} bài)</span></div>
     <input id="mus-search" type="text" placeholder="🔍 Tìm bài nhạc..." style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--t1);padding:5px 8px;font-size:11px;margin-bottom:6px;box-sizing:border-box" oninput="_renderMusList(this.value,document.getElementById('mus-genre-sel')?.value||'Tất cả')">
     <select id="mus-genre-sel" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--t1);padding:4px 8px;font-size:11px;margin-bottom:6px" onchange="_renderMusList(document.getElementById('mus-search')?.value||'',this.value)">
+      <option value="❤️ Yêu thích">❤️ Yêu thích</option>
       ${_MUS_GENRES.map(g=>`<option value="${g}">${g}</option>`).join('')}
     </select>
     <div id="mus-lib-list" style="max-height:220px;overflow-y:auto;margin-top:2px">
-      ${MUS_LIBRARY.map((t,i)=>`<div class="mus-track" onclick="selectMusicTrack(${i},this)">
-        <span class="mus-track-icon">${t.icon}</span>
-        <div class="mus-track-info"><div class="mus-track-name">${t.name}</div><div class="mus-track-meta">${t.genre}${t.bpm?` · ${t.bpm} BPM`:''}</div></div>
-        <span class="mus-track-dur">${t.dur}</span>
-      </div>`).join('')}
+      ${MUS_LIBRARY.map((t,i)=>_musItem(t,i)).join('')}
     </div>
     <button class="sub-add-btn" style="margin-top:5px" onclick="addMusicToTimeline()">+ Thêm vào timeline</button>
   </div>
@@ -5045,6 +5093,7 @@ function applyTextAnim(anim, item){
 /* ---- FILTER TAB ---- */
 const FILTER_DEFS={
   none:'',
+  /* Phổ biến */
   sunset:'sepia(0.45) saturate(1.8) hue-rotate(-20deg) brightness(1.08)',
   vintage:'sepia(0.65) contrast(0.82) brightness(0.88) saturate(0.75)',
   vivid:'saturate(2.2) contrast(1.12) brightness(1.04)',
@@ -5052,8 +5101,133 @@ const FILTER_DEFS={
   cold:'hue-rotate(170deg) saturate(0.65) brightness(0.92)',
   warm:'sepia(0.35) saturate(1.5) hue-rotate(-25deg) brightness(1.06)',
   pastel:'saturate(0.55) brightness(1.18) contrast(0.9)',
+  fade:'saturate(0.5) brightness(1.15) contrast(0.85)',
+  aqua:'hue-rotate(160deg) saturate(1.4) brightness(1.05)',
+  amber:'sepia(0.5) saturate(1.8) hue-rotate(-30deg) brightness(1.1)',
+  emerald:'hue-rotate(100deg) saturate(1.6) brightness(0.95)',
+  crystal:'saturate(1.3) brightness(1.2) contrast(1.05)',
+  midnight:'brightness(0.6) saturate(0.8) hue-rotate(220deg)',
+  pop:'saturate(3) contrast(1.3) brightness(1.1)',
+  violet:'hue-rotate(250deg) saturate(1.8) brightness(0.9)',
+  /* Thiên nhiên */
+  nature:'hue-rotate(90deg) saturate(1.3) brightness(1.05)',
+  dawn:'sepia(0.3) saturate(1.6) hue-rotate(-10deg) brightness(1.12)',
+  ocean:'hue-rotate(185deg) saturate(1.5) brightness(1.05)',
+  forest:'hue-rotate(100deg) saturate(1.5) brightness(0.9)',
+  sunny:'brightness(1.3) saturate(1.4) contrast(1.1)',
+  night:'brightness(0.5) saturate(0.7) hue-rotate(200deg)',
+  mist:'saturate(0.5) brightness(1.1) contrast(0.85)',
+  autumn:'sepia(0.6) saturate(1.8) hue-rotate(-30deg)',
+  arctic:'hue-rotate(180deg) saturate(0.5) brightness(1.2) contrast(1.1)',
+  spring:'saturate(1.4) brightness(1.1) hue-rotate(20deg)',
+  summer:'saturate(1.6) brightness(1.15) contrast(1.05)',
+  mountain:'contrast(1.3) saturate(0.8) brightness(0.9)',
+  beach:'saturate(1.5) brightness(1.15) hue-rotate(-10deg)',
+  wheat:'sepia(0.4) saturate(1.5) brightness(1.1)',
+  volcanic:'contrast(1.5) saturate(1.3) hue-rotate(10deg) brightness(0.85)',
+  galaxy:'hue-rotate(240deg) saturate(2) brightness(0.7) contrast(1.4)',
+  /* Đô thị */
+  city:'contrast(1.2) saturate(1.1)',
+  metro:'grayscale(0.3) contrast(1.3)',
+  nightcity:'brightness(0.65) saturate(1.8) hue-rotate(220deg)',
   drama:'contrast(1.4) saturate(0.8) brightness(0.82)',
   neon:'saturate(3) hue-rotate(60deg) brightness(1.1) contrast(1.2)',
+  film:'sepia(0.2) contrast(1.15) saturate(0.9)',
+  dark:'brightness(0.55) contrast(1.3)',
+  moody:'brightness(0.75) saturate(0.7) contrast(1.2)',
+  downtown:'contrast(1.2) saturate(1.3) brightness(1.05)',
+  urban:'grayscale(0.2) contrast(1.25) brightness(0.95)',
+  bridge:'brightness(0.7) contrast(1.4) hue-rotate(200deg)',
+  office:'saturate(0.8) brightness(1.05) contrast(1.1)',
+  traffic:'hue-rotate(15deg) saturate(1.2) contrast(1.15)',
+  cyberpunk:'hue-rotate(180deg) saturate(3) brightness(0.9) contrast(1.5)',
+  street:'sepia(0.2) contrast(1.25) saturate(1.1)',
+  golden:'sepia(0.6) saturate(2) hue-rotate(-20deg) brightness(1.1)',
+  /* Thực phẩm */
+  food:'saturate(1.6) brightness(1.1) contrast(1.05)',
+  cafe:'sepia(0.45) saturate(1.4) brightness(1.05)',
+  sweet:'saturate(1.5) brightness(1.2) hue-rotate(320deg)',
+  spicy:'saturate(2) hue-rotate(15deg) brightness(1.0) contrast(1.2)',
+  tea:'sepia(0.3) saturate(1.3) hue-rotate(30deg)',
+  fresh:'hue-rotate(100deg) saturate(1.5) brightness(1.1)',
+  honey:'sepia(0.5) saturate(1.8) brightness(1.15)',
+  berry:'hue-rotate(290deg) saturate(1.8) brightness(0.95)',
+  pizza:'saturate(1.4) brightness(1.05) hue-rotate(10deg)',
+  ramen:'sepia(0.35) saturate(1.5) brightness(1.08)',
+  sushi:'saturate(0.9) brightness(1.1) contrast(1.1)',
+  stew:'sepia(0.5) saturate(1.6) brightness(0.9)',
+  wine:'hue-rotate(330deg) saturate(1.8) brightness(0.9)',
+  bakery:'sepia(0.4) saturate(1.6) brightness(1.12)',
+  pot:'sepia(0.3) saturate(1.5) brightness(1.0)',
+  chocolate:'sepia(0.8) saturate(1.5) brightness(0.8)',
+  /* Chân dung */
+  portrait:'saturate(1.2) brightness(1.1) contrast(1.05)',
+  soft:'saturate(0.8) brightness(1.15) contrast(0.9)',
+  glow:'brightness(1.35) saturate(0.9) contrast(0.9)',
+  dramatic:'contrast(1.5) saturate(0.7) brightness(0.85)',
+  noir:'grayscale(1) contrast(1.4) brightness(0.8)',
+  bright:'brightness(1.4) saturate(1.2) contrast(0.95)',
+  rosy:'hue-rotate(330deg) saturate(1.5) brightness(1.1)',
+  luxe:'contrast(1.2) saturate(1.3) brightness(0.95)',
+  moon:'brightness(0.75) saturate(0.5) hue-rotate(210deg)',
+  flower:'hue-rotate(300deg) saturate(1.6) brightness(1.1)',
+  royal:'hue-rotate(250deg) saturate(1.5) contrast(1.2) brightness(0.9)',
+  girly:'hue-rotate(320deg) saturate(1.8) brightness(1.15)',
+  bold:'contrast(1.6) saturate(1.5) brightness(1.05)',
+  colorful:'saturate(2.5) contrast(1.1) brightness(1.05)',
+  pure:'brightness(1.3) saturate(0.5) contrast(0.9)',
+  mystic:'hue-rotate(250deg) saturate(1.3) brightness(0.8) contrast(1.2)',
+  /* Điện ảnh */
+  cinema:'contrast(1.25) saturate(0.85) brightness(0.9)',
+  film35:'sepia(0.2) contrast(1.15) saturate(0.95) brightness(0.95)',
+  teal:'hue-rotate(160deg) saturate(1.5) contrast(1.2)',
+  bleach:'contrast(1.4) saturate(0.4) brightness(1.1)',
+  noir2:'grayscale(0.85) contrast(1.5) brightness(0.75)',
+  goldhour:'sepia(0.5) saturate(2) hue-rotate(-15deg) brightness(1.1)',
+  nightfilm:'brightness(0.6) saturate(1.2) hue-rotate(210deg) contrast(1.3)',
+  desat:'saturate(0.3) contrast(1.1) brightness(1.05)',
+  haze:'hue-rotate(270deg) saturate(0.8) brightness(0.9) contrast(0.9)',
+  cross:'hue-rotate(30deg) saturate(2) contrast(1.3) brightness(0.95)',
+  dream:'brightness(1.2) saturate(0.7) contrast(0.85)',
+  widescreen:'contrast(1.1) saturate(0.9)',
+  vignette2:'brightness(0.85) contrast(1.15)',
+  cold2:'hue-rotate(195deg) saturate(0.7) brightness(0.9)',
+  warm2:'sepia(0.4) saturate(1.6) hue-rotate(-20deg) brightness(1.08)',
+  epic:'contrast(1.4) saturate(1.3) brightness(0.85)',
+  /* Vintage */
+  kodak:'sepia(0.3) saturate(1.4) contrast(1.1) brightness(1.05)',
+  fuji:'saturate(1.2) contrast(1.05) hue-rotate(5deg) brightness(1.08)',
+  vhs2:'sepia(0.4) contrast(1.3) saturate(0.7)',
+  sepia2:'sepia(1) brightness(0.95)',
+  lomo:'contrast(1.5) saturate(1.8) brightness(0.85)',
+  polaroid2:'sepia(0.25) contrast(0.9) brightness(1.2) saturate(0.9)',
+  bwgrain:'grayscale(1) contrast(1.2) brightness(0.9)',
+  fade2:'saturate(0.45) brightness(1.1) contrast(0.82) sepia(0.3)',
+  chromatic:'saturate(1.5) hue-rotate(10deg) contrast(1.2)',
+  crt:'contrast(1.3) brightness(0.9) saturate(0.8)',
+  slide:'sepia(0.15) saturate(1.3) contrast(1.1) brightness(1.05)',
+  yellow:'sepia(0.7) saturate(1.5) hue-rotate(-10deg)',
+  orange:'sepia(0.5) saturate(2) hue-rotate(-20deg)',
+  faded:'saturate(0.5) sepia(0.3) brightness(1.1)',
+  purple:'hue-rotate(270deg) saturate(1.5) brightness(0.9)',
+  pink:'hue-rotate(310deg) saturate(1.8) brightness(1.1)',
+  /* Xu hướng */
+  aesthetic:'saturate(0.7) brightness(1.15) contrast(0.9)',
+  vsco:'saturate(1.1) brightness(1.1) contrast(0.95)',
+  moody2:'brightness(0.72) contrast(1.25) saturate(0.8)',
+  clean:'brightness(1.25) saturate(0.7) contrast(0.9)',
+  dark2:'brightness(0.5) contrast(1.3) saturate(0.9)',
+  rainbow:'saturate(3) hue-rotate(45deg) brightness(1.1)',
+  ice:'hue-rotate(185deg) saturate(0.8) brightness(1.25)',
+  fire:'sepia(0.3) saturate(2.5) hue-rotate(10deg) brightness(1.1)',
+  tropical:'hue-rotate(150deg) saturate(1.8) brightness(1.1)',
+  lofi:'saturate(0.6) contrast(0.9) brightness(1.1) sepia(0.2)',
+  glitter:'saturate(2) brightness(1.2) contrast(1.15)',
+  kawaii:'hue-rotate(320deg) saturate(1.6) brightness(1.2)',
+  butterfly:'hue-rotate(200deg) saturate(1.7) brightness(1.05)',
+  wave2:'hue-rotate(170deg) saturate(1.3) brightness(1.0)',
+  star2:'brightness(1.3) saturate(1.1) contrast(1.05)',
+  editorial:'grayscale(0.2) contrast(1.3) brightness(0.95)',
 };
 let _activeFilter='none';
 let _filterIntensity=80;
@@ -5099,21 +5273,73 @@ function selectEffect(name, el){
   /* preview: briefly flash CSS effect on phone */
   _previewEffect(name);
 }
+const EFFECT_CSS={
+  'Glitch':'contrast(1.8) saturate(3) hue-rotate(45deg)','VHS':'sepia(0.4) contrast(1.3) saturate(0.7)',
+  'Neon':'saturate(3) brightness(1.2) hue-rotate(60deg)','Bokeh':'blur(2px) brightness(1.1)',
+  'Ánh sáng':'brightness(1.5) saturate(1.2)','Mưa':'brightness(0.8) contrast(1.1) saturate(0.9)',
+  'Tuyết':'brightness(1.2) saturate(0.6)','Chớp':'brightness(2) contrast(1.5)',
+  'Cuộn phim':'sepia(0.3) contrast(1.2)','Lăng kính':'saturate(1.8) hue-rotate(30deg)',
+  'Zoom in':'brightness(1.05) contrast(1.1)','Zoom out':'brightness(0.95)',
+  'Xoáy':'saturate(1.3) hue-rotate(20deg)','Defocus':'blur(3px)',
+  'Motion blur':'blur(2px) brightness(1.05)','Scanline':'contrast(1.3) brightness(0.85)',
+  'Noise':'contrast(1.4) brightness(0.9)','Film grain':'contrast(1.15) sepia(0.1)',
+  'Flash':'brightness(2.5)','Mirror':'saturate(1.2)','Letterbox':'brightness(0.9) contrast(1.1)',
+  'Wave':'saturate(1.2) hue-rotate(10deg)','Vignette':'brightness(0.75) contrast(1.2)',
+  'Làm mịn':'brightness(1.1) saturate(1.05) contrast(0.95)','Làm trắng':'brightness(1.4) saturate(0.6)',
+  'Da sáng':'brightness(1.35) saturate(0.8)','Trang điểm':'saturate(1.5) contrast(1.1)',
+  'Blur nền':'blur(4px)','Đổi màu nền':'hue-rotate(120deg) saturate(1.5)',
+  'Xóa nền':'contrast(2)','Thay nền':'brightness(1.1)','Sáng nền':'brightness(1.5)',
+  'Tối nền':'brightness(0.5)','Nền đỏ':'hue-rotate(0deg) saturate(3) brightness(0.9)',
+  'Nền xanh':'hue-rotate(200deg) saturate(2)','Nền vàng':'sepia(1) saturate(3)',
+  'Nền vũ trụ':'brightness(0.5) saturate(2) hue-rotate(240deg)',
+  'Hoàng hôn':'sepia(0.5) saturate(2) hue-rotate(-20deg) brightness(1.1)',
+  'Đêm thành phố':'brightness(0.6) saturate(1.8) hue-rotate(220deg)',
+  'Hào quang':'brightness(1.4) saturate(1.1)','Lấp lánh':'brightness(1.3) contrast(1.2) saturate(1.5)',
+  'Lens flare':'brightness(1.6) saturate(1.3)','Cầu vồng':'saturate(2.5) hue-rotate(45deg)',
+  'Pháo hoa':'saturate(2) brightness(1.3) contrast(1.2)','Kim sa':'brightness(1.3) saturate(2)',
+  'Nổ sáng':'brightness(2) contrast(1.5)','Ánh trăng':'brightness(0.6) saturate(0.5) hue-rotate(200deg)',
+  'Ánh nắng':'brightness(1.5) sepia(0.2)','Sét':'brightness(2.5) contrast(2)',
+  'Dải ngân hà':'hue-rotate(240deg) saturate(1.8) brightness(0.7)',
+  'God rays':'brightness(1.5) contrast(1.1)','Star burst':'brightness(1.3) contrast(1.3) saturate(1.5)',
+  /* Cinematic */
+  'Anamorphic':'contrast(1.2) saturate(0.85) brightness(0.95)','Film look':'sepia(0.2) contrast(1.15)',
+  'Teal & Orange':'hue-rotate(160deg) saturate(1.5) contrast(1.2)','Noir':'grayscale(0.85) contrast(1.5) brightness(0.75)',
+  'Golden hour':'sepia(0.5) saturate(2) hue-rotate(-15deg) brightness(1.1)',
+  'Night vision':'hue-rotate(100deg) saturate(2) brightness(0.85)',
+  'Super 8':'sepia(0.5) contrast(1.2) saturate(0.8)','Fog':'brightness(1.1) saturate(0.6) contrast(0.85)',
+  'Drama':'contrast(1.5) saturate(0.7) brightness(0.85)','High contrast':'contrast(2) brightness(0.9)',
+  'Desaturate':'saturate(0.2)','Dreamy':'brightness(1.25) saturate(0.7) contrast(0.85)',
+  'Purple haze':'hue-rotate(270deg) saturate(0.8) brightness(0.9)',
+  'Bleach bypass':'contrast(1.4) saturate(0.4) brightness(1.1)',
+  'Cross process':'hue-rotate(30deg) saturate(2) contrast(1.3)','Vibrant':'saturate(2.2) contrast(1.1)',
+  'Epic wide':'contrast(1.3) saturate(1.2) brightness(0.88)',
+  /* Retro */
+  'VHS 80s':'sepia(0.4) contrast(1.3) saturate(0.7)','CRT TV':'contrast(1.3) brightness(0.85) saturate(0.8)',
+  'Sepia':'sepia(1)','B&W grain':'grayscale(1) contrast(1.2) brightness(0.9)',
+  'Chromatic AB':'saturate(1.5) hue-rotate(10deg) contrast(1.2)',
+  'Kodachrome':'sepia(0.3) saturate(1.4) contrast(1.1)','Lomography':'contrast(1.5) saturate(1.8) brightness(0.85)',
+  'Polaroid':'sepia(0.25) contrast(0.9) brightness(1.2)','80s synth':'hue-rotate(300deg) saturate(2) brightness(1.1)',
+  '8-bit':'contrast(2) saturate(2)','Neon retro':'hue-rotate(300deg) saturate(3) brightness(1.1)',
+  'Miami vice':'hue-rotate(320deg) saturate(2) brightness(1.1)',
+  /* Hoạt hình */
+  'Cartoon face':'saturate(3) contrast(1.5)','Comic boom':'contrast(2) saturate(2.5)',
+  'Heart pop':'hue-rotate(330deg) saturate(2) brightness(1.1)','Sparkle':'brightness(1.4) saturate(1.5)',
+  'Rainbow trail':'saturate(2.5) hue-rotate(30deg)','Exaggerate':'contrast(1.8) saturate(2)',
+  'Fox filter':'sepia(0.5) saturate(1.8) hue-rotate(-20deg)','Sakura':'hue-rotate(320deg) saturate(1.6) brightness(1.1)',
+  'Halloween':'hue-rotate(30deg) saturate(2) brightness(0.75)','Magic':'hue-rotate(270deg) saturate(2) brightness(1.1)',
+  /* Kỹ thuật số */
+  'Matrix':'hue-rotate(120deg) saturate(3) brightness(0.7)','Circuit':'hue-rotate(140deg) saturate(2) brightness(0.8)',
+  'Neon grid':'hue-rotate(160deg) saturate(3) brightness(0.9)','Sci-fi':'hue-rotate(200deg) saturate(2) brightness(0.85) contrast(1.3)',
+  'Tech glow':'hue-rotate(160deg) saturate(2) brightness(1.1)','Terminal':'hue-rotate(120deg) saturate(3) brightness(0.7) contrast(1.5)',
+  'Hologram':'hue-rotate(170deg) saturate(2) brightness(0.9)','UFO':'hue-rotate(220deg) saturate(2) brightness(0.85)',
+};
 function _previewEffect(name){
   const ph=document.getElementById('phone-el');
   if(!ph) return;
-  const EFFECT_CSS={
-    'Glitch':'contrast(1.8) saturate(3) hue-rotate(45deg)',
-    'VHS':'sepia(0.4) contrast(1.3) saturate(0.7)',
-    'Neon':'saturate(3) brightness(1.2) hue-rotate(60deg)',
-    'Đen trắng':'grayscale(1)',
-    'Bokeh':'blur(2px) brightness(1.1)',
-    'Ánh sáng':'brightness(1.5) saturate(1.2)',
-  };
   const prev=ph.style.filter;
   if(EFFECT_CSS[name]){
     ph.style.filter=EFFECT_CSS[name];
-    setTimeout(()=>{ ph.style.filter=prev; },500);
+    setTimeout(()=>{ ph.style.filter=prev; },600);
   }
 }
 function addSelectedEffect(){
@@ -5763,8 +5989,14 @@ function switchStkCat(cat, el){
   el.closest('.cat-tabs').querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('on'));
   el.classList.add('on');
   const grid=document.getElementById('stk-grid');
-  if(!grid||!STK_CATS[cat]) return;
-  grid.innerHTML=STK_CATS[cat].map(e=>`<div class="stk-cat-item" onclick="addStickerOverlay('${e}')">${e}</div>`).join('');
+  if(!grid) return;
+  if(cat==='❤️ Yêu thích'){
+    const favs=[..._FAV.sticker];
+    grid.innerHTML=favs.length?favs.map(e=>_stkItem(e)).join(''):`<div class="fav-empty">Nhấn 🤍 trên sticker để thêm vào đây</div>`;
+    return;
+  }
+  if(!STK_CATS[cat]) return;
+  grid.innerHTML=STK_CATS[cat].map(e=>_stkItem(e)).join('');
 }
 function adjustFocusedSticker(prop, val){
   const el=document.querySelector('.ov-sticker.focused,.ov-text.focused');
@@ -5805,8 +6037,17 @@ function switchEffCat(cat, el){
   el.closest('.cat-tabs').querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('on'));
   el.classList.add('on');
   const grid=document.getElementById('eff-item-grid');
-  if(!grid||!EFF_CATS[cat]) return;
-  grid.innerHTML=EFF_CATS[cat].map(([icon,name])=>`<div class="eff-item" onclick="selectEffect('${name}',this)"><span class="eff-icon">${icon}</span>${name}</div>`).join('');
+  if(!grid) return;
+  if(cat==='❤️ Yêu thích'){
+    const favs=[..._FAV.effect];
+    grid.innerHTML=favs.length?favs.map(name=>{
+      const found=Object.values(EFF_CATS).flat().find(([,n])=>n===name);
+      return found?_effItem(found):`<div class="eff-item" onclick="selectEffect('${name}',this)">${name}</div>`;
+    }).join(''):`<div class="fav-empty">Nhấn 🤍 trên hiệu ứng để thêm vào đây</div>`;
+    return;
+  }
+  if(!EFF_CATS[cat]) return;
+  grid.innerHTML=EFF_CATS[cat].map(item=>_effItem(item)).join('');
 }
 
 /* ---- FILTER TAB ---- */
@@ -5814,8 +6055,17 @@ function switchFiltCat(cat, el){
   el.closest('.cat-tabs').querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('on'));
   el.classList.add('on');
   const list=document.getElementById('filter-list');
-  if(!list||!FILT_PRESETS[cat]) return;
-  list.innerHTML=FILT_PRESETS[cat].map(([ico,key,name],i)=>`<div class="fi${i===0?' on':''}" data-filter="${key}" onclick="applyFilter('${key}',this)"><div class="fi-thumb">${ico}</div><div class="fi-name">${name}</div></div>`).join('');
+  if(!list) return;
+  if(cat==='❤️ Yêu thích'){
+    const favKeys=[..._FAV.filter];
+    const allItems=Object.values(FILT_PRESETS).flat();
+    const favItems=favKeys.map(k=>allItems.find(([,key])=>key===k)).filter(Boolean);
+    list.innerHTML=favItems.length?favItems.map((item,i)=>_filtItem(item,i)).join(''):`<div class="fav-empty">Nhấn 🤍 trên bộ lọc để thêm vào đây</div>`;
+    if(favItems.length) applyFilter(favItems[0][1],list.querySelector('.fi'));
+    return;
+  }
+  if(!FILT_PRESETS[cat]) return;
+  list.innerHTML=FILT_PRESETS[cat].map((item,i)=>_filtItem(item,i)).join('');
 }
 function autoEnhance(){
   const pv=document.getElementById('phone-el');
