@@ -8,5 +8,15 @@
     "createdAt": 1781904024.786535,
     "healthScore": 20,
     "onboardingComplete": true
+  },
+  {
+    "id": "f3afb7f973054136",
+    "email": "ẻa@gmail.com",
+    "displayName": "ádasdasd",
+    "passwordHash": "31535021a453c198d93634b238fba9081792158cc4671511491db356376f2bf6",
+    "role": "beta_user",
+    "createdAt": 1781980986.4806852,
+    "healthScore": 20,
+    "onboardingComplete": true
   }
 ]

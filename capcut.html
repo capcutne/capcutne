@@ -4332,12 +4332,12 @@ function bindPanelInteractions(){
     if((el=sel('.tg'))){ el.classList.toggle('on'); el.classList.toggle('off'); return; }
   };
   body.querySelectorAll('.prop-sl').forEach(slEl=>{
-    slEl.oninput=function(){
+    slEl.addEventListener('input', function(){
       const out=this.nextElementSibling;
       if(out && out.classList.contains('prop-val')){
         out.textContent = this.dataset.pct==='1' ? (this.value+'%') : this.value;
       }
-    };
+    });
   });
 }
 
