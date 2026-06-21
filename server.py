@@ -624,6 +624,25 @@ QUALITY_MAP = {
     "4k":    {"w": 3840,  "h": 2160, "vbr": "15000k"},
 }
 
+# CE-7: Platform preset overrides (w/h take priority over QUALITY_MAP)
+PRESET_MAP = {
+    "tiktok":           {"w": 1080, "h": 1920, "vbr": "6000k",  "label": "TikTok",           "fps": 30},
+    "youtube":          {"w": 1920, "h": 1080, "vbr": "8000k",  "label": "YouTube",           "fps": 30},
+    "instagram":        {"w": 1080, "h": 1080, "vbr": "4000k",  "label": "Instagram",         "fps": 30},
+    "instagram_reels":  {"w": 1080, "h": 1920, "vbr": "6000k",  "label": "Instagram Reels",   "fps": 30},
+    "facebook":         {"w": 1920, "h": 1080, "vbr": "4000k",  "label": "Facebook",          "fps": 30},
+    "podcast":          {"w": 0,    "h": 0,    "vbr": "0",      "label": "Podcast MP3",       "fps": 0},
+}
+
+# CE-7: MIME types for all export formats
+EXPORT_MIME = {
+    "mp4":  "video/mp4",
+    "mov":  "video/quicktime",
+    "webm": "video/webm",
+    "gif":  "image/gif",
+    "mp3":  "audio/mpeg",
+}
+
 EXPORT_HISTORY_FILE = EXPORTS_DIR / "history.json"
 
 
@@ -1023,7 +1042,14 @@ def _build_real_export_cmd(video_segs, audio_segs, plan, fmt, fps, w, h, vbr,
             "-c:a", "libopus", "-b:a", "96k",
             "-t", str(total_dur), out_path,
         ]
-    else:  # mp4
+    elif fmt == "mov":
+        cmd += [
+            "-map", video_out, "-map", audio_out,
+            "-c:v", "libx264", "-preset", "medium", "-b:v", vbr,
+            "-c:a", "aac", "-b:a", "192k",
+            "-t", str(total_dur), "-movflags", "+faststart", out_path,
+        ]
+    else:  # mp4 (default)
         cmd += [
             "-map", video_out, "-map", audio_out,
             "-c:v", "libx264", "-preset", "fast", "-b:v", vbr,
@@ -1034,16 +1060,48 @@ def _build_real_export_cmd(video_segs, audio_segs, plan, fmt, fps, w, h, vbr,
     return cmd
 
 
+def _build_mp3_export_cmd(audio_segs, plan, dur, out_path, bitrate="320k"):
+    """CE-7: Audio-only MP3 export — mixes all audio/video audio tracks."""
+    if not audio_segs:
+        return [
+            "ffmpeg", "-y",
+            "-f", "lavfi", "-i", f"sine=frequency=0:duration={dur}",
+            "-c:a", "libmp3lame", "-b:a", "128k", "-t", str(dur), out_path,
+        ]
+    inputs, fc_parts = [], []
+    for i, seg in enumerate(audio_segs):
+        cs = seg.get("clipStart", 0)
+        sd = round(seg["end"] - seg["start"], 3)
+        inputs += ["-ss", str(cs), "-t", str(sd), "-i", seg["diskPath"]]
+        delay_ms = int(seg["start"] * 1000)
+        fc_parts.append(f"[{i}:a]adelay={delay_ms}|{delay_ms}[ad{i}]")
+    fc_str = ";".join(fc_parts)
+    all_a  = "".join(f"[ad{i}]" for i in range(len(audio_segs)))
+    fc_str += f";{all_a}amix=inputs={len(audio_segs)}:duration=longest:normalize=0[afinal]"
+    return (["ffmpeg", "-y"] + inputs +
+            ["-filter_complex", fc_str, "-map", "[afinal]",
+             "-c:a", "libmp3lame", "-b:a", bitrate, "-t", str(dur), out_path])
+
+
 # ── FFmpeg background worker ──────────────────────────────────────────────────
 
 def _run_export(job_id: str, project: dict, fmt: str, quality: str, fps: int, settings: dict):
     job = export_jobs[job_id]
     try:
+        # CE-7: Platform preset overrides quality dimensions
+        preset_key = settings.get("preset", "")
+        preset     = PRESET_MAP.get(preset_key)
+        hwaccel    = settings.get("hwaccel", False)
+
         q   = QUALITY_MAP.get(quality, QUALITY_MAP["1080p"])
         w, h, vbr = q["w"], q["h"], q["vbr"]
+        if preset and preset["w"] > 0:
+            w, h, vbr = preset["w"], preset["h"], preset["vbr"]
+            fps = preset.get("fps", fps) or fps
 
         burn_subs = settings.get("burnSubtitles", True)
-        job.update({"status": "running", "progress": 3, "message": "Compiling timeline…"})
+        job.update({"status": "running", "progress": 3, "message": "Compiling timeline…",
+                    "preset": preset_key or None, "hwaccel": hwaccel})
 
         # ── Phase 1: Compile timeline → RenderPlan ────────────────────────────
         plan = _compile_timeline(project, burn_subtitles=burn_subs)
@@ -1058,8 +1116,49 @@ def _run_export(job_id: str, project: dict, fmt: str, quality: str, fps: int, se
                         "burn_subtitles": burn_subs,
                     }})
 
-        ext      = "gif" if fmt == "gif" else ("webm" if fmt == "webm" else "mp4")
+        # CE-7: resolve extension for all formats
+        _ext_map = {"gif": "gif", "webm": "webm", "mov": "mov", "mp3": "mp3"}
+        ext      = _ext_map.get(fmt, "mp4")
         out_path = str(EXPORTS_DIR / f"{job_id}.{ext}")
+
+        # CE-7: Audio-only MP3 fast path ──────────────────────────────────────
+        if fmt == "mp3":
+            all_a = [s for s in plan["segments"]
+                     if s.get("diskPath") and Path(s["diskPath"]).exists()]
+            mp3_br = settings.get("mp3Bitrate", "320k")
+            cmd = _build_mp3_export_cmd(all_a, plan, dur, out_path, mp3_br)
+            job.update({"progress": 8, "message": "Encoding audio → MP3…", "started_at": time.time()})
+            proc = subprocess.Popen(cmd, stderr=subprocess.PIPE, text=True, bufsize=1)
+            for line in proc.stderr:
+                if job.get("status") == "cancelled": proc.kill(); break
+                if "time=" in line:
+                    try:
+                        t_str = line.split("time=")[1].split(" ")[0]
+                        parts = t_str.split(":")
+                        t = float(parts[0])*3600 + float(parts[1])*60 + float(parts[2])
+                        pct = min(95, int(t/dur*87)+8)
+                        elapsed = time.time() - job.get("started_at", time.time())
+                        eta_s = int(elapsed/max(t,0.1)*(dur-t)) if t>0 else 0
+                        job.update({"progress": pct, "message": f"Audio {int(t)}/{int(dur)}s", "eta": eta_s})
+                    except Exception: pass
+            proc.wait()
+            if job.get("status") == "cancelled":
+                if os.path.exists(out_path): os.unlink(out_path)
+                return
+            if proc.returncode == 0:
+                fsize = os.path.getsize(out_path)
+                pname = (PRESET_MAP.get(preset_key, {}).get("label") or "") if preset_key else ""
+                job.update({"status": "done", "progress": 100, "message": "MP3 complete",
+                            "output_path": out_path,
+                            "filename": f"capcut_{pname or 'audio'}.mp3",
+                            "filesize": fsize, "completed_at": time.time(), "eta": 0})
+                print(f"[export] ✅ MP3 {job_id} ({fsize//1024} KB)", flush=True)
+                _save_export_history()
+            else:
+                job.update({"status": "error", "message": "MP3 encoding failed"})
+                _save_export_history()
+            return
+        # ─────────────────────────────────────────────────────────────────────
 
         # ── Phase 2: Build FFmpeg command ──────────────────────────────────────
         # Collect video/audio segments that have actual files on disk
@@ -1132,6 +1231,10 @@ def _run_export(job_id: str, project: dict, fmt: str, quality: str, fps: int, se
                     "-t", str(dur), "-movflags", "+faststart", out_path,
                 ]
 
+        # CE-7: Hardware acceleration — insert -hwaccel auto after ffmpeg -y
+        if hwaccel and cmd and cmd[0] == "ffmpeg":
+            cmd = cmd[:2] + ["-hwaccel", "auto", "-threads", "0"] + cmd[2:]
+
         # ── Phase 3: Run FFmpeg with progress tracking ────────────────────────
         job.update({"progress": 8, "message": "Starting FFmpeg…", "started_at": time.time()})
         proc = subprocess.Popen(cmd, stderr=subprocess.PIPE, text=True, bufsize=1)
@@ -1166,12 +1269,14 @@ def _run_export(job_id: str, project: dict, fmt: str, quality: str, fps: int, se
 
         if proc.returncode == 0:
             fsize = os.path.getsize(out_path)
+            _plabel = PRESET_MAP.get(preset_key, {}).get("label", "") if preset_key else ""
+            _fname_q = (_plabel.replace(" ", "_").lower() if _plabel else quality)
             job.update({
                 "status":       "done",
                 "progress":     100,
                 "message":      "Export complete",
                 "output_path":  out_path,
-                "filename":     f"capcut_{quality}.{ext}",
+                "filename":     f"capcut_{_fname_q}.{ext}",
                 "filesize":     fsize,
                 "completed_at": time.time(),
                 "eta":          0,
@@ -1438,12 +1543,21 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         # Export history
         if self.path == "/export/history":
             records = [
-                {k: v for k, v in j.items() if k != "output_path"}
+                {k: v for k, v in j.items() if k not in ("output_path", "_project", "_settings")}
                 for j in export_jobs.values()
                 if j.get("status") in ("done", "error", "cancelled")
             ]
             records.sort(key=lambda r: r.get("completed_at") or r.get("created_at", 0), reverse=True)
             return self.send_json({"history": records[:50]})
+
+        # CE-7: Export queue (all jobs for live polling)
+        if self.path == "/export/queue":
+            jobs = [
+                {k: v for k, v in j.items() if k not in ("output_path", "_project", "_settings")}
+                for j in export_jobs.values()
+            ]
+            jobs.sort(key=lambda r: r.get("created_at", 0), reverse=True)
+            return self.send_json({"jobs": jobs[:100]})
 
         # Export status
         if self.path.startswith("/export/status"):
@@ -1468,12 +1582,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 return self.send_json({"error": "File missing"}, 404)
             fname = job.get("filename", "export.mp4")
             ext   = fname.rsplit(".", 1)[-1]
-            ct_map = {
-                "mp4":  "video/mp4",
-                "webm": "video/webm",
-                "gif":  "image/gif",
-            }
-            ct    = ct_map.get(ext, "application/octet-stream")
+            ct    = EXPORT_MIME.get(ext, "application/octet-stream")
             fsize = os.path.getsize(path)
             self.send_response(200)
             self._cors()
@@ -1513,7 +1622,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             "/workspace/remove-member", "/workspace/delete",
         }
         ALLOWED_PATHS = (AI_PATHS | BETA_POST_PATHS | FOUNDATION_PATHS | BILLING_PATHS
-                         | WORKSPACE_PATHS | {"/project/save", EXPORT_START, EXPORT_CANCEL, FACTORY_GENERATE})
+                         | WORKSPACE_PATHS | {"/project/save", EXPORT_START, EXPORT_CANCEL,
+                                              FACTORY_GENERATE, "/export/retry"})
         if self.path not in ALLOWED_PATHS:
             self.send_json({"error": "Not found"}, 404)
             return
@@ -1596,6 +1706,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     "fps":          fps,
                     "burn_subs":    settings.get("burnSubtitles", True),
                     "created_at":   time.time(),
+                    "_project":     project,
+                    "_settings":    settings,
                 }
                 t = threading.Thread(
                     target=_run_export,
@@ -1637,6 +1749,40 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     _save_export_history()
                     return self.send_json({"ok": True})
                 return self.send_json({"error": "Job not found or already finished"}, 404)
+
+            # CE-7: Export retry — clone params from existing job, create new job
+            if self.path == "/export/retry":
+                jid = body.get("job_id", "")
+                job = export_jobs.get(jid)
+                if not job:
+                    return self.send_json({"error": "Job not found"}, 404)
+                new_jid   = "exp_" + uuid.uuid4().hex[:12]
+                old_fmt   = job.get("format",  "mp4")
+                old_q     = job.get("quality", "1080p")
+                old_fps   = job.get("fps",     30)
+                old_proj  = body.get("project")  or job.get("_project",  {})
+                old_sets  = body.get("settings") or job.get("_settings", {})
+                export_jobs[new_jid] = {
+                    "id":         new_jid,
+                    "status":     "queued",
+                    "progress":   0,
+                    "message":    "Queued (retry)…",
+                    "format":     old_fmt,
+                    "quality":    old_q,
+                    "fps":        old_fps,
+                    "burn_subs":  old_sets.get("burnSubtitles", True),
+                    "created_at": time.time(),
+                    "retry_of":   jid,
+                    "_project":   old_proj,
+                    "_settings":  old_sets,
+                }
+                t = threading.Thread(
+                    target=_run_export,
+                    args=(new_jid, old_proj, old_fmt, old_q, old_fps, old_sets),
+                    daemon=True,
+                )
+                t.start()
+                return self.send_json({"ok": True, "job_id": new_jid})
 
             # ── Billing POST endpoints ────────────────────────────────────────
             if self.path == "/billing/webhook":
