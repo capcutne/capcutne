@@ -298,5 +298,21 @@
     "step": null,
     "ts": 1781989923475,
     "url": "/"
+  },
+  {
+    "userId": "acfd6cd4fcfe4e44",
+    "event": "app_open",
+    "data": {},
+    "step": null,
+    "ts": 1782043533924,
+    "url": "/"
+  },
+  {
+    "userId": "acfd6cd4fcfe4e44",
+    "event": "app_open",
+    "data": {},
+    "step": null,
+    "ts": 1782044923262,
+    "url": "/"
   }
 ]

@@ -592,6 +592,55 @@ svg.ic{display:inline-block;vertical-align:middle;fill:none;stroke:currentColor;
 .ce5-scope-tab:hover{color:var(--t1)}
 .ce5-scope-tab.on{background:var(--bg4);color:var(--t1);border-color:rgba(255,255,255,.2)}
 #ce5-scope-canvas{display:block;width:100%;border-radius:8px;border:1px solid var(--border)}
+/* ══════════════════════════════════════════════════════
+   CE-6: Audio Engine Pro — Panel Styles
+   ══════════════════════════════════════════════════════ */
+.ce6-panel{display:flex;flex-direction:column;gap:0;overflow-y:auto;max-height:calc(100vh - 120px)}
+.ce6-header{display:flex;align-items:center;gap:8px;padding:10px 12px 8px;border-bottom:1px solid var(--border)}
+.ce6-clip-icon{font-size:18px;flex-shrink:0}
+.ce6-clip-name{flex:1;font-size:11px;font-weight:700;color:var(--t1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ce6-norm-btn{font-size:10px;padding:3px 9px;background:var(--bg3);border:1px solid var(--border2);color:var(--t2);border-radius:6px;cursor:pointer;font-family:inherit;transition:all .15s;flex-shrink:0}
+.ce6-norm-btn:hover{background:var(--bg4);color:var(--t1)}
+.ce6-norm-btn.on{background:rgba(99,102,241,.25);border-color:var(--accent);color:var(--accent)}
+/* Waveform viewer */
+.ce6-wf-wrap{padding:8px 12px 4px;background:var(--bg2)}
+.ce6-wf-canvas{display:block;width:100%;border-radius:6px;border:1px solid var(--border)}
+.ce6-wf-lbl{font-size:9px;color:var(--t3);text-align:center;margin-top:4px;opacity:.7}
+/* Sections */
+.ce6-section{border-top:1px solid var(--border);padding:8px 12px}
+.ce6-sec-title{font-size:10px;font-weight:700;color:var(--t2);margin-bottom:6px;letter-spacing:.4px;text-transform:uppercase}
+.ce6-sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.ce6-sec-hdr .ce6-sec-title{margin-bottom:0}
+/* Slider rows */
+.ce6-sl-row{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.ce6-sl-lbl{font-size:10px;color:var(--t3);width:64px;flex-shrink:0}
+.ce6-sl{flex:1;accent-color:var(--accent);height:2px;cursor:pointer}
+.ce6-sl-val{font-size:10px;color:var(--t2);width:46px;text-align:right;font-variant-numeric:tabular-nums;flex-shrink:0}
+/* Sub-body (compressor/limiter/NR body) */
+.ce6-sub-body{transition:opacity .2s}
+.ce6-sub-body.disabled{opacity:.35;pointer-events:none}
+/* Toggle switch */
+.ce6-toggle{display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.ce6-toggle input{display:none}
+.ce6-tog-track{width:32px;height:16px;background:var(--bg4);border-radius:8px;position:relative;transition:background .2s;border:1px solid var(--border2)}
+.ce6-toggle input:checked~.ce6-tog-track{background:var(--accent)}
+.ce6-tog-thumb{position:absolute;top:2px;left:2px;width:10px;height:10px;background:#fff;border-radius:50%;transition:left .2s}
+.ce6-toggle input:checked~.ce6-tog-track .ce6-tog-thumb{left:18px}
+/* EQ */
+.ce6-eq-wrap{display:flex;justify-content:space-around;gap:4px;padding:4px 0 8px;height:120px;align-items:flex-end}
+.ce6-eq-col{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1}
+.ce6-eq-freq{font-size:8px;color:var(--t3);margin-bottom:2px}
+.ce6-eq-sl{height:72px;cursor:pointer;accent-color:var(--accent)}
+.ce6-eq-val{font-size:8px;color:var(--accent);font-variant-numeric:tabular-nums}
+.ce6-eq-lbl{font-size:8px;color:var(--t3)}
+/* Automation canvas */
+.ce6-auto-canvas{display:block;width:100%;border-radius:6px;border:1px solid var(--border);cursor:crosshair;margin-bottom:4px}
+.ce6-auto-hint{font-size:9px;color:var(--t3);text-align:center;opacity:.7;margin-bottom:4px}
+/* Small buttons */
+.ce6-btn-sm{font-size:10px;padding:3px 10px;background:var(--bg3);border:1px solid var(--border2);color:var(--t3);border-radius:5px;cursor:pointer;font-family:inherit;transition:all .15s}
+.ce6-btn-sm:hover{background:var(--bg4);color:var(--t1)}
+/* Solo button on track head */
+.thb.solo-on{color:#f59e0b!important;background:rgba(245,158,11,.18)!important;border-color:#f59e0b!important}
 /* CE-5: Effect Stack section inside CE-5 panel */
 #ce5-fx-wrap{border-top:2px solid var(--border);padding-bottom:8px;flex-shrink:0}
 .ce5-fx-header{display:flex;align-items:center;gap:6px;padding:6px 10px 4px;flex-wrap:wrap}
@@ -2508,6 +2557,8 @@ function renderTracks(){
               onclick="typeof ce3_toggleMute==='function'&&ce3_toggleMute('${tr.id}')">${tr.muted?'🔇':'🔊'}</button>
             <button class="thb${tr.hidden?' on':''}" title="${tr.hidden?'Hiện':'Ẩn'} track"
               onclick="typeof ce3_toggleHide==='function'&&ce3_toggleHide('${tr.id}')">${tr.hidden?'🙈':'👁'}</button>
+            ${tr.type==='audio'?`<button class="thb${typeof ce6_isSolo==='function'&&ce6_isSolo(tr.id)?' solo-on':''}" title="Solo track (nghe riêng)"
+              onclick="typeof ce6_toggleSolo==='function'&&ce6_toggleSolo('${tr.id}')">S</button>`:''}
           </div>
         </div>
       </div>
@@ -4718,6 +4769,8 @@ function updateRightInfo(){
 function _loadClipToPanel(clip){
   /* CE-4: Text clips get the dedicated text inspector */
   if(clip.cls==='cs'&&typeof ce4_handleTextClip==='function'){ce4_handleTextClip(clip);return;}
+  /* CE-6: Audio clips get the full Audio Engine Pro inspector */
+  if(clip.cls==='ca'&&typeof ce6_handleAudioClip==='function'){ce6_handleAudioClip(clip);return;}
   /* CE-5: Video clips get the full Color Grading inspector */
   if(clip.cls==='cv'&&typeof ce5_handleVideoClip==='function'){ce5_handleVideoClip(clip);return;}
   /* Effect clips get a dedicated panel */
@@ -7746,6 +7799,7 @@ window.switchRP=function(tab){
 <script src="/js/timeline_ce3.js"></script>
 <script src="/js/text_ce4.js"></script>
 <script src="/js/color_ce5.js"></script>
+<script src="/js/audio_ce6.js"></script>
 </body>
 </html>
 
